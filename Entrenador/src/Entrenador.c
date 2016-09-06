@@ -10,6 +10,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
+#include <commons/log.h>
+#include <commons/config.h>
 
 int main(void) {
 	puts("!!!Hello World!!!"); /* prints !!!Hello World!!! */

@@ -15,7 +15,11 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <pthread.h>
+#include <commons/log.h>
+#include <commons/config.h>
 #include "libSockets.h"
+#include <commons/bitarray.h>
 
 /* para testear sockets */
 #define PACKAGESIZE 1024

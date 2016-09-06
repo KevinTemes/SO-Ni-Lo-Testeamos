@@ -15,7 +15,11 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <pthread.h>
+#include <commons/log.h>
+#include <commons/config.h>
 #include "libSockets.h"
+#include <commons/bitarray.h>
 
 /* defines para testear sockets */
 #define IP "127.0.0.1"
