@@ -13,6 +13,8 @@
 #include <pthread.h>
 #include <commons/log.h>
 #include <commons/config.h>
+#include <nivel.h>
+#include <tad_items.h>
 
 int main(void) {
 	puts("!!!Hello World!!!"); /* prints !!!Hello World!!! */
