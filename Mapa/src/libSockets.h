@@ -28,17 +28,17 @@ typedef struct{
 typedef struct{
 	char* tipoPokemon;
 	char* posicion;
-	char caracterPokeNest;
+	char* caracterPokeNest;
 }metaDataPokeNest;
 
 typedef struct{
 	int nivel;
-	char caracterPokemon;
+	char* caracterPokemon;
 
 }metaDataPokemon;
 
-int leerConfiguracion(char *ruta, metaDataComun **datos);
-int leerConfigPokenest(char *ruta, metaDataPokeNest **datos);
-
+int leerConfiguracion(char* ruta, metaDataComun **datos);
+int leerConfigPokenest(char* ruta, metaDataPokeNest **datos);
+int leerConfigPokemon(char* ruta, metaDataPokemon **datos);
 
 #endif /* LIBSOCKETS_H_ */

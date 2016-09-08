@@ -49,7 +49,10 @@ int main(int argc, char* argv[]) {
 			return 1;
 	} else if (!leerConfigPokenest(argv[1],&datosPokenest)){
 		log_error(logs,"Error al leer el archivo de configuracion de Metadata Pokenest\n");
-		return 1;
+		return 2;
+	} else if (!leerConfigPokemon(argv[1],&datosPokenest)){
+		log_error(logs,"Error al leer el archivo de configuracion de Metadata de Pokemons\n");
+		return 3;
 	}
 
 

@@ -58,3 +58,22 @@ int leerConfigPokenest(char *ruta, metaDataPokeNest **datos) {
 		}
 
 }
+
+int leerConfigPokemon(char* ruta, metaDataPokemon **datos){
+	t_config* archivoConfigPokemon = config_create(ruta);//Crea struct de configuracion
+			if (archivoConfigPokemon == NULL) {
+				return 0;
+			} else {
+				int cantidadKeys = config_keys_amount(archivoConfigPokemon);
+				if (cantidadKeys < 2) {
+					return 0;
+				} else {
+					(*datos)->nivel = config_get_int_value(archivoConfigPokemon, "Nivel");
+					char* caracter1 = string_new();
+					string_append(&caracter1, config_get_string_value(archivoConfigPokemon,"[Ascii Art]"));
+					(*datos)->caracterPokemon= caracter1;
+					config_destroy(archivoConfigPokemon);
+					return 1;
+				}
+			}
+}
