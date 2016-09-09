@@ -15,6 +15,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include "libSockets.h"
+#include "osada.h"
 #include "libreriaPokedexServidor.h"
 #include <commons/config.h>
 #include <commons/collections/queue.h>

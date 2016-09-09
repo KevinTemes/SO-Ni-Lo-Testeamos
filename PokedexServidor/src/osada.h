@@ -42,4 +42,13 @@ typedef struct {
 
 //_Static_assert( sizeof(osada_file) == (sizeof(osada_block) / 2.0), "osada_file size does not half osada_block size");
 
+int fsize(FILE*);
+//SE FIJA EL TAMAÑO DEL ARCHIVO EN BYTES
+void datos(FILE*);
+//IMPRIME DATOS DEL ARCHIVO COMO: TAMAÑO EN BLOQUES TOTAL, BLOQUES DEL HEADER,ETC
+void seekBloques(FILE*,int);
+//SIRVE PARA ABSTRAERSE DEL FSEEK Y PODER MOVERSE EN BLOQUES (SE ESTA EN SEEK_CUR AL MOVERSE)
+int osada(osada_header,osada_file);
+//METE DATOS DEL ARCHIVO EN VARIABLES DE ESTRUCTURA, HAY QUE PASARLE LOS VALORES POR REFERENCIA
+//TAMBIEN LOS IMPRIMEEE
 #pragma pack(pop)
