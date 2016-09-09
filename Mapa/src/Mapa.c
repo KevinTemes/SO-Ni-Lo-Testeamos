@@ -20,6 +20,7 @@
 #include <stdbool.h>
 #include "libSockets.h"
 #include <curses.h>
+#include <commons/string.h>
 
 
 int main(int argc, char* argv[]) {
@@ -48,7 +49,7 @@ int main(int argc, char* argv[]) {
 	datosPokenest= malloc(sizeof(metaDataPokeNest));
 	datosPokemon= malloc(sizeof(metaDataPokemon));
 
-
+	/*
 	if (!leerConfiguracion("MetadataComun", &datosMapa)) {
 			log_error(logs,"Error al leer el archivo de configuracion de Metadata\n");
 			return 1;
@@ -62,13 +63,13 @@ int main(int argc, char* argv[]) {
 	if (!leerConfigPokemon("MetadataPokemon",&datosPokemon)){
 		log_error(logs,"Error al leer el archivo de configuracion de Metadata de Pokemons\n");
 		return 3;
-	}
+	}*/
 
+	printf("Queres dibujar el mapa? Responde \"Si\" si queres dibujarlo, o otra cosa si no queres\n");
+	char* inicio;
+	scanf("%s", inicio);
 
-	// MAS ADELANTE CUANDO ESTE TODO CREADO
-	log_info(logs, "dibujado del mapa");
-	//char resp = scanf("%c", &resp);
-	//if (resp == 'S' || resp == 's'){
+	if(!strcmp(inicio,"Si")){ // porque el strcmp devuelve 0 si son iguales, si lo negamos devuelve 1 y entra al if
 
 	t_list* items = list_create();
 	int rows; // nro de filas
@@ -184,9 +185,7 @@ int main(int argc, char* argv[]) {
 		BorrarItem(items, 'F');
 
 		nivel_gui_terminar();
-	//} else if (resp == 'N' || resp== 'n'){
-	//	return 1;
-	//}
+	}
 
 	return EXIT_SUCCESS;
 }
