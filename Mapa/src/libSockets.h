@@ -31,12 +31,12 @@ typedef struct{
 typedef struct{
 	char* tipoPokemon;
 	char* posicion;
-	char* caracterPokeNest;
+	char caracterPokeNest;
 }metaDataPokeNest;
 
 typedef struct{
 	int nivel;
-	char* caracterPokemon;
+	char caracterPokemon;
 
 }metaDataPokemon;
 

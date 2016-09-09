@@ -50,9 +50,7 @@ int leerConfigPokenest(char *ruta, metaDataPokeNest **datos) {
 				char* posicion=string_new();
 				string_append(&posicion,config_get_string_value(archivoConfigPokenest,"Posicion"));
 				(*datos)->posicion=posicion;
-				char* caracter = string_new();
-				string_append(&caracter, config_get_string_value(archivoConfigPokenest,"Identificador"));
-				(*datos)->caracterPokeNest= caracter;
+				(*datos)->caracterPokeNest=config_get_string_value(archivoConfigPokenest,"Identificador");
 
 				config_destroy(archivoConfigPokenest);
 				return 1;
@@ -71,9 +69,7 @@ int leerConfigPokemon(char* ruta, metaDataPokemon **datos){
 					return 0;
 				} else {
 					(*datos)->nivel = config_get_int_value(archivoConfigPokemon, "Nivel");
-					char* caracter1 = string_new();
-					string_append(&caracter1, config_get_string_value(archivoConfigPokemon,"[Ascii Art]"));
-					(*datos)->caracterPokemon= caracter1;
+					(*datos)->caracterPokemon= config_get_string_value(archivoConfigPokemon,"[Ascii Art]");
 
 					config_destroy(archivoConfigPokemon);
 					return 1;

@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
 	datosPokenest= malloc(sizeof(metaDataPokeNest));
 	datosPokemon= malloc(sizeof(metaDataPokemon));
 
-	/*
+
 	if (!leerConfiguracion("MetadataComun", &datosMapa)) {
 			log_error(logs,"Error al leer el archivo de configuracion de Metadata\n");
 			return 1;
@@ -63,7 +63,9 @@ int main(int argc, char* argv[]) {
 	if (!leerConfigPokemon("MetadataPokemon",&datosPokemon)){
 		log_error(logs,"Error al leer el archivo de configuracion de Metadata de Pokemons\n");
 		return 3;
-	}*/
+	}
+
+	log_info(logs,"Los tres archivos de config fueron creados exitosamente!\n");
 
 	char* inicio = string_new();
 

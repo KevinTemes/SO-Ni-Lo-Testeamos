@@ -129,7 +129,8 @@ int osada(osada_header *head, osada_file *tablaArchivo) {
     printf("Inicio de Tabla de Asignaciones (bloque): %d\n",head->allocations_table_offset);
     printf("Tamaño de Datos: %d\n",head->data_blocks);
 
-    int h;
+    int h=0; // despues lo cambiamos, sino tira warning
+
     //multiplico N bytes del bitmap por el tamaño de un bloque para desplazarme esa cantidad y saltear el bitmap
     //h = fseek(archivo,(N*OSADA_BLOCK_SIZE),SEEK_CUR);
 
