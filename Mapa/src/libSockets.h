@@ -14,6 +14,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <commons/config.h>
+#include <commons/log.h>
+
+
 
 typedef struct{
 	int tiempoChequeoDeadlock;

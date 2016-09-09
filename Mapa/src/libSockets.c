@@ -15,7 +15,7 @@ int leerConfiguracion(char *ruta, metaDataComun **datos) {
 	} else {
 		int cantidadKeys = config_keys_amount(archivoConfiguracion);
 		if (cantidadKeys < 7) {
-			return 0;
+			return 0; // sale, 0 es false
 		} else {
 			(*datos)->tiempoChequeoDeadlock = config_get_int_value(archivoConfiguracion, "TiempoChequeoDeadlock");
 			(*datos)->batalla = config_get_int_value(archivoConfiguracion,"Batalla");
@@ -28,8 +28,9 @@ int leerConfiguracion(char *ruta, metaDataComun **datos) {
 			string_append(&ip,config_get_string_value(archivoConfiguracion,"IP"));
 			(*datos)->ip=ip;
 			(*datos)->puerto= config_get_int_value(archivoConfiguracion,"Puerto");
+
 			config_destroy(archivoConfiguracion);
-			return 1;
+			return 1; // cualquier otra cosa que no es 0, es true
 		}
 	}
 }
@@ -52,6 +53,7 @@ int leerConfigPokenest(char *ruta, metaDataPokeNest **datos) {
 				char* caracter = string_new();
 				string_append(&caracter, config_get_string_value(archivoConfigPokenest,"Identificador"));
 				(*datos)->caracterPokeNest= caracter;
+
 				config_destroy(archivoConfigPokenest);
 				return 1;
 			}
@@ -72,6 +74,7 @@ int leerConfigPokemon(char* ruta, metaDataPokemon **datos){
 					char* caracter1 = string_new();
 					string_append(&caracter1, config_get_string_value(archivoConfigPokemon,"[Ascii Art]"));
 					(*datos)->caracterPokemon= caracter1;
+
 					config_destroy(archivoConfigPokemon);
 					return 1;
 				}
