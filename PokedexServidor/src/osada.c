@@ -61,10 +61,15 @@ void seekBloques(FILE* archivo,int cantidad){
 }
 
 int osada(osada_header *head, osada_file *tablaArchivo) {
+
+// Antes esto tiraba error de tipos, cambie el osada.h para que reciba punteros
+// Porque antes recibia solo las structs
+
 	FILE* archivo;
 	if ((archivo = fopen("/home/utnso/workspace/SistemaOsada/archivoEjemplo.txt" , "r")) == NULL) {
-					printf("No se pudo abrir archivo\n");
-					return -99;
+		printf("No se pudo abrir archivo\n");
+
+		return -99;
 			}
 
 
@@ -112,8 +117,8 @@ int osada(osada_header *head, osada_file *tablaArchivo) {
 
     //esto muestra el header
     printf("\n\n----HEADER----\n\n");
-    int i=0;
-    for(i;i<7;i++){
+    int i;
+    for(i=0;i<7;i++){
     	char c;
     	c = head->magic_number[i];
     	printf("%c",c);
@@ -139,9 +144,9 @@ int osada(osada_header *head, osada_file *tablaArchivo) {
 
     printf("\n\n----TABLA----\n\n");
     printf("Estado: %d\n",tablaArchivo->state);
-    int j=0;
+    int j;
     printf("Nombre del archivo: ");
-    for(j;j<17;j++){
+    for(j=0;j<17;j++){
     	char a;
     	a=tablaArchivo->fname[j];
     	printf("%c",a);

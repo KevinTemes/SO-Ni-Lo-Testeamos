@@ -20,7 +20,7 @@
 #include <stdbool.h>
 #include "libSockets.h"
 #include <curses.h>
-#include <commons/string.h>
+#include <string.h>
 
 
 int main(int argc, char* argv[]) {
@@ -65,8 +65,9 @@ int main(int argc, char* argv[]) {
 		return 3;
 	}*/
 
+	char* inicio = string_new();
+
 	printf("Queres dibujar el mapa? Responde \"Si\" si queres dibujarlo, o otra cosa si no queres\n");
-	char* inicio;
 	scanf("%s", inicio);
 
 	if(!strcmp(inicio,"Si")){ // porque el strcmp devuelve 0 si son iguales, si lo negamos devuelve 1 y entra al if
