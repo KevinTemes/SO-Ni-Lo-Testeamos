@@ -30,13 +30,14 @@ int main(int argc, char* argv[]) {
 	logs = log_create("Mapa.log", "Mapa", true, log_level_from_string("INFO"));
 	puts("Log creado exitosamente \n");
 
-	/*
+
 	t_queue* listoParaMoverse;
 	t_queue* esperaCapturarPokemon;
 	t_list* finalizaAnormal;
 	listoParaMoverse=queue_create();
 	esperaCapturarPokemon=queue_create();
 	finalizaAnormal=list_create();
+
 
 	// CONFIGURACION
 	metaDataComun* datosMapa;
@@ -61,10 +62,13 @@ int main(int argc, char* argv[]) {
 	if (!leerConfigPokemon("MetadataPokemon",&datosPokemon)){
 		log_error(logs,"Error al leer el archivo de configuracion de Metadata de Pokemons\n");
 		return 3;
-	} */
+	}
+
 
 	// MAS ADELANTE CUANDO ESTE TODO CREADO
-	log_info(logs, "Ahora dibujamos el mapa\n");
+	log_info(logs, "dibujado del mapa");
+	//char resp = scanf("%c", &resp);
+	//if (resp == 'S' || resp == 's'){
 
 	t_list* items = list_create();
 	int rows; // nro de filas
@@ -88,7 +92,7 @@ int main(int argc, char* argv[]) {
 	CrearCaja(items, 'M', 8, 15, 3);
 	CrearCaja(items, 'F', 19, 9, 2);
 
-	nivel_gui_dibujar(items, "Test Chamber 04");
+	nivel_gui_dibujar(items, "Mapa con Entrenadores");
 
 	while (1) {
 			int key = getch();
@@ -180,8 +184,9 @@ int main(int argc, char* argv[]) {
 		BorrarItem(items, 'F');
 
 		nivel_gui_terminar();
+	//} else if (resp == 'N' || resp== 'n'){
+	//	return 1;
+	//}
 
 	return EXIT_SUCCESS;
-
-
 }
