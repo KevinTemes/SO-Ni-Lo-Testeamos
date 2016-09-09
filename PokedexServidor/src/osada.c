@@ -60,7 +60,7 @@ void seekBloques(FILE* archivo,int cantidad){
 	fseek(archivo,cantidad*(OSADA_BLOCK_SIZE),SEEK_CUR);
 }
 
-int main() {
+int osada() {
 	FILE* archivo;
 	if ((archivo = fopen("/home/utnso/workspace/SistemaOsada/archivoEjemplo.txt" , "r")) == NULL) {
 					printf("No se pudo abrir archivo\n");
@@ -150,9 +150,9 @@ int main() {
     int j=0;
     printf("Nombre del archivo: ");
     for(j;j<17;j++){
-    	char j;
-    	j=tablaArchivo.fname[i];
-    	printf("%c",j);
+    	char a;
+    	a=tablaArchivo.fname[j];
+    	printf("%c",a);
     }
     printf("\nBloque Padre: %d\n",tablaArchivo.parent_directory);
     printf("Tamaño del Archivo: %d\n",tablaArchivo.file_size);
