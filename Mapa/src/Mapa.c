@@ -28,10 +28,6 @@
 #define PUERTO "7900"
 #define PACKAGESIZE 1024
 
-
-
-
-
 typedef struct {
     char* nombreMapa;
     int identificador;
@@ -62,10 +58,6 @@ void crearDirectorioDeMapa(t_mapa* mapa){
             ("mkdir -p /home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/Entrenadores/%s/%s/", mapa->nombreMapa, "Dir\\ de\\ Bill");
     system(comando_Directorio_Entrenador_DirBill);*/
 }
-
-
-
-
 
 
 int main(int argc, char* argv[]) {
@@ -105,7 +97,7 @@ int main(int argc, char* argv[]) {
         return 2;
     }
 
-    if (!leerConfigPokemon("MetadataPokemon",&datosPokemon)){
+    if (!leerConfigPokemon("MetadataPokemon.dat",&datosPokemon)){
         log_error(logs,"Error al leer el archivo de configuracion de Metadata de Pokemons\n");
         return 3;
     }
