@@ -18,6 +18,7 @@
 #include <arpa/inet.h>
 #include <commons/log.h>
 #include <commons/string.h>
+#include <commons/config.h>
 
 typedef struct Paquete {
 	int codigoOperacion;

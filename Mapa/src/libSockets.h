@@ -9,8 +9,12 @@
 #define LIBSOCKETS_H_
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <commons/string.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <netdb.h>
+#include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <commons/config.h>
@@ -43,5 +47,6 @@ typedef struct{
 int leerConfiguracion(char* ruta, metaDataComun **datos);
 int leerConfigPokenest(char* ruta, metaDataPokeNest **datos);
 int leerConfigPokemon(char* ruta, metaDataPokemon **datos);
+struct addrinfo* cargarInfoSocket(char *IP, char* Port);
 
 #endif /* LIBSOCKETS_H_ */
