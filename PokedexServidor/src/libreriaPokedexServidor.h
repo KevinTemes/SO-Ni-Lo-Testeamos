@@ -30,5 +30,10 @@ typedef struct{
 /* Función loca para testear rececpción de mensajes a través de un socket. */
 void imprimirGiladas(void *unCliente);
 
+/* Función para imprimir por pantalla el contenido de un archivo de texto */
+void imprimir_archivo(char *rutaDelArchivo);
+
+/* Función para volcar el contenido de un archivo .txt dentro de un string */
+char *txtAString(char *rutaDelArchivo);
 
 #endif /* LIBRERIAPOKEDEXSERVIDOR_H_ */
