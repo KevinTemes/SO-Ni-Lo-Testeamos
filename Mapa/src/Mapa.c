@@ -41,6 +41,7 @@ t_mapa* crear_Mapa(char* nombre, int id){
     return nuevoMapa;
 }
 
+/*
 void crearDirectorioDeMapa(t_mapa* mapa){
     char* comando_Directorio_Mapa = string_from_format
             ("mkdir -p /home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/Mapas/%s/", mapa->nombreMapa);
@@ -56,17 +57,18 @@ void crearDirectorioDeMapa(t_mapa* mapa){
 
     /*char* comando_Directorio_Entrenador_DirBill = string_from_format
             ("mkdir -p /home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/Entrenadores/%s/%s/", mapa->nombreMapa, "Dir\\ de\\ Bill");
-    system(comando_Directorio_Entrenador_DirBill);*/
-}
+    system(comando_Directorio_Entrenador_DirBill);
+}*/
 
 
 int main(int argc, char* argv[]) {
 
-    remove("Mapa.log");
+    //LOGS
+	remove("Mapa.log");
     puts("Creando archivo de logueo...\n");
     t_log* logs;
     logs = log_create("Mapa.log", "Mapa", true, log_level_from_string("INFO"));
-    puts("Log creado exitosamente \n");
+    puts("Log Mapa creado exitosamente \n");
 
 
     t_queue* listoParaMoverse;
@@ -77,7 +79,7 @@ int main(int argc, char* argv[]) {
     finalizaAnormal=list_create();
 
 
-    // CONFIGURACION
+    // CONFIG
     metaDataComun* datosMapa;
     metaDataPokeNest* datosPokenest;
     metaDataPokemon* datosPokemon;
@@ -227,7 +229,7 @@ int main(int argc, char* argv[]) {
         nivel_gui_terminar();
     }
 
-
+    //CONEXIONES
     int socketEscucha, retornoPoll;
         socketEscucha = setup_listen("localhost", PUERTO);
 

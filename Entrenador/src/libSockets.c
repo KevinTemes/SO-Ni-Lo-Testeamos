@@ -8,6 +8,52 @@
 #include "libSockets.h"
 #define HEADER_PAQUETE (sizeof(int)*3)
 
+int leerConfigEnt(char *ruta, t_entrenador **datos){
+	t_config* archivoConfiguracion = config_create(ruta);//Crea struct de configuracion
+	if (archivoConfiguracion == NULL) {
+		return 0;
+	} else {
+		int cantidadKeys = config_keys_amount(archivoConfiguracion);
+			if (cantidadKeys < 6) {
+				return 0;
+			} else {
+			char* nombre=string_new();
+			string_append(&nombre, config_get_string_value(archivoConfiguracion, "nombre"));
+			(*datos)->nombreEntrenador=nombre;
+			(*datos)->caracter=config_get_string_value(archivoConfiguracion,"simbolo");
+			(*datos)->hojaDeViaje=config_get_array_value(archivoConfiguracion,"hojaDeViaje");
+
+			// ahora que obtuve las cosas lo manejo como lista ambas
+			t_list* listaDeViaje;
+			t_list* listaObjetivosxMapa;
+			int i=1;
+			do{
+				int j =0;
+				if ((*datos)->hojaDeViaje[j]!=NULL){
+					// ARREGLAR ESTO MAS TARDE
+					list_add(listaDeViaje,(*datos)->hojaDeViaje[j]);
+					(*datos)->objetivosPorMapa= config_get_array_value(archivoConfiguracion,("obj[%s]", (*datos)->hojaDeViaje[j]));
+					list_add(listaObjetivosxMapa, (*datos)->objetivosPorMapa[j]);
+					j++;
+				}
+				else {
+					i =-1;
+				}
+			} while(i);
+
+			//for(int i=0; ((*datos)->hojaDeViaje)[i]!=NULL; i++){
+			//	(*datos)->objetivosPorMapa= config_get_array_value(archivoConfiguracion,("obj[%s]", (*datos)->hojaDeViaje[i]));
+			//}
+
+			(*datos)->cantidadInicialVidas= config_get_int_value(archivoConfiguracion,"vidas");
+			(*datos)->reintentos= config_get_int_value(archivoConfiguracion,"reintentos");
+
+			config_destroy(archivoConfiguracion);
+			return 1;
+			}
+	}
+}
+
 int setup_listen(char* IP, char* Port) {
 	struct addrinfo * serverInfo = cargarInfoSocket(IP, Port);
 	if (serverInfo == NULL)

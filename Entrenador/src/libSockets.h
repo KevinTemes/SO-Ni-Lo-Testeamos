@@ -18,6 +18,17 @@
 #include <arpa/inet.h>
 #include <commons/log.h>
 #include <commons/string.h>
+#include <commons/collections/list.h>
+#include <commons/config.h>
+
+typedef struct {
+    char* nombreEntrenador;
+    char caracter;
+    char** hojaDeViaje;
+    char** objetivosPorMapa;
+    int cantidadInicialVidas;
+    int reintentos;
+}t_entrenador;
 
 typedef struct Paquete {
 	int codigoOperacion;
@@ -84,6 +95,6 @@ char *serializar(Paquete *unPaquete);
 Paquete *deserializar_header(char *buffer);
 void deserializar_data(Paquete *unPaquete, char *buffer);
 void destruirPaquete(Paquete * unPaquete);
-
+int leerConfigEnt(char *ruta, t_entrenador **datos);
 
 #endif /* LIBSOCKETS_H_ */
