@@ -21,7 +21,7 @@ typedef struct {
 	unsigned char padding[40]; // useless bytes just to complete the block size
 } osada_header;
 
-//_Static_assert( sizeof(osada_header) == sizeof(osada_block), "osada_header size does not match osada_block size");
+_Static_assert( sizeof(osada_header) == sizeof(osada_block), "osada_header size does not match osada_block size");
 
 typedef enum __attribute__((packed)) {
     DELETED = '\0',
@@ -29,7 +29,7 @@ typedef enum __attribute__((packed)) {
     DIRECTORY = '\2',
 } osada_file_state;
 
-//_Static_assert( sizeof(osada_file_state) == 1, "osada_file_state is not a char type");
+_Static_assert( sizeof(osada_file_state) == 1, "osada_file_state is not a char type");
 
 typedef struct {
 	osada_file_state state;
@@ -40,7 +40,7 @@ typedef struct {
 	osada_block_pointer first_block;
 } osada_file;
 
-//_Static_assert( sizeof(osada_file) == (sizeof(osada_block) / 2.0), "osada_file size does not half osada_block size");
+_Static_assert( sizeof(osada_file) == (sizeof(osada_block) / 2.0), "osada_file size does not half osada_block size");
 
 int fsize(FILE*);
 //SE FIJA EL TAMAÑO DEL ARCHIVO EN BYTES

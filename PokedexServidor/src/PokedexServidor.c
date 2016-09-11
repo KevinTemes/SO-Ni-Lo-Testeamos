@@ -18,7 +18,21 @@
 
 int main() {
 
+	//carga de variables
+
+	/*
+	osada_header head;
+	osada_file archi;
+
+	osada(&head,&archi);
+
+
+
+
+
 /* inicio todas las variables para arrancar */
+
+
 	int socketEscucha, retornoPoll;
 	int fd_index = 0;
 

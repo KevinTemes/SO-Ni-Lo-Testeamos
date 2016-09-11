@@ -113,7 +113,7 @@ int osada(osada_header *head, osada_file *tablaArchivo) {
 
 
     //leo un header
-    fread(&head,sizeof(osada_header),1,archivo);
+    fread(head,sizeof(osada_header),1,archivo);
 
     //esto muestra el header
     printf("\n\n----HEADER----\n\n");
@@ -132,7 +132,8 @@ int osada(osada_header *head, osada_file *tablaArchivo) {
     int h=0; // despues lo cambiamos, sino tira warning
 
     //multiplico N bytes del bitmap por el tamaño de un bloque para desplazarme esa cantidad y saltear el bitmap
-    //h = fseek(archivo,(N*OSADA_BLOCK_SIZE),SEEK_CUR);
+    //h = fseek(archivo,(N*OSADA_BLOCK_SIZE),SEEK_CUR); seria la funcioin equivalente al seekBloques
+    //ahorra tiempo, que se yo
 
     seekBloques(archivo,N);
 
@@ -141,10 +142,10 @@ int osada(osada_header *head, osada_file *tablaArchivo) {
     	exit(1);
     }
 
-    fread(&tablaArchivo,sizeof(osada_file),1,archivo);
+    fread(tablaArchivo,sizeof(osada_file),1,archivo);
 
     printf("\n\n----TABLA----\n\n");
-    printf("Estado: %d\n",tablaArchivo->state);
+    printf("Estado: %c\n",tablaArchivo->state);
     int j;
     printf("Nombre del archivo: ");
     for(j=0;j<17;j++){
@@ -155,7 +156,7 @@ int osada(osada_header *head, osada_file *tablaArchivo) {
     printf("\nBloque Padre: %d\n",tablaArchivo->parent_directory);
     printf("Tamaño del Archivo: %d\n",tablaArchivo->file_size);
     printf("Fecha de ultima modificacion: %d\n",tablaArchivo->lastmod);
-    printf("Bloque inicial: %d\n",tablaArchivo->first_block);
+    printf("Bloque inicial: %d\n\n",tablaArchivo->first_block);
 
 
     fclose(archivo);
