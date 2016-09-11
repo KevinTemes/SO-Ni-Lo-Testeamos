@@ -84,7 +84,7 @@ int main(void) {
 
 	 log_info(logs,"Archivo de config Entrenador creado exitosamente!\n");
 
-	 //CONEXIONES
+	 /*//CONEXIONES
     int servidor;
     servidor = conectarCliente(IP, PUERTO);
 
@@ -104,6 +104,6 @@ int main(void) {
     //t_list hojaPrueba;
     //t_entrenador* prueba = crear_Entrenador("Prueba",1,3,hojaPrueba);
     //crearDirectorioDeEntrenador(prueba);
-
+    */
         return EXIT_SUCCESS;
-    }
+}

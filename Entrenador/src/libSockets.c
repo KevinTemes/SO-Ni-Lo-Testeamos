@@ -31,8 +31,9 @@ int leerConfigEnt(char *ruta, t_entrenador **datos){
 				int j =0;
 				if ((*datos)->hojaDeViaje[j]!=NULL){
 					// ARREGLAR ESTO MAS TARDE
+					char* objetivoDeMapa = string_from_format("obj[%s]",(*datos)->hojaDeViaje[j]);
 					list_add(listaDeViaje,(*datos)->hojaDeViaje[j]);
-					(*datos)->objetivosPorMapa= config_get_array_value(archivoConfiguracion,("obj[%s]", (*datos)->hojaDeViaje[j]));
+					(*datos)->objetivosPorMapa= config_get_array_value(archivoConfiguracion,objetivoDeMapa);
 					list_add(listaObjetivosxMapa, (*datos)->objetivosPorMapa[j]);
 					j++;
 				}
@@ -40,10 +41,6 @@ int leerConfigEnt(char *ruta, t_entrenador **datos){
 					i =-1;
 				}
 			} while(i);
-
-			//for(int i=0; ((*datos)->hojaDeViaje)[i]!=NULL; i++){
-			//	(*datos)->objetivosPorMapa= config_get_array_value(archivoConfiguracion,("obj[%s]", (*datos)->hojaDeViaje[i]));
-			//}
 
 			(*datos)->cantidadInicialVidas= config_get_int_value(archivoConfiguracion,"vidas");
 			(*datos)->reintentos= config_get_int_value(archivoConfiguracion,"reintentos");
