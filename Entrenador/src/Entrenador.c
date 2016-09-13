@@ -32,17 +32,6 @@
 #include "libSockets.h"
 #include <commons/collections/dictionary.h>
 
-t_entrenador* crear_Entrenador(char* nombre, char caracter,char** hoja, char** objetivosXMapa, int vidas, int reintentos){
-    t_entrenador* nuevoEntrenador = NULL;
-    nuevoEntrenador = malloc(sizeof(t_entrenador));
-    nuevoEntrenador->nombreEntrenador = nombre;
-    nuevoEntrenador->caracter= caracter;
-    nuevoEntrenador->hojaDeViaje = hoja;
-    nuevoEntrenador->objetivosPorMapa=objetivosXMapa;
-    nuevoEntrenador->cantidadInicialVidas = vidas;
-    nuevoEntrenador->reintentos= reintentos;
-    return nuevoEntrenador;
-}
 
 /*void crearDirectorioDeEntrenador(t_entrenador* entrenador){ //Esto deberia ir en pokedex
     char* comando_Directorio_Entrenador = string_from_format("mkdir -p /home/utnso/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/Entrenadores/%s/", entrenador->nombreEntrenador);
@@ -100,10 +89,6 @@ int main(void) {
 
     close(servidor);
 
-
-    //t_list hojaPrueba;
-    //t_entrenador* prueba = crear_Entrenador("Prueba",1,3,hojaPrueba);
-    //crearDirectorioDeEntrenador(prueba);
     */
         return EXIT_SUCCESS;
 }

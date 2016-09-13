@@ -22,6 +22,8 @@
 #include <commons/config.h>
 
 typedef struct {
+	char* ipMapa;
+	int puertoMapa;
     char* nombreEntrenador;
     char caracter;
     char** hojaDeViaje;

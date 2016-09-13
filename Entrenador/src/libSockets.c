@@ -17,6 +17,10 @@ int leerConfigEnt(char *ruta, t_entrenador **datos){
 			if (cantidadKeys < 8) {
 				return 0;
 			} else {
+			char* ipMapa = string_new();
+			string_append(&ipMapa, config_get_string_value(archivoConfiguracion,"ip_mapa"));
+			(*datos)->ipMapa= ipMapa;
+			(*datos)->puertoMapa=config_get_int_value(archivoConfiguracion,"puerto_mapa");
 			char* nombre=string_new();
 			string_append(&nombre, config_get_string_value(archivoConfiguracion, "nombre"));
 			(*datos)->nombreEntrenador=nombre;
