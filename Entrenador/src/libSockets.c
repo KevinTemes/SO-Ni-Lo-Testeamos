@@ -14,31 +14,30 @@ int leerConfigEnt(char *ruta, t_entrenador **datos){
 		return 0;
 	} else {
 		int cantidadKeys = config_keys_amount(archivoConfiguracion);
-			if (cantidadKeys < 6) {
+			if (cantidadKeys < 8) {
 				return 0;
 			} else {
+			char* ipMapa = string_new();
+			string_append(&ipMapa, config_get_string_value(archivoConfiguracion,"ip_mapa"));
+			(*datos)->ipMapa= ipMapa;
+			(*datos)->puertoMapa=config_get_int_value(archivoConfiguracion,"puerto_mapa");
 			char* nombre=string_new();
 			string_append(&nombre, config_get_string_value(archivoConfiguracion, "nombre"));
 			(*datos)->nombreEntrenador=nombre;
 			(*datos)->caracter=config_get_string_value(archivoConfiguracion,"simbolo");
 			(*datos)->hojaDeViaje=config_get_array_value(archivoConfiguracion,"hojaDeViaje");
 
-			// ahora que obtuve las cosas lo manejo como lista ambas
-			t_list* listaDeViaje;
-			t_list* listaObjetivosxMapa;
 			int i=1;
+			int j =0;
 			do{
-				int j =0;
 				if ((*datos)->hojaDeViaje[j]!=NULL){
-					// ARREGLAR ESTO MAS TARDE
 					char* objetivoDeMapa = string_from_format("obj[%s]",(*datos)->hojaDeViaje[j]);
-					list_add(listaDeViaje,(*datos)->hojaDeViaje[j]);
+					printf("tengo que cumplir %s \n", objetivoDeMapa);
 					(*datos)->objetivosPorMapa= config_get_array_value(archivoConfiguracion,objetivoDeMapa);
-					list_add(listaObjetivosxMapa, (*datos)->objetivosPorMapa[j]);
 					j++;
 				}
 				else {
-					i =-1;
+					i=0;
 				}
 			} while(i);
 

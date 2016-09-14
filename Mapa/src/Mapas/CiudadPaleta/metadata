@@ -1,3 +1,5 @@
+nombreMapa=Mapa1
+pokenests=[P,B,L]
 TiempoChequeoDeadlock=10000
 Batalla=1
 algoritmo=RR

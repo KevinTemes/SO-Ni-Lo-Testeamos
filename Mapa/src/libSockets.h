@@ -23,6 +23,8 @@
 
 
 typedef struct{
+	char* nombreMapa;
+	char** pokenests;
 	int tiempoChequeoDeadlock;
 	bool batalla; // 0= desactivado 1=activado
 	char* algoritmo;
@@ -36,6 +38,7 @@ typedef struct{
 	char* tipoPokemon;
 	char* posicion;
 	char caracterPokeNest;
+	int cantPokemons;
 }metaDataPokeNest;
 
 typedef struct{
@@ -47,6 +50,14 @@ typedef struct{
 int leerConfiguracion(char* ruta, metaDataComun **datos);
 int leerConfigPokenest(char* ruta, metaDataPokeNest **datos);
 int leerConfigPokemon(char* ruta, metaDataPokemon **datos);
+
+int setup_listen(char* IP, char* Port);
+int setup_listen_con_log(char* IP, char* Port, t_log * logger);
 struct addrinfo* cargarInfoSocket(char *IP, char* Port);
+int conectarCliente(char *IP, char* Port);
+int conectarCliente_con_log(char *IP, char* Port, t_log * logger);
+int esperarConexionEntrante(int socketEscucha, int BACKLOG, t_log * logger);
+int conectarServidor(char* IP, char* Port, int backlog) ;
+
 
 #endif /* LIBSOCKETS_H_ */

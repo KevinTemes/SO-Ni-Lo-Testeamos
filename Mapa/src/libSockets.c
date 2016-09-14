@@ -15,9 +15,14 @@ int leerConfiguracion(char *ruta, metaDataComun **datos) {
 		return 0;
 	} else {
 		int cantidadKeys = config_keys_amount(archivoConfiguracion);
-		if (cantidadKeys < 7) {
+		if (cantidadKeys < 9) {
 			return 0; // sale, 0 es false
 		} else {
+			char* nombreMapa=string_new();
+			string_append(&nombreMapa, config_get_string_value(archivoConfiguracion, "nombreMapa"));
+			(*datos)->nombreMapa=nombreMapa;
+			// despues para crear el directorio, saco cada elemento de la lista pokenests
+			(*datos)->pokenests= config_get_array_value(archivoConfiguracion,"pokenests");
 			(*datos)->tiempoChequeoDeadlock = config_get_int_value(archivoConfiguracion, "TiempoChequeoDeadlock");
 			(*datos)->batalla = config_get_int_value(archivoConfiguracion,"Batalla");
 			char* algoritmo=string_new();
@@ -42,7 +47,7 @@ int leerConfigPokenest(char *ruta, metaDataPokeNest **datos) {
 			return 0;
 		} else {
 			int cantidadKeys = config_keys_amount(archivoConfigPokenest);
-			if (cantidadKeys < 3) {
+			if (cantidadKeys < 4) {
 				return 0;
 			} else {
 				char* tipo=string_new();
@@ -52,6 +57,8 @@ int leerConfigPokenest(char *ruta, metaDataPokeNest **datos) {
 				string_append(&posicion,config_get_string_value(archivoConfigPokenest,"Posicion"));
 				(*datos)->posicion=posicion;
 				(*datos)->caracterPokeNest=config_get_string_value(archivoConfigPokenest,"Identificador");
+				// despues para crear el .dat de cada pokemon que tenga en la pokenest
+				(*datos)->cantPokemons=config_get_int_value(archivoConfigPokenest,"cantPokemons");
 
 				config_destroy(archivoConfigPokenest);
 				return 1;

@@ -28,18 +28,6 @@
 #define PUERTO "7900"
 #define PACKAGESIZE 1024
 
-typedef struct {
-    char* nombreMapa;
-    int identificador;
-}t_mapa;
-
-t_mapa* crear_Mapa(char* nombre, int id){
-    t_mapa* nuevoMapa = NULL;
-    nuevoMapa = malloc(sizeof(t_mapa));
-    nuevoMapa->nombreMapa = nombre;
-    nuevoMapa->identificador = id;
-    return nuevoMapa;
-}
 
 /*
 void crearDirectorioDeMapa(t_mapa* mapa){
@@ -55,7 +43,7 @@ void crearDirectorioDeMapa(t_mapa* mapa){
             ("mkdir -p /home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/Mapas/%s/%s/", mapa->nombreMapa, "PokeNest");
     system(comando_Directorio_Mapa_Metadata);
 
-    /*char* comando_Directorio_Entrenador_DirBill = string_from_format
+    char* comando_Directorio_Entrenador_DirBill = string_from_format
             ("mkdir -p /home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/Entrenadores/%s/%s/", mapa->nombreMapa, "Dir\\ de\\ Bill");
     system(comando_Directorio_Entrenador_DirBill);
 }*/
@@ -67,7 +55,7 @@ int main(int argc, char* argv[]) {
 	remove("Mapa.log");
     puts("Creando archivo de logueo...\n");
     t_log* logs;
-    logs = log_create("Mapa.log", "Mapa", true, log_level_from_string("INFO"));
+    logs = log_create("Mapa.log", "Mapa", false, log_level_from_string("INFO"));
     puts("Log Mapa creado exitosamente \n");
 
 
@@ -89,7 +77,7 @@ int main(int argc, char* argv[]) {
     datosPokemon= malloc(sizeof(metaDataPokemon));
 
 
-    if (!leerConfiguracion("MetadataComun", &datosMapa)) {
+    if (!leerConfiguracion("metadata", &datosMapa)) {
             log_error(logs,"Error al leer el archivo de configuracion de Metadata\n");
             return 1;
     }
