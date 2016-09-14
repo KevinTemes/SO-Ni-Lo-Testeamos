@@ -14,17 +14,18 @@
 #define BACKLOG 100
 /* para testear sockets */
 #define PACKAGESIZE 1024
-#define PUERTO "7778"
+#define PUERTO "7777"
 
 int main() {
 
+	printf("iniciado el servidor principal de la Pokedéx. Aguardando conexiones...\n\n");
 	//carga de variables
 
 	/*
 	osada_header head;
 	osada_file archi;
 
-	osada(&head,&archi);
+	osada(&head,&archi); */
 
 
 
@@ -35,6 +36,7 @@ int main() {
 
 	int socketEscucha, retornoPoll;
 	int fd_index = 0;
+
 
 	struct pollfd fileDescriptors[100];
 	int cantfds = 0;
@@ -48,10 +50,11 @@ int main() {
 	int enviar = 1;
 	int cliente = 1;
 	t_infoCliente *infoCliente;
-
-	// Estas  dos variables son para el primer chekpoint nada más!!!
+	t_infoCliente unCliente;
 	int n = 0;
+	int *numeroCliente;
 	pthread_t hiloImprimirGiladas[1024];
+	pthread_t hiloAtenderConexiones[1024];
 
 
 	while(enviar){
@@ -81,7 +84,14 @@ int main() {
 				infoCliente->cliente = cliente;
 				infoCliente->socket = socketCliente;
 
+	/*			unCliente.cliente = cliente;
+				unCliente.socket = socketCliente;
+				clientesActivos[n] = unCliente;
+				numeroCliente = malloc(sizeof(int));
+				numeroCliente = &n; */
+
 				pthread_create(&hiloImprimirGiladas[n],NULL, imprimirGiladas, infoCliente);
+			//	pthread_create(&hiloAtenderConexiones[n], NULL, atenderConexion, numeroCliente);
 
 				cliente++;
 				n++;

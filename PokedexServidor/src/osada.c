@@ -66,7 +66,7 @@ int osada(osada_header *head, osada_file *tablaArchivo) {
 // Porque antes recibia solo las structs
 
 	FILE* archivo;
-	if ((archivo = fopen("/home/utnso/workspace/SistemaOsada/archivoEjemplo.txt" , "r")) == NULL) {
+	if ((archivo = fopen("../archivoEjemplo.txt" , "r")) == NULL) {
 		printf("No se pudo abrir archivo\n");
 
 		return -99;

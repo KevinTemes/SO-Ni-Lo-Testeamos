@@ -22,6 +22,12 @@ int setup_listen(char* IP, char* Port) {
 		printf("Error en el Bind \n");
 		exit(-1);
 	}
+
+	const int       optVal = 1;
+	const socklen_t optLen = sizeof(optVal);
+
+	int rtn = setsockopt(socketEscucha, SOL_SOCKET, SO_REUSEADDR, (void*) &optVal, optLen);
+
 	freeaddrinfo(serverInfo);
 	return socketEscucha;
 }
@@ -37,6 +43,11 @@ int setup_listen_con_log(char* IP, char* Port, t_log * logger) {
 			string_from_format("Escuchando conexiones en el socket %d",
 					socketEscucha));
 	bind(socketEscucha, serverInfo->ai_addr, serverInfo->ai_addrlen);
+
+	const int       optVal = 1;
+	const socklen_t optLen = sizeof(optVal);
+	int rtn = setsockopt(socketEscucha, SOL_SOCKET, SO_REUSEADDR, (void*) &optVal, optLen);
+
 	freeaddrinfo(serverInfo);
 	return socketEscucha;
 }

@@ -86,7 +86,9 @@ int conectarCliente(char *IP, char* Port) {
 			== -1){
 		connect(serverSocket, serverInfo->ai_addr, serverInfo->ai_addrlen);
 	}
+
 	freeaddrinfo(serverInfo);
+
 	return serverSocket;
 }
 
@@ -110,6 +112,11 @@ int conectarCliente_con_log(char *IP, char* Port, t_log * logger) {
 		close(serverSocket);
 		return -1;
 	}
+
+	const int       optVal = 1;
+	const socklen_t optLen = sizeof(optVal);
+	int rtn = setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, (void*) &optVal, optLen);
+
 	freeaddrinfo(serverInfo);
 	return serverSocket;
 }
