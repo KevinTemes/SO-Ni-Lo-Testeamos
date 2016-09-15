@@ -37,7 +37,7 @@ typedef struct{
 typedef struct{
 	char* tipoPokemon;
 	char* posicion;
-	char caracterPokeNest;
+	char* caracterPokeNest;
 	int cantPokemons;
 }metaDataPokeNest;
 

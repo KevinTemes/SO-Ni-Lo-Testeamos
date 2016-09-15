@@ -93,12 +93,12 @@ int main(int argc, char* argv[]) {
 
     log_info(logs,"Los tres archivos de config fueron creados exitosamente!\n");
 
-    char* inicio = string_new();
+    //char* inicio = string_new();
 
-    printf("Queres dibujar el mapa? Responde \"Si\" si queres dibujarlo, o otra cosa si no queres\n");
-    scanf("%s", inicio);
+   /* printf("Queres dibujar el mapa? Responde \"Si\" si queres dibujarlo, o otra cosa si no queres\n");
+    scanf("%s", inicio);*/
 
-    if(!strcmp(inicio,"Si")){ // porque el strcmp devuelve 0 si son iguales, si lo negamos devuelve 1 y entra al if
+    //if(!strcmp(inicio,"Si")){ // porque el strcmp devuelve 0 si son iguales, si lo negamos devuelve 1 y entra al if
 
     t_list* items = list_create();
     int rows; // nro de filas
@@ -121,6 +121,17 @@ int main(int argc, char* argv[]) {
     CrearCaja(items, 'H', 26, 10, 5);
     CrearCaja(items, 'M', 8, 15, 3);
     CrearCaja(items, 'F', 19, 9, 2);
+
+    //POKENEST
+    char** posPoke;
+
+    posPoke = string_split(datosPokenest->posicion,";");
+    char ide;
+    ide = datosPokenest->caracterPokeNest[0];
+
+    CrearCaja(items, ide, atoi (posPoke[0]),atoi (posPoke[1]), datosPokenest->cantPokemons);
+
+   // printf("\n%d",atoi(posich[0]));
 
     nivel_gui_dibujar(items, "Mapa con Entrenadores");
 
@@ -214,7 +225,7 @@ int main(int argc, char* argv[]) {
         BorrarItem(items, 'F');
 
         nivel_gui_terminar();
-    }
+
 
     //CONEXIONES
     int socketEscucha, retornoPoll;

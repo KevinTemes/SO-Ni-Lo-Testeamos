@@ -56,7 +56,9 @@ int leerConfigPokenest(char *ruta, metaDataPokeNest **datos) {
 				char* posicion=string_new();
 				string_append(&posicion,config_get_string_value(archivoConfigPokenest,"Posicion"));
 				(*datos)->posicion=posicion;
-				(*datos)->caracterPokeNest=config_get_string_value(archivoConfigPokenest,"Identificador");
+				char* simbolo=string_new();
+				string_append(&simbolo,config_get_string_value(archivoConfigPokenest,"Identificador"));
+				(*datos)->caracterPokeNest=simbolo;
 				// despues para crear el .dat de cada pokemon que tenga en la pokenest
 				(*datos)->cantPokemons=config_get_int_value(archivoConfigPokenest,"cantPokemons");
 
