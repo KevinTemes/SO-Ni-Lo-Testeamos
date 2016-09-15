@@ -50,13 +50,12 @@
 #define IP "127.0.0.1"
 #define PUERTO "7900"
 #define PACKAGESIZE 1024
-
+ t_log* logs;
 
 int main(void) {
 	// LOGS
 	 remove("Entrenador.log");
 	 puts("Creando archivo de logueo...\n");
-	 t_log* logs;
 	 logs = log_create("Entrenador.log", "Entrenador", true, log_level_from_string("INFO"));
 	 puts("Log Entrenador creado exitosamente \n");
 

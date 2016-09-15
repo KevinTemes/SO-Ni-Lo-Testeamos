@@ -11,6 +11,23 @@ typedef uint32_t osada_block_pointer;
 // See http://stackoverflow.com/a/11772340/641451
 #pragma pack(push, 1)
 
+typedef struct{
+	int bloquesTotales;
+	int bloqueHeader;
+	int bloquesBitmap;
+	int bloquesTablaArchivos;
+	int bloquesTablaAsignaciones;
+	int bloquesDeDatos;
+}archivoOsada;
+
+
+typedef struct{
+	char** posBloqueDeDatos;
+	int datoDelBloque;
+	osada_block_pointer* moverAlBloqueSig;
+}tablaDeAsignaciones;
+
+
 typedef struct {
 	unsigned char magic_number[7]; // OSADAFS
 	uint8_t version;
@@ -20,6 +37,7 @@ typedef struct {
 	uint32_t data_blocks; // amount of data blocks
 	unsigned char padding[40]; // useless bytes just to complete the block size
 } osada_header;
+
 
 _Static_assert( sizeof(osada_header) == sizeof(osada_block), "osada_header size does not match osada_block size");
 
@@ -40,15 +58,24 @@ typedef struct {
 	osada_block_pointer first_block;
 } osada_file;
 
+
 _Static_assert( sizeof(osada_file) == (sizeof(osada_block) / 2.0), "osada_file size does not half osada_block size");
 
-int fsize(FILE*);
+
 //SE FIJA EL TAMAÑO DEL ARCHIVO EN BYTES
-void datos(FILE*);
+int fsize(FILE*);
+
+
 //IMPRIME DATOS DEL ARCHIVO COMO: TAMAÑO EN BLOQUES TOTAL, BLOQUES DEL HEADER,ETC
-void seekBloques(FILE*,int);
+void datos(FILE*);
+
+
 //SIRVE PARA ABSTRAERSE DEL FSEEK Y PODER MOVERSE EN BLOQUES (SE ESTA EN SEEK_CUR AL MOVERSE)
-int osada(osada_header*,osada_file*);
+void seekBloques(FILE*,int);
+
 //METE DATOS DEL ARCHIVO EN VARIABLES DE ESTRUCTURA, HAY QUE PASARLE LOS VALORES POR REFERENCIA
-//TAMBIEN LOS IMPRIMEEE
+//TAMBIEN LOS IMPRIME
+int osada(osada_header*,osada_file*);
+
+
 #pragma pack(pop)

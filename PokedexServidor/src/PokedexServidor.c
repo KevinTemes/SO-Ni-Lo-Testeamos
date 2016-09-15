@@ -11,28 +11,35 @@
 #include "PokedexServidor.h"
 #include <pthread.h>
 
+
 #define BACKLOG 100
 /* para testear sockets */
 #define PACKAGESIZE 1024
 #define PUERTO "7777"
+t_log* logs;
 
 int main() {
 
-	printf("iniciado el servidor principal de la Pokedéx. Aguardando conexiones...\n\n");
+	//LOGS
+	remove("PokeServidor.log");
+	puts("Creando archivo de logueo PokeServidor...\n");
+	logs = log_create("PokeServidor.log", "PokedexServidor", true, log_level_from_string("INFO"));
+	puts("Log Pokedex Servidor creado exitosamente \n");
+
+
 	//carga de variables
 
-	/*
 	osada_header head;
 	osada_file archi;
 
-	osada(&head,&archi); */
 
-
+	osada(&head,&archi);
 
 
 
 /* inicio todas las variables para arrancar */
-
+	//SOCKETS
+	log_info(logs, "iniciado el servidor principal de la Pokedéx. Aguardando conexiones...\n\n");
 
 	int socketEscucha, retornoPoll;
 	int fd_index = 0;

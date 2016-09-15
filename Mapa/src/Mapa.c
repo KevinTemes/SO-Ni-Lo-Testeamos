@@ -27,7 +27,7 @@
 #define IP "127.0.0.1"
 #define PUERTO "7900"
 #define PACKAGESIZE 1024
-
+t_log* logs;
 
 /*
 void crearDirectorioDeMapa(t_mapa* mapa){
@@ -54,7 +54,6 @@ int main(int argc, char* argv[]) {
     //LOGS
 	remove("Mapa.log");
     puts("Creando archivo de logueo...\n");
-    t_log* logs;
     logs = log_create("Mapa.log", "Mapa", false, log_level_from_string("INFO"));
     puts("Log Mapa creado exitosamente \n");
 
