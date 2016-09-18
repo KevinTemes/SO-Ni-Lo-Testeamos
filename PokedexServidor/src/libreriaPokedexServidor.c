@@ -74,30 +74,32 @@ char *txtAString(char *rutaDelArchivo) {
 	return buffer;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
+void notificarCaida(){
+	int i;
+	for( i = 0; i <= 1024; i++){
+		enviarHeader(clientesActivos[i].socket, 9);
+	}
+	printf("\n");
+	printf("AVISO: cierre inesperando del sistema. Notificando a los clientes y finalizando...\n");
+	exit(0);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 void atenderConexion(void *numeroCliente){
- int unCliente = *((int *) numeroCliente);
-		char paquete[1024];
-		int status = 1;
+	int unCliente = *((int *) numeroCliente);
+	char paquete[1024];
+	int status = 1;
 
-		void enviarAvisoDeCierre(){
-			printf("\n");
-			enviarHeader(clientesActivos[unCliente].socket, 9);
-			printf("AVISO: cierre inesperando del sistema. Notificando a los clientes y finalizando...\n");
-			exit(0);
-		}
-
-		printf("PokeCliente #%d conectado! esperando mensajes... \n",
+	printf("PokeCliente #%d conectado! esperando mensajes... \n",
 				clientesActivos[unCliente].cliente);
 
-		signal(SIGINT, enviarAvisoDeCierre);
+	while(status !=0){
+		status = recv(clientesActivos[unCliente].socket, (void*) paquete, 1024, 0);
+		if (status != 0) {
+			printf("el PokeCliente #%d dijo: \n %s", clientesActivos[unCliente].cliente, paquete);
+			enviarHeader(clientesActivos[unCliente].socket, 1);
+			}
 
-		while(status !=0){
-			status = recv(clientesActivos[unCliente].socket, (void*) paquete, 1024, 0);
-			if (status != 0) {
-				printf("el PokeCliente #%d dijo: \n %s", clientesActivos[unCliente].cliente, paquete);
-				enviarHeader(clientesActivos[unCliente].socket, 1);
-				}
-
-		}
+	}
 
 }

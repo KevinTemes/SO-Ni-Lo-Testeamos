@@ -25,6 +25,7 @@
 #include <pthread.h>
 #include <poll.h>
 #include <semaphore.h>
+#include <signal.h>
 
 
 #endif /* POKEDEXSERVIDOR_H_ */

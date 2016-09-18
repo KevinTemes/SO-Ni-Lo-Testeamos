@@ -42,8 +42,9 @@ char *txtAString(char *rutaDelArchivo);
 /* Función par enviar un código de operación (header) via sockets */
 void enviarHeader(int unSocket, int unHeader);
 
-/* Función para notificar a los clientes conectados de un cierre inesperado */
+/* Funciones para notificar a los clientes conectados de un cierre inesperado */
 void enviarAvisoDeCierre();
+void notificarCaida();
 
 /* Función para atender una conexión en particular */
 void atenderConexion(void *numeroCliente);

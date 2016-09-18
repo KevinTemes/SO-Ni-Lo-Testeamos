@@ -36,6 +36,7 @@ int main() {
 	osada(&head,&archi);
 
 
+	signal(SIGINT, notificarCaida);
 
 /* inicio todas las variables para arrancar */
 	//SOCKETS
@@ -91,14 +92,15 @@ int main() {
 				infoCliente->cliente = cliente;
 				infoCliente->socket = socketCliente;
 
-	/*			unCliente.cliente = cliente;
+				unCliente.cliente = cliente;
 				unCliente.socket = socketCliente;
 				clientesActivos[n] = unCliente;
+				int nroCliente = n++;
 				numeroCliente = malloc(sizeof(int));
-				numeroCliente = &n; */
+				numeroCliente = &nroCliente;
 
-				pthread_create(&hiloImprimirGiladas[n],NULL, imprimirGiladas, infoCliente);
-			//	pthread_create(&hiloAtenderConexiones[n], NULL, atenderConexion, numeroCliente);
+			//	pthread_create(&hiloImprimirGiladas[n],NULL, imprimirGiladas, infoCliente);
+				pthread_create(&hiloAtenderConexiones[n], NULL, atenderConexion, numeroCliente);
 
 				cliente++;
 				n++;
