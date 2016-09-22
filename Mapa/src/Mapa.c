@@ -21,6 +21,11 @@
 #include "libSockets.h"
 #include <curses.h>
 #include <string.h>
+#include <poll.h>
+#include <semaphore.h>
+#include <signal.h>
+#include <pthread.h>
+#include "libreriaMapa.h"
 
 //Para testear sockets
 
@@ -56,6 +61,91 @@ int main(int argc, char* argv[]) {
     puts("Creando archivo de logueo...\n");
     logs = log_create("Mapa.log", "Mapa", false, log_level_from_string("INFO"));
     puts("Log Mapa creado exitosamente \n");
+
+    /*if(argc < 2){
+    	perror("Error en la cantidad de argumentos");
+    	exit (1);
+    }
+*/
+	signal(SIGINT, notificarCaida);
+
+/* inicio todas las variables para arrancar */
+	//SOCKETS
+	log_info(logs, "iniciado el servidor principal de la Pokedéx. Aguardando conexiones...\n\n");
+
+	int socketEscucha, retornoPoll;
+	int fd_index = 0;
+
+
+	struct pollfd fileDescriptors[100];
+	int cantfds = 0;
+	socketEscucha = setup_listen("localhost", PUERTO);
+	listen(socketEscucha, 1024);
+
+	fileDescriptors[0].fd = socketEscucha;
+	fileDescriptors[0].events = POLLIN;
+	cantfds++;
+
+	int enviar = 1;
+	int cliente = 1;
+	t_infoCliente *infoCliente;
+	t_infoCliente unCliente;
+	int n = 0;
+	int *numeroCliente;
+	pthread_t hiloImprimirGiladas[1024];
+	pthread_t hiloAtenderConexiones[1024];
+
+
+
+	while(enviar){
+
+		llamadaPoll:
+
+	// Inicio la función poll()
+		 retornoPoll = poll(fileDescriptors, cantfds, -1);
+
+	// valido que haya iniciado bien
+		if (retornoPoll == -1) {
+			printf("Error en la funcion poll\n");
+		}
+
+	// Recorro la lista de file descriptors chequeando si el poll() retornó por una modificación.
+	// De ser así, acepto la conexión, delego la atención del socket
+	// a un hilo y vuelvo para arriba.
+		for (fd_index = 0; fd_index < cantfds; fd_index++) {
+			if (fileDescriptors[fd_index].fd == socketEscucha) {
+				listen(socketEscucha, 100);
+				struct sockaddr_in addr;
+				socklen_t addrlen = sizeof(addr);
+				int socketCliente = accept(socketEscucha,
+				(struct sockaddr *) &addr, &addrlen);
+
+				infoCliente = malloc(sizeof(t_infoCliente));
+				infoCliente->cliente = cliente;
+				infoCliente->socket = socketCliente;
+
+				unCliente.cliente = cliente;
+				unCliente.socket = socketCliente;
+				clientesActivos[n] = unCliente;
+				int nroCliente = n++;
+				numeroCliente = malloc(sizeof(int));
+				numeroCliente = &nroCliente;
+
+			//	pthread_create(&hiloImprimirGiladas[n],NULL, imprimirGiladas, infoCliente);
+				pthread_create(&hiloAtenderConexiones[n], NULL, atenderConexion, numeroCliente);
+
+
+				cliente++;
+				n++;
+
+				fileDescriptors[cantfds].fd = socketCliente;
+				fileDescriptors[cantfds].events = POLLIN;
+				cantfds++;
+
+				goto llamadaPoll;
+			}
+		}
+	}
 
 
     t_queue* listoParaMoverse;
@@ -224,38 +314,12 @@ int main(int argc, char* argv[]) {
         BorrarItem(items, 'M');
         BorrarItem(items, 'F');
 
+        BorrarItem(items, ide);
+
         nivel_gui_terminar();
 
 
-    //CONEXIONES
-    int socketEscucha, retornoPoll;
-        socketEscucha = setup_listen("localhost", PUERTO);
 
-        listen(socketEscucha, 1024);
-
-        struct sockaddr_in addr;
-        socklen_t addrlen = sizeof(addr);
-        int socketCliente = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
-
-        /* Esto de ahora es gilada para el primer checkpoint, eliminar después */
-
-        char paquete[PACKAGESIZE];
-        int status = 1;
-        printf("Entrenador conectado! Esperando mensajes...\n");
-
-            while (status != 0)
-            {
-                status = recv(socketCliente, (void*) paquete, PACKAGESIZE, 0);
-                if (status != 0)
-                    {
-                    printf("%s", paquete);
-                    }
-            }
-
-        /* Fin de la gilada para el primer checkpoint */
-
-        close(socketCliente);
-        close(socketEscucha);
 
     return EXIT_SUCCESS;
 }
