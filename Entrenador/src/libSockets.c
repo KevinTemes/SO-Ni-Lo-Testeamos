@@ -9,7 +9,7 @@
 #define HEADER_PAQUETE (sizeof(int)*3)
 
 
-int leerConfigEnt(char *ruta, t_entrenador **datos){
+int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 	t_config* archivoConfiguracion = config_create(ruta);//Crea struct de configuracion
 	if (archivoConfiguracion == NULL) {
 		return 0;
@@ -18,10 +18,6 @@ int leerConfigEnt(char *ruta, t_entrenador **datos){
 			if (cantidadKeys < 8) {
 				return 0;
 			} else {
-			char* ipMapa = string_new();
-			string_append(&ipMapa, config_get_string_value(archivoConfiguracion,"ip_mapa"));
-			(*datos)->ipMapa= ipMapa;
-			(*datos)->puertoMapa=config_get_int_value(archivoConfiguracion,"puerto_mapa");
 			char* nombre=string_new();
 			string_append(&nombre, config_get_string_value(archivoConfiguracion, "nombre"));
 			(*datos)->nombreEntrenador=nombre;
@@ -56,8 +52,6 @@ int leerConfigEnt(char *ruta, t_entrenador **datos){
 					// y con el list iterate aca le digo que recorra todos los mapas
 
 					char* objetivoDeMapa = string_from_format("obj[%s]",hojaViaje[j]);
-					printf("tengo que cumplir %s \n", objetivoDeMapa);
-
 
 					char** objetivosMapa = config_get_array_value(archivoConfiguracion,objetivoDeMapa);
 					k=0;
@@ -66,14 +60,33 @@ int leerConfigEnt(char *ruta, t_entrenador **datos){
 							char* cadaPoke = string_from_format("%s",objetivosMapa[k]);
 							string_append(&poke, cadaPoke);
 							list_add((*datos)->objetivosPorMapa, cadaPoke);
-							// y con el list iterate recorro y hago que agarra cada pokemon
-							printf("tengo el Poke %s del mapa %s \n", cadaPoke, hojaViaje[j] );
+							// y con el list iterate recorro y hago que agarre cada pokemon
+							printf("tengo que conseguir el Poke %s del mapa %s \n", cadaPoke, hojaViaje[j] );
 							k++;
 						} else {
 							l=0;
 						}
 					} while (l);
+					printf("\n");
 
+					 t_mapa* cosasMapa;;
+					 cosasMapa = malloc(sizeof(t_mapa));
+
+					char* configMapa = string_from_format("%s/Mapas/%s/metadata",puntoMontaje,hojaViaje[j]);
+					//creamos el config para leer las cosas de mapa
+					t_config* archivoMapa = config_create(configMapa);
+						if (archivoMapa == NULL) {
+							printf("Error, no hay nada \n");
+						} else {
+						char* ip = string_new();
+						string_append(&ip, config_get_string_value(archivoMapa,"IP"));
+						(cosasMapa)->ipMapa= ip;
+						printf("%s \n", (cosasMapa)->ipMapa);
+						(cosasMapa)->puertoMapa=config_get_int_value(archivoMapa,"Puerto");
+						printf("%d \n", (cosasMapa)->puertoMapa);
+						}
+
+					printf("\n");
 
 					j++;
 				}
@@ -95,8 +108,10 @@ int leerConfigEnt(char *ruta, t_entrenador **datos){
 	}
 }
 
-/*void funcionMagica(char* elemento){
-		printf("%s/n",elemento);
+
+/* para el list_iterate por ahi sirve
+void obtengoNombreMapa(char* elemento){
+		printf("%s \n",elemento);
 		return;
 }*/
 

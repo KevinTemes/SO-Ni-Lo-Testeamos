@@ -32,21 +32,6 @@
 #include "libSockets.h"
 #include <commons/collections/dictionary.h>
 
-
-/*void crearDirectorioDeEntrenador(t_entrenador* entrenador){ //Esto deberia ir en pokedex
-    char* comando_Directorio_Entrenador = string_from_format("mkdir -p /home/utnso/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/Entrenadores/%s/", entrenador->nombreEntrenador);
-    system(comando_Directorio_Entrenador); // Crea los directorios Entrenadores (si es que no existe) y el del entrenador en particular
-
-    char* comando_Directorio_Entrenador_Medallas = string_from_format("mkdir -p /home/utnso/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/Entrenadores/%s/%s/", entrenador->nombreEntrenador, "medallas");
-    system(comando_Directorio_Entrenador_Medallas); // Crea el directorio medalla en la ruta del entrenador particular
-
-    char* comando_Directorio_Entrenador_Metadata = string_from_format("mkdir -p /home/utnso/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/Entrenadores/%s/%s/", entrenador->nombreEntrenador, "metadata");
-    system(comando_Directorio_Entrenador_Metadata); // Crea el directorio metadata en la ruta del entrenador particular
-
-    char* comando_Directorio_Entrenador_DirBill = string_from_format("mkdir -p /home/utnso/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/Entrenadores/%s/%s/", entrenador->nombreEntrenador, "Dir\\ de\\ Bill");
-    system(comando_Directorio_Entrenador_DirBill);
-}*/
-
 #define IP "127.0.0.1"
 #define PUERTO "7900"
 #define PACKAGESIZE 1024
@@ -54,7 +39,7 @@
 
  // copiar todos los archivos del Entrenador en /home/utnso/workspace/pokedex
 
-int main(int argc, char* argv[]){ // ./Entrenador Ash /home/utnso/workspace/pokedex
+int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso/workspace/pokedex
 
 	// LOGS
 	 remove("Entrenador.log");
@@ -69,7 +54,7 @@ int main(int argc, char* argv[]){ // ./Entrenador Ash /home/utnso/workspace/poke
 
 	 char* configEntrenador = string_from_format("%s/Entrenadores/%s/metadata",argv[2],argv[1]);
 
-	 if (!leerConfigEnt(configEntrenador,&ent)) {
+	 if (!leerConfigEnt(configEntrenador,&ent, argv[2])) {
 	     log_error(logs,"Error al leer el archivo de configuracion de Metadata Entrenador\n");
 	     return 1;
 	 }
@@ -77,6 +62,7 @@ int main(int argc, char* argv[]){ // ./Entrenador Ash /home/utnso/workspace/poke
 	 log_info(logs,"Archivo de config Entrenador creado exitosamente!\n");
 
 	 //CONEXIONES
+
     int servidor;
     servidor = conectarCliente(IP, PUERTO);
 

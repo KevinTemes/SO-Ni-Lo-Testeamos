@@ -21,9 +21,12 @@
 #include <commons/collections/list.h>
 #include <commons/config.h>
 
-typedef struct {
+typedef struct{
 	char* ipMapa;
 	int puertoMapa;
+}t_mapa;
+
+typedef struct {
     char* nombreEntrenador;
     char* caracter;
     t_list* hojaDeViaje;
@@ -96,7 +99,7 @@ char *serializar(Paquete *unPaquete);
 Paquete *deserializar_header(char *buffer);
 void deserializar_data(Paquete *unPaquete, char *buffer);
 void destruirPaquete(Paquete * unPaquete);
-int leerConfigEnt(char *ruta, t_entrenador **datos);
-void funcionMagica(char* elemento);
+int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje);
+void obtengoNombreMapa(char* elemento);
 
 #endif /* LIBSOCKETS_H_ */
