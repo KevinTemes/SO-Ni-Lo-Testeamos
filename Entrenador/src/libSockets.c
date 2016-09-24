@@ -85,7 +85,7 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 						(cosasMapa)->puertoMapa=config_get_int_value(archivoMapa,"Puerto");
 						printf("%d \n", (cosasMapa)->puertoMapa);
 						}
-
+					config_destroy(archivoMapa);
 					printf("\n");
 
 					j++;
@@ -94,7 +94,6 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 					i=0;
 				}
 			} while(i);
-
 
 			(*datos)->cantidadInicialVidas= config_get_int_value(archivoConfiguracion,"vidas");
 			printf("vidas=%d \n",(*datos)->cantidadInicialVidas);
