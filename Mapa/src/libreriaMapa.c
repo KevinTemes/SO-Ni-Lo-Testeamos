@@ -24,14 +24,14 @@ void imprimirGiladas(void *unCliente){
 		exit(0);
 	}
 
-	printf("PokeCliente #%d conectado! esperando mensajes... \n", infoCliente->cliente);
+	printf("Entrenador #%d conectado! esperando mensajes... \n", infoCliente->cliente);
 
 	signal(SIGINT, enviarAvisoDeCierre);
 
 	while(status !=0){
 		status = recv(infoCliente->socket, (void*) paquete, 1024, 0);
 		if (status != 0) {
-			printf("el PokeCliente #%d dijo: \n %s", infoCliente->cliente, paquete);
+			printf("el Entrenador #%d dijo: \n %s", infoCliente->cliente, paquete);
 			enviarHeader(infoCliente->socket, 1);
 			}
 
@@ -90,13 +90,13 @@ void atenderConexion(void *numeroCliente){
 	char paquete[1024];
 	int status = 1;
 
-	printf("PokeCliente #%d conectado! esperando mensajes... \n",
+	printf("Entrenador #%d conectado! esperando mensajes... \n",
 				clientesActivos[unCliente].cliente);
 
 	while(status !=0){
 		status = recv(clientesActivos[unCliente].socket, (void*) paquete, 1024, 0);
 		if (status != 0) {
-			printf("el PokeCliente #%d dijo: \n %s", clientesActivos[unCliente].cliente, paquete);
+			printf("el Entrenador #%d dijo: \n %s", clientesActivos[unCliente].cliente, paquete);
 			enviarHeader(clientesActivos[unCliente].socket, 1);
 			}
 

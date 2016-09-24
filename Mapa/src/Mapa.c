@@ -27,7 +27,8 @@
 #include <pthread.h>
 #include "libreriaMapa.h"
 
-//Para testear sockets, despues vuela
+//Para testear sockets
+
 #define IP "127.0.0.1"
 #define PUERTO "7900"
 #define PACKAGESIZE 1024
@@ -47,104 +48,144 @@ void crearDirectorioDeMapa(t_mapa* mapa){
             ("mkdir -p /home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/Mapas/%s/%s/", mapa->nombreMapa, "PokeNest");
     system(comando_Directorio_Mapa_Metadata);
 
-    char* comando_Directorio_Entrenador_DirBill = string_from_format
+    char* comando_Directorio_Entren
+    ador_DirBill = string_from_format
             ("mkdir -p /home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/Entrenadores/%s/%s/", mapa->nombreMapa, "Dir\\ de\\ Bill");
     system(comando_Directorio_Entrenador_DirBill);
 }*/
 
+void* socketin(){
+    int socketEscucha, retornoPoll;
+        int fd_index = 0;
+
+
+        struct pollfd fileDescriptors[100];
+        int cantfds = 0;
+        socketEscucha = setup_listen("localhost", PUERTO);
+        listen(socketEscucha, 1024);
+
+        fileDescriptors[0].fd = socketEscucha;
+        fileDescriptors[0].events = POLLIN;
+        cantfds++;
+
+        int enviar = 1;
+        int cliente = 1;
+        t_infoCliente *infoCliente;
+        t_infoCliente unCliente;
+        int n = 0;
+        int *numeroCliente;
+        pthread_t hiloImprimirGiladas[1024];
+        pthread_t hiloAtenderConexiones[1024];
+
+
+while(enviar){
+
+        llamadaPoll:
+
+    // Inicio la función poll()
+         retornoPoll = poll(fileDescriptors, cantfds, -1);
+
+    // valido que haya iniciado bien
+        if (retornoPoll == -1) {
+            printf("Error en la funcion poll\n");
+        }
+
+    // Recorro la lista de file descriptors chequeando si el poll() retornó por una modificación.
+    // De ser así, acepto la conexión, delego la atención del socket
+    // a un hilo y vuelvo para arriba.
+
+        for (fd_index = 0; fd_index < cantfds; fd_index++) {
+            if (fileDescriptors[fd_index].fd == socketEscucha) {
+                listen(socketEscucha, 100);
+                struct sockaddr_in addr;
+                socklen_t addrlen = sizeof(addr);
+                int socketCliente = accept(socketEscucha,
+                (struct sockaddr *) &addr, &addrlen);
+
+                infoCliente = malloc(sizeof(t_infoCliente));
+                infoCliente->cliente = cliente;
+                infoCliente->socket = socketCliente;
+
+                unCliente.cliente = cliente;
+                unCliente.socket = socketCliente;
+                clientesActivos[n] = unCliente;
+                int nroCliente = n++;
+                numeroCliente = malloc(sizeof(int));
+                numeroCliente = &nroCliente;
+
+            //    pthread_create(&hiloImprimirGiladas[n],NULL, imprimirGiladas, infoCliente);
+                pthread_create(&hiloAtenderConexiones[n], NULL, atenderConexion, numeroCliente);
+
+
+                cliente++;
+                n++;
+
+                fileDescriptors[cantfds].fd = socketCliente;
+                fileDescriptors[cantfds].events = POLLIN;
+                cantfds++;
+
+                goto llamadaPoll;
+            }
+        }
+    }
+}
 
 int main(int argc, char* argv[]) {
 
     //LOGS
-	remove("Mapa.log");
+    remove("Mapa.log");
     puts("Creando archivo de logueo...\n");
     logs = log_create("Mapa.log", "Mapa", false, log_level_from_string("INFO"));
     puts("Log Mapa creado exitosamente \n");
 
     /*if(argc < 2){
-    	perror("Error en la cantidad de argumentos");
-    	exit (1);
+        perror("Error en la cantidad de argumentos");
+        exit (1);
     }
 */
-	signal(SIGINT, notificarCaida);
+
+
+    // CONFIG
+       metaDataComun* datosMapa;
+       metaDataPokeNest* datosPokenest;
+       metaDataPokemon* datosPokemon;
+
+       datosMapa=malloc(sizeof(metaDataComun));
+       datosPokenest= malloc(sizeof(metaDataPokeNest));
+       datosPokemon= malloc(sizeof(metaDataPokemon));
+
+
+       if (!leerConfiguracion("metadata", &datosMapa)) {
+               log_error(logs,"Error al leer el archivo de configuracion de Metadata\n");
+               return 1;
+       }
+
+       if (!leerConfigPokenest("MetadataPokenest",&datosPokenest)){
+           log_error(logs,"Error al leer el archivo de configuracion de Metadata Pokenest\n");
+           return 2;
+       }
+
+       if (!leerConfigPokemon("MetadataPokemon.dat",&datosPokemon)){
+           log_error(logs,"Error al leer el archivo de configuracion de Metadata de Pokemons\n");
+           return 3;
+       }
+
+       log_info(logs,"Los tres archivos de config fueron creados exitosamente!\n");
+
+
+    signal(SIGINT, notificarCaida);
 
 /* inicio todas las variables para arrancar */
-	//SOCKETS
-	log_info(logs, "iniciado el servidor principal de la Pokedéx. Aguardando conexiones...\n\n");
+    //SOCKETS
+    log_info(logs, "iniciado el servidor principal de la Pokedéx. Aguardando conexiones...\n\n");
+    pthread_t socketServMapa;
 
-	int socketEscucha, retornoPoll;
-	int fd_index = 0;
-
-
-	struct pollfd fileDescriptors[100];
-	int cantfds = 0;
-	socketEscucha = setup_listen("localhost", PUERTO);
-	listen(socketEscucha, 1024);
-
-	fileDescriptors[0].fd = socketEscucha;
-	fileDescriptors[0].events = POLLIN;
-	cantfds++;
-
-	int enviar = 1;
-	int cliente = 1;
-	t_infoCliente *infoCliente;
-	t_infoCliente unCliente;
-	int n = 0;
-	int *numeroCliente;
-	pthread_t hiloImprimirGiladas[1024];
-	pthread_t hiloAtenderConexiones[1024];
+    pthread_create(&socketServMapa,NULL,socketin,NULL);
 
 
 
-	while(enviar){
-
-		llamadaPoll:
-
-	// Inicio la función poll()
-		 retornoPoll = poll(fileDescriptors, cantfds, -1);
-
-	// valido que haya iniciado bien
-		if (retornoPoll == -1) {
-			printf("Error en la funcion poll\n");
-		}
-
-	// Recorro la lista de file descriptors chequeando si el poll() retornó por una modificación.
-	// De ser así, acepto la conexión, delego la atención del socket
-	// a un hilo y vuelvo para arriba.
-		for (fd_index = 0; fd_index < cantfds; fd_index++) {
-			if (fileDescriptors[fd_index].fd == socketEscucha) {
-				listen(socketEscucha, 100);
-				struct sockaddr_in addr;
-				socklen_t addrlen = sizeof(addr);
-				int socketCliente = accept(socketEscucha,
-				(struct sockaddr *) &addr, &addrlen);
-
-				infoCliente = malloc(sizeof(t_infoCliente));
-				infoCliente->cliente = cliente;
-				infoCliente->socket = socketCliente;
-
-				unCliente.cliente = cliente;
-				unCliente.socket = socketCliente;
-				clientesActivos[n] = unCliente;
-				int nroCliente = n++;
-				numeroCliente = malloc(sizeof(int));
-				numeroCliente = &nroCliente;
-
-			//	pthread_create(&hiloImprimirGiladas[n],NULL, imprimirGiladas, infoCliente);
-				pthread_create(&hiloAtenderConexiones[n], NULL, atenderConexion, numeroCliente);
 
 
-				cliente++;
-				n++;
-
-				fileDescriptors[cantfds].fd = socketCliente;
-				fileDescriptors[cantfds].events = POLLIN;
-				cantfds++;
-
-				goto llamadaPoll;
-			}
-		}
-	}
 
 
     t_queue* listoParaMoverse;
@@ -155,33 +196,14 @@ int main(int argc, char* argv[]) {
     finalizaAnormal=list_create();
 
 
-    // CONFIG
-    metaDataComun* datosMapa;
-    metaDataPokeNest* datosPokenest;
-    metaDataPokemon* datosPokemon;
-
-    datosMapa=malloc(sizeof(metaDataComun));
-    datosPokenest= malloc(sizeof(metaDataPokeNest));
-    datosPokemon= malloc(sizeof(metaDataPokemon));
 
 
-    if (!leerConfiguracion("metadata", &datosMapa)) {
-            log_error(logs,"Error al leer el archivo de configuracion de Metadata\n");
-            return 1;
-    }
+    //char* inicio = string_new();
 
-    if (!leerConfigPokenest("MetadataPokenest",&datosPokenest)){
-        log_error(logs,"Error al leer el archivo de configuracion de Metadata Pokenest\n");
-        return 2;
-    }
+   /* printf("Queres dibujar el mapa? Responde \"Si\" si queres dibujarlo, o otra cosa si no queres\n");
+    scanf("%s", inicio);*/
 
-    if (!leerConfigPokemon("MetadataPokemon.dat",&datosPokemon)){
-        log_error(logs,"Error al leer el archivo de configuracion de Metadata de Pokemons\n");
-        return 3;
-    }
-
-    log_info(logs,"Los tres archivos de config fueron creados exitosamente!\n");
-
+    //if(!strcmp(inicio,"Si")){ // porque el strcmp devuelve 0 si son iguales, si lo negamos devuelve 1 y entra al if
 
     t_list* items = list_create();
     int rows; // nro de filas
@@ -201,9 +223,9 @@ int main(int argc, char* argv[]) {
     CrearPersonaje(items, '@', p, q);
     CrearPersonaje(items, '#', x, y);
 
-    CrearCaja(items, 'H', 26, 10, 5);
-    CrearCaja(items, 'M', 8, 15, 3);
-    CrearCaja(items, 'F', 19, 9, 2);
+    //CrearCaja(items, 'H', 26, 10, 5);
+    //CrearCaja(items, 'M', 8, 15, 3);
+    //CrearCaja(items, 'F', 19, 9, 2);
 
     //POKENEST
     char** posPoke;
