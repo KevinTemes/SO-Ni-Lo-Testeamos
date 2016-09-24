@@ -27,8 +27,7 @@
 #include <pthread.h>
 #include "libreriaMapa.h"
 
-//Para testear sockets
-
+//Para testear sockets, despues vuela
 #define IP "127.0.0.1"
 #define PUERTO "7900"
 #define PACKAGESIZE 1024
@@ -183,12 +182,6 @@ int main(int argc, char* argv[]) {
 
     log_info(logs,"Los tres archivos de config fueron creados exitosamente!\n");
 
-    //char* inicio = string_new();
-
-   /* printf("Queres dibujar el mapa? Responde \"Si\" si queres dibujarlo, o otra cosa si no queres\n");
-    scanf("%s", inicio);*/
-
-    //if(!strcmp(inicio,"Si")){ // porque el strcmp devuelve 0 si son iguales, si lo negamos devuelve 1 y entra al if
 
     t_list* items = list_create();
     int rows; // nro de filas

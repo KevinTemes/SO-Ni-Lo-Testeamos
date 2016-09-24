@@ -52,7 +52,10 @@
 #define PACKAGESIZE 1024
  t_log* logs;
 
-int main(void) {
+ // copiar todos los archivos del Entrenador en /home/utnso/workspace/pokedex
+
+int main(int argc, char* argv[]){ // ./Entrenador Ash /home/utnso/workspace/pokedex
+
 	// LOGS
 	 remove("Entrenador.log");
 	 puts("Creando archivo de logueo...\n");
@@ -64,15 +67,16 @@ int main(void) {
 
 	 ent = malloc(sizeof(t_entrenador));
 
-	 if (!leerConfigEnt("metadata", &ent)) {
+	 char* configEntrenador = string_from_format("%s/Entrenadores/%s/metadata",argv[2],argv[1]);
+
+	 if (!leerConfigEnt(configEntrenador,&ent)) {
 	     log_error(logs,"Error al leer el archivo de configuracion de Metadata Entrenador\n");
 	     return 1;
 	 }
 
-
 	 log_info(logs,"Archivo de config Entrenador creado exitosamente!\n");
 
-	 /*//CONEXIONES
+	 //CONEXIONES
     int servidor;
     servidor = conectarCliente(IP, PUERTO);
 
@@ -101,6 +105,6 @@ int main(void) {
 
     close(servidor);
 
-    */
-        return EXIT_SUCCESS;
+return EXIT_SUCCESS;
+
 }

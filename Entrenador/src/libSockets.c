@@ -8,6 +8,7 @@
 #include "libSockets.h"
 #define HEADER_PAQUETE (sizeof(int)*3)
 
+
 int leerConfigEnt(char *ruta, t_entrenador **datos){
 	t_config* archivoConfiguracion = config_create(ruta);//Crea struct de configuracion
 	if (archivoConfiguracion == NULL) {
@@ -24,16 +25,56 @@ int leerConfigEnt(char *ruta, t_entrenador **datos){
 			char* nombre=string_new();
 			string_append(&nombre, config_get_string_value(archivoConfiguracion, "nombre"));
 			(*datos)->nombreEntrenador=nombre;
-			(*datos)->caracter=config_get_string_value(archivoConfiguracion,"simbolo");
-			(*datos)->hojaDeViaje=config_get_array_value(archivoConfiguracion,"hojaDeViaje");
+			printf("nombre=%s \n",(*datos)->nombreEntrenador);
+
+			char* simbolo=string_new();
+			string_append(&simbolo,config_get_string_value(archivoConfiguracion,"simbolo"));
+			(*datos)->caracter=simbolo;
+			printf("simbolo= %s \n",(*datos)->caracter);
+
+			char** hojaViaje =config_get_array_value(archivoConfiguracion,"hojaDeViaje");
+
 
 			int i=1;
+			int l=1;
 			int j =0;
+			int k=0;
+
+
+			char* mapa = string_new();
+			char* poke = string_new();
+			(*datos)->hojaDeViaje = list_create();
+			(*datos)->objetivosPorMapa = list_create();
+
+
 			do{
-				if ((*datos)->hojaDeViaje[j]!=NULL){
-					char* objetivoDeMapa = string_from_format("obj[%s]",(*datos)->hojaDeViaje[j]);
+				if (hojaViaje[j]!=NULL){
+					l=1;
+					char* cadaMapa = string_from_format("%s",hojaViaje[j]);
+					string_append(&mapa, cadaMapa);
+					list_add((*datos)->hojaDeViaje,cadaMapa);
+					// y con el list iterate aca le digo que recorra todos los mapas
+
+					char* objetivoDeMapa = string_from_format("obj[%s]",hojaViaje[j]);
 					printf("tengo que cumplir %s \n", objetivoDeMapa);
-					(*datos)->objetivosPorMapa= config_get_array_value(archivoConfiguracion,objetivoDeMapa);
+
+
+					char** objetivosMapa = config_get_array_value(archivoConfiguracion,objetivoDeMapa);
+					k=0;
+					do {
+						if (objetivosMapa[k]!=NULL){
+							char* cadaPoke = string_from_format("%s",objetivosMapa[k]);
+							string_append(&poke, cadaPoke);
+							list_add((*datos)->objetivosPorMapa, cadaPoke);
+							// y con el list iterate recorro y hago que agarra cada pokemon
+							printf("tengo el Poke %s del mapa %s \n", cadaPoke, hojaViaje[j] );
+							k++;
+						} else {
+							l=0;
+						}
+					} while (l);
+
+
 					j++;
 				}
 				else {
@@ -41,14 +82,23 @@ int leerConfigEnt(char *ruta, t_entrenador **datos){
 				}
 			} while(i);
 
+
 			(*datos)->cantidadInicialVidas= config_get_int_value(archivoConfiguracion,"vidas");
+			printf("vidas=%d \n",(*datos)->cantidadInicialVidas);
+
 			(*datos)->reintentos= config_get_int_value(archivoConfiguracion,"reintentos");
+			printf("reintentos=%d \n",(*datos)->reintentos);
 
 			config_destroy(archivoConfiguracion);
 			return 1;
 			}
 	}
 }
+
+/*void funcionMagica(char* elemento){
+		printf("%s/n",elemento);
+		return;
+}*/
 
 int setup_listen(char* IP, char* Port) {
 	struct addrinfo * serverInfo = cargarInfoSocket(IP, Port);

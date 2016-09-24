@@ -25,9 +25,9 @@ typedef struct {
 	char* ipMapa;
 	int puertoMapa;
     char* nombreEntrenador;
-    char caracter;
-    char** hojaDeViaje;
-    char** objetivosPorMapa;
+    char* caracter;
+    t_list* hojaDeViaje;
+    t_list* objetivosPorMapa;
     int cantidadInicialVidas;
     int reintentos;
 }t_entrenador;
@@ -89,14 +89,14 @@ int conectarCliente_con_log(char *IP, char* Port, t_log *);
  * LOGGER = Log para escribir
  */
 int esperarConexionEntrante(int, int, t_log *);
-
 int conectarServidor(char* IP, char* Port, int backlog);
 Paquete *generarPaquete(int codigoOperacion, int tamMessage, char *message,
-		int programCounter, int quantum, int pid);
+int programCounter, int quantum, int pid);
 char *serializar(Paquete *unPaquete);
 Paquete *deserializar_header(char *buffer);
 void deserializar_data(Paquete *unPaquete, char *buffer);
 void destruirPaquete(Paquete * unPaquete);
 int leerConfigEnt(char *ruta, t_entrenador **datos);
+void funcionMagica(char* elemento);
 
 #endif /* LIBSOCKETS_H_ */
