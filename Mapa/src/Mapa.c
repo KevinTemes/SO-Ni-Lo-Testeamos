@@ -138,12 +138,6 @@ int main(int argc, char* argv[]) {
     logs = log_create("Mapa.log", "Mapa", false, log_level_from_string("INFO"));
     puts("Log Mapa creado exitosamente \n");
 
-    /*if(argc < 2){
-        perror("Error en la cantidad de argumentos");
-        exit (1);
-    }
-*/
-
 
     // CONFIG
        metaDataComun* datosMapa;
@@ -154,18 +148,22 @@ int main(int argc, char* argv[]) {
        datosPokenest= malloc(sizeof(metaDataPokeNest));
        datosPokemon= malloc(sizeof(metaDataPokemon));
 
+       char* configMetaMapa = string_from_format("%s/Mapas/%s/metadata",argv[2],argv[1]);
 
-       if (!leerConfiguracion("metadata", &datosMapa)) {
+       if (!leerConfiguracion(configMetaMapa, &datosMapa)) {
                log_error(logs,"Error al leer el archivo de configuracion de Metadata\n");
                return 1;
        }
+       //por ahora
+       char* configPokenest = string_from_format("%s/Mapas/%s/PokeNests/Pikachu/metadata",argv[2],argv[1]);
 
-       if (!leerConfigPokenest("MetadataPokenest",&datosPokenest)){
+       if (!leerConfigPokenest(configPokenest,&datosPokenest)){
            log_error(logs,"Error al leer el archivo de configuracion de Metadata Pokenest\n");
            return 2;
        }
 
-       if (!leerConfigPokemon("MetadataPokemon.dat",&datosPokemon)){
+       char* configPoke = string_from_format("%s/Mapas/%s/PokeNests/Pikachu/Pikachu001.dat",argv[2],argv[1]);
+       if (!leerConfigPokemon(configPoke,&datosPokemon)){
            log_error(logs,"Error al leer el archivo de configuracion de Metadata de Pokemons\n");
            return 3;
        }
@@ -173,18 +171,14 @@ int main(int argc, char* argv[]) {
        log_info(logs,"Los tres archivos de config fueron creados exitosamente!\n");
 
 
-    signal(SIGINT, notificarCaida);
+       signal(SIGINT, notificarCaida);
 
-/* inicio todas las variables para arrancar */
+
     //SOCKETS
-    log_info(logs, "iniciado el servidor principal de la Pokedéx. Aguardando conexiones...\n\n");
+    log_info(logs, "iniciado el servidor principal del Mapa. Aguardando conexiones...\n\n");
     pthread_t socketServMapa;
 
     pthread_create(&socketServMapa,NULL,socketin,NULL);
-
-
-
-
 
 
 
@@ -236,7 +230,6 @@ int main(int argc, char* argv[]) {
 
     CrearCaja(items, ide, atoi (posPoke[0]),atoi (posPoke[1]), datosPokenest->cantPokemons);
 
-   // printf("\n%d",atoi(posich[0]));
 
     nivel_gui_dibujar(items, "Mapa con Entrenadores");
 

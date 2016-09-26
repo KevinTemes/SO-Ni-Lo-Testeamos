@@ -23,8 +23,6 @@
 
 
 typedef struct{
-	char* nombreMapa;
-	char** pokenests;
 	int tiempoChequeoDeadlock;
 	bool batalla; // 0= desactivado 1=activado
 	char* algoritmo;
@@ -43,7 +41,6 @@ typedef struct{
 
 typedef struct{
 	int nivel;
-	char caracterPokemon;
 
 }metaDataPokemon;
 

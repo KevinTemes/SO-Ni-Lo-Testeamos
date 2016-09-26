@@ -5,7 +5,7 @@
  *      Author: utnso
  */
 
-
+#include <dirent.h>
 #include "libSockets.h"
 #define HEADER_PAQUETE (sizeof(int)*3)
 
@@ -15,25 +15,37 @@ int leerConfiguracion(char *ruta, metaDataComun **datos) {
 		return 0;
 	} else {
 		int cantidadKeys = config_keys_amount(archivoConfiguracion);
-		if (cantidadKeys < 9) {
+		if (cantidadKeys < 7) {
 			return 0; // sale, 0 es false
 		} else {
-			char* nombreMapa=string_new();
-			string_append(&nombreMapa, config_get_string_value(archivoConfiguracion, "nombreMapa"));
-			(*datos)->nombreMapa=nombreMapa;
-			// despues para crear el directorio, saco cada elemento de la lista pokenests
-			(*datos)->pokenests= config_get_array_value(archivoConfiguracion,"pokenests");
+
+
+
 			(*datos)->tiempoChequeoDeadlock = config_get_int_value(archivoConfiguracion, "TiempoChequeoDeadlock");
+            //printf("TiempoChequeo %d\n",(*datos)->tiempoChequeoDeadlock);
+
 			(*datos)->batalla = config_get_int_value(archivoConfiguracion,"Batalla");
+			//printf("batalla %d\n",(*datos)->batalla);
+
 			char* algoritmo=string_new();
 			string_append(&algoritmo, config_get_string_value(archivoConfiguracion, "algoritmo"));
 			(*datos)->algoritmo=algoritmo;
+			//printf("algoritmo  %s\n",(*datos)->algoritmo);
+
+
 			(*datos)->quantum = config_get_int_value(archivoConfiguracion, "quantum");
+			//printf("quantum  %d\n",(*datos)->quantum);
+
 			(*datos)->retardoQ = config_get_int_value(archivoConfiguracion, "retardo");
+			//printf("retardo  %d\n",(*datos)->retardoQ);
+
 			char* ip=string_new();
 			string_append(&ip,config_get_string_value(archivoConfiguracion,"IP"));
 			(*datos)->ip=ip;
+			//printf("ip  %s\n",(*datos)->ip);
+
 			(*datos)->puerto= config_get_int_value(archivoConfiguracion,"Puerto");
+			//printf("puerto %d\n",(*datos)->puerto);
 
 			config_destroy(archivoConfiguracion);
 			return 1; // cualquier otra cosa que no es 0, es true
@@ -47,7 +59,7 @@ int leerConfigPokenest(char *ruta, metaDataPokeNest **datos) {
 			return 0;
 		} else {
 			int cantidadKeys = config_keys_amount(archivoConfigPokenest);
-			if (cantidadKeys < 4) {
+			if (cantidadKeys < 3) {
 				return 0;
 			} else {
 				char* tipo=string_new();
@@ -60,7 +72,21 @@ int leerConfigPokenest(char *ruta, metaDataPokeNest **datos) {
 				string_append(&simbolo,config_get_string_value(archivoConfigPokenest,"Identificador"));
 				(*datos)->caracterPokeNest=simbolo;
 				// despues para crear el .dat de cada pokemon que tenga en la pokenest
-				(*datos)->cantPokemons=config_get_int_value(archivoConfigPokenest,"cantPokemons");
+				{
+				int file_count = 0;
+				DIR * dirp;
+				struct dirent * entry;
+
+				dirp = opendir("/home/utnso/workspace/pokedex/Mapas/PuebloPaleta/PokeNests/Pikachu");
+				while ((entry = readdir(dirp)) != NULL) {
+				    if (entry->d_type == DT_REG) { /*Si entry es un tipo regular de archivo (DT_RETG)*/
+				         file_count++;
+				    }
+				}
+				closedir(dirp);
+				(*datos)->cantPokemons=(file_count-1);
+				}
+
 
 				config_destroy(archivoConfigPokenest);
 				return 1;
@@ -79,7 +105,7 @@ int leerConfigPokemon(char* ruta, metaDataPokemon **datos){
 					return 0;
 				} else {
 					(*datos)->nivel = config_get_int_value(archivoConfigPokemon, "Nivel");
-					(*datos)->caracterPokemon= config_get_string_value(archivoConfigPokemon,"[Ascii Art]");
+				//	(*datos)->caracterPokemon= config_get_string_value(archivoConfigPokemon,"[Ascii Art]");
 
 					config_destroy(archivoConfigPokemon);
 					return 1;
