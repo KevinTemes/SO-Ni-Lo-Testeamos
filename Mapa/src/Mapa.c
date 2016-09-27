@@ -135,7 +135,7 @@ int main(int argc, char* argv[]) {
     //LOGS
     remove("Mapa.log");
     puts("Creando archivo de logueo...\n");
-    logs = log_create("Mapa.log", "Mapa", false, log_level_from_string("INFO"));
+    logs = log_create("Mapa.log", "Mapa", true, log_level_from_string("INFO"));
     puts("Log Mapa creado exitosamente \n");
 
 
@@ -154,6 +154,7 @@ int main(int argc, char* argv[]) {
                log_error(logs,"Error al leer el archivo de configuracion de Metadata\n");
                return 1;
        }
+
        //por ahora
        char* configPokenest = string_from_format("%s/Mapas/%s/PokeNests/Pikachu/metadata",argv[2],argv[1]);
 

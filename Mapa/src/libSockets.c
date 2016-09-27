@@ -101,11 +101,10 @@ int leerConfigPokemon(char* ruta, metaDataPokemon **datos){
 				return 0;
 			} else {
 				int cantidadKeys = config_keys_amount(archivoConfigPokemon);
-				if (cantidadKeys < 2) {
+				if (cantidadKeys < 1) {
 					return 0;
 				} else {
 					(*datos)->nivel = config_get_int_value(archivoConfigPokemon, "Nivel");
-				//	(*datos)->caracterPokemon= config_get_string_value(archivoConfigPokemon,"[Ascii Art]");
 
 					config_destroy(archivoConfigPokemon);
 					return 1;
