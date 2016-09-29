@@ -34,10 +34,13 @@
 
 #define IP "127.0.0.1"
 #define PUERTO "7900"
-#define PACKAGESIZE 1024
- t_log* logs;
+#define PACKAGESIZE 10
 
- // copiar todos los archivos del Entrenador en /home/utnso/workspace/pokedex
+t_log* logs;
+void* recibirUbicacionPokenest(int, int);
+void moverseEnUnaDireccion(int,int,int,int,char*,int);
+
+
 
 int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso/workspace/pokedex
 
@@ -61,36 +64,100 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 log_info(logs,"Archivo de config Entrenador creado exitosamente!\n");
 
+	 // DE ACA SACO CADA MAPA Y CADA OBJETIVO,CADA IP Y CADA PUERTO
+
+	 /*list_iterate((ent)->hojaDeViaje,(void*)obtengoCadaUno);
+	 list_iterate((ent)->objetivosPorMapa,(void*)obtengoCadaUno);
+	*/
+
 	 //CONEXIONES
 
     int servidor;
     servidor = conectarCliente(IP, PUERTO);
 
     int enviar = 1;
-    char message[PACKAGESIZE];
+    //char message[PACKAGESIZE];
     char *resultado = malloc(sizeof(int));
 	int resultadoEnvio = 0;
     printf("Conectado al Mapa. Ingrese el mensaje que desee enviar, o cerrar para salir\n");
 
-    while(enviar != 0){
-        fgets(message, PACKAGESIZE, stdin);
-        if (!strcmp(message,"cerrar\n")) enviar = 0;
-        if (enviar) send(servidor, message, strlen(message) + 1, 0);
-        recv(servidor, (void *)resultado, sizeof(int), 0);
-		resultadoEnvio = *((int *)resultado);
 
-		if(resultadoEnvio == 1) {
-			printf("el servidor recibió el mensaje!: %d\n", resultadoEnvio);
-		}
-		else if(resultadoEnvio == 9){
-			printf("Servidor caído! imposible reconectar. Cerrando...\n");
-			exit(0);
-		}
+    //////////////// recibo y mando datos al Mapa /////////////////////
+    int num = 1;
+    char* numConcatenado = string_itoa(num);
+    char* protocolo = string_new();
+    string_append(&protocolo,(ent)->caracter);
+    string_append(&protocolo,numConcatenado);
+    char* coordPokenest;
+    char** posPokenest;
 
+    int posXInicial =0;
+    int posYInicial = 0;
+
+    while(enviar){
+
+    // le mando mi caracter y que quiero solicitar ubicacion de pokenest
+    send(servidor, protocolo, 2, 0);
+    //recibo 5 chars, ej: "34;12"
+    coordPokenest = (char*)recibirUbicacionPokenest(servidor,5);
+
+    posPokenest = string_split(coordPokenest,";");
+    int x = atoi (posPokenest[0]);
+    int y = atoi (posPokenest[1]);
+
+    moverseEnUnaDireccion(posXInicial, posYInicial, x, y, protocolo, servidor);
+
+
+    // por si se cae
+    recv(servidor, (void *)resultado, sizeof(int), 0);
+    resultadoEnvio = *((int *)resultado);
+
+	if(resultadoEnvio == 9){
+		printf("Servidor caído! imposible reconectar. Cerrando...\n");
+		exit(0);
+	}
+
+	enviar = 0;
     }
-
     close(servidor);
 
 return EXIT_SUCCESS;
 
+}
+
+
+///////////////////// FUNCIONES DEL ENTRENADOR ///////////////////////////
+
+void* recibirUbicacionPokenest(int conexion, int tamanio){
+	void* mensaje=(void*)malloc(tamanio);
+	int bytesRecibidos = recv(conexion, mensaje, tamanio, MSG_WAITALL);
+	if (bytesRecibidos != tamanio) {
+		perror("Error al recibir el mensaje\n");
+		free(mensaje);
+		char* adios=string_new();
+		string_append(&adios,"0\0");
+		return adios;}
+	return mensaje;
+}
+
+
+void moverseEnUnaDireccion(int posXInicial, int posYInicial,int x, int y, char* protocolo, int servidor){
+if((posXInicial != x) && (posYInicial != y)){
+    	protocolo = "@6"; // muevo a la derecha primero
+    	send(servidor, protocolo, 2, 0);
+    	posXInicial++;
+
+    	protocolo = "@8"; // muevo para arriba
+    	send(servidor, protocolo, 2, 0);
+    	posYInicial++;
+
+    	if(posXInicial==x){ // llego al x, se mueve solo en y
+    		send(servidor, protocolo, 2, 0);
+    		posYInicial++;
+    	} else if(posYInicial==y) { // llego al y, se mueve solo en x
+    		protocolo = "@6";
+    		send(servidor, protocolo, 2, 0);
+    		posXInicial++;
+    	}
+    }
 }

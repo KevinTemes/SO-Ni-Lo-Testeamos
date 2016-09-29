@@ -42,6 +42,8 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 			(*datos)->hojaDeViaje = list_create();
 			(*datos)->objetivosPorMapa = list_create();
 
+			ips = list_create();
+			puertos= list_create();
 
 			do{
 				if (hojaViaje[j]!=NULL){
@@ -81,12 +83,17 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 						char* ip = string_new();
 						string_append(&ip, config_get_string_value(archivoMapa,"IP"));
 						(cosasMapa)->ipMapa= ip;
-						printf("%s \n", (cosasMapa)->ipMapa);
+						//printf("%s \n", (cosasMapa)->ipMapa);
 						(cosasMapa)->puertoMapa=config_get_int_value(archivoMapa,"Puerto");
-						printf("%d \n", (cosasMapa)->puertoMapa);
+						//printf("%d \n", (cosasMapa)->puertoMapa);
 						}
 					config_destroy(archivoMapa);
-					printf("\n");
+					//printf("\n");
+
+					list_add(ips,(cosasMapa)->ipMapa);
+
+					char* puertoChar = string_itoa((cosasMapa)->puertoMapa);
+					list_add(puertos,puertoChar);
 
 					j++;
 				}
@@ -108,11 +115,11 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 }
 
 
-/* para el list_iterate por ahi sirve
-void obtengoNombreMapa(char* elemento){
+//para el list_iterate que uso en el main
+void obtengoCadaUno(char* elemento){
 		printf("%s \n",elemento);
 		return;
-}*/
+}
 
 int setup_listen(char* IP, char* Port) {
 	struct addrinfo * serverInfo = cargarInfoSocket(IP, Port);
