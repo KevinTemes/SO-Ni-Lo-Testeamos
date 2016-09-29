@@ -68,7 +68,8 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 /*list_iterate((ent)->hojaDeViaje,(void*)obtengoCadaUno);
 	 list_iterate((ent)->objetivosPorMapa,(void*)obtengoCadaUno);
-	*/
+	 list_iterate(ips, (void*)obtengoCadaUno);
+	 list_iterate(puertos, (void*)obtengoCadaUno); */
 
 	 //CONEXIONES
 
