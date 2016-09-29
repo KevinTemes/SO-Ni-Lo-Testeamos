@@ -184,31 +184,31 @@ int main(int argc, char *argv[]) {
 
 // metadata de Red
 int fd_red_metadata;
-fd_red_metadata= open("/home/utnso/directorios de prueba/mnt/Pokedex/Entrenadores/Red/metadata",O_RDWR);
+fd_red_metadata= open("/home/utnso/workspace/pokedex/Entrenadores/Red/metadata",O_RDWR);
 fstat(fd_red_metadata,&redMetadataStat);
 pmap_red_metadata= mmap(0, redMetadataStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_red_metadata, 0);
 
 // metadata de Pueblo Paleta
 int fd_puebloPaleta_metadata;
-fd_puebloPaleta_metadata= open("/home/utnso/directorios de prueba/mnt/Pokedex/Mapas/PuebloPaleta/metadata",O_RDWR);
+fd_puebloPaleta_metadata= open("/home/utnso/workspace/pokedex/Mapas/PuebloPaleta/metadata",O_RDWR);
 fstat(fd_puebloPaleta_metadata,&puebloPaletaMetadataStat);
 pmap_pueblo_paleta_metadata= mmap(0, puebloPaletaMetadataStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_puebloPaleta_metadata, 0);
 
 // medalla de Pueblo Paleta
 int fd_medallaPuebloPaleta;
-fd_medallaPuebloPaleta= open("/home/utnso/directorios de prueba/mnt/Pokedex/Mapas/PuebloPaleta/medalla-PuebloPaleta.jpg",O_RDWR);
+fd_medallaPuebloPaleta= open("/home/utnso/workspace/pokedex/Mapas/PuebloPaleta/medalla-PuebloPaleta.jpg",O_RDWR);
 fstat(fd_medallaPuebloPaleta,&puebloPaletaMedallaStat);
 pmap_pueblo_paleta_medalla= mmap(0, puebloPaletaMedallaStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_medallaPuebloPaleta, 0);
 
 // metadata de la PokeNest Pikachu
 int fd_PikachuMetadata;
-fd_PikachuMetadata = open("/home/utnso/directorios de prueba/mnt/Pokedex/Mapas/PuebloPaleta/PokeNests/Pikachu/metadata",O_RDWR);
+fd_PikachuMetadata = open("/home/utnso/workspace/pokedex/Mapas/PuebloPaleta/PokeNests/Pikachu/metadata",O_RDWR);
 fstat(fd_PikachuMetadata, &pokenestPikachuMetadataStat);
 pmap_pokenest_pikachu_metadata = mmap(0, pokenestPikachuMetadataStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_PikachuMetadata, 0);
 
 // instancia Pikachu001.dat de la PokeNest Pikachu
 int fd_Pikachu001Dat;
-fd_Pikachu001Dat = open("/home/utnso/directorios de prueba/mnt/Pokedex/Mapas/PuebloPaleta/PokeNests/Pikachu/Pikachu001.dat",O_RDWR);
+fd_Pikachu001Dat = open("/home/utnso/workspace/pokedex/Mapas/PuebloPaleta/PokeNests/Pikachu/Pikachu001.dat",O_RDWR);
 fstat(fd_Pikachu001Dat, &pokenestPikachu001Stat);
 pmap_pokenest_pikachu_metadata = mmap(0, pokenestPikachu001Stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_Pikachu001Dat, 0);
 
