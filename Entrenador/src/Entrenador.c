@@ -66,9 +66,9 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 // DE ACA SACO CADA MAPA Y CADA OBJETIVO,CADA IP Y CADA PUERTO
 
-	 /*list_iterate((ent)->hojaDeViaje,(void*)obtengoCadaUno);
-	 list_iterate((ent)->objetivosPorMapa,(void*)obtengoCadaUno);
-	 list_iterate(ips, (void*)obtengoCadaUno);
+	 //list_iterate((ent)->hojaDeViaje,(void*)obtengoCadaUno);
+	 //list_iterate((ent)->objetivosPorMapa,(void*)obtengoCadaUno);
+	 /*list_iterate(ips, (void*)obtengoCadaUno);
 	 list_iterate(puertos, (void*)obtengoCadaUno); */
 
 	 //CONEXIONES
@@ -143,22 +143,48 @@ void* recibirUbicacionPokenest(int conexion, int tamanio){
 
 
 void moverseEnUnaDireccion(int posXInicial, int posYInicial,int x, int y, char* protocolo, int servidor){
-if((posXInicial != x) && (posYInicial != y)){
-    	protocolo = "@6"; // muevo a la derecha primero
-    	send(servidor, protocolo, 2, 0);
-    	posXInicial++;
+	int cantMovX = x - posXInicial; // cant total mov de x
+	int cantMovY = y - posYInicial; // cant total mov de y
+	char ultMov;
+	int movDeX; // movimientos que se hicieron de x
+	int movDeY; // movimientos que se hicieron de y
 
-    	protocolo = "@8"; // muevo para arriba
-    	send(servidor, protocolo, 2, 0);
-    	posYInicial++;
+	do
+	{
+		if(cantMovY==0)
+			ultMov='y';
+		if((cantMovX>0) && (ultMov!='x')){
+			protocolo = "@6"; // derecha
+			send(servidor, protocolo, 2, 0);
+			ultMov = 'x';
+			cantMovX--;
+			movDeX++;
+		} else if((cantMovX<0) && (ultMov!='x')){
+			protocolo = "@4"; //izquierda
+			send(servidor, protocolo, 2, 0);
+			ultMov = 'x';
+			cantMovX--;
+			movDeX++;
+		}
 
-    	if(posXInicial==x){ // llego al x, se mueve solo en y
-    		send(servidor, protocolo, 2, 0);
-    		posYInicial++;
-    	} else if(posYInicial==y) { // llego al y, se mueve solo en x
-    		protocolo = "@6";
-    		send(servidor, protocolo, 2, 0);
-    		posXInicial++;
-    	}
-    }
+		if (cantMovX==0) ultMov = 'x';
+		if((cantMovY>0) && (ultMov!='y')){
+			protocolo = "@2"; // abajo
+			send(servidor, protocolo, 2, 0);
+			ultMov = 'y';
+			cantMovY--;
+			movDeY++;
+		} else if((cantMovY<0) && (ultMov!='y')){
+			protocolo = "@8"; //arriba
+			send(servidor, protocolo, 2, 0);
+			ultMov = 'y';
+			cantMovY--;
+			movDeY++;
+		}
+
+	} while((cantMovX!=0) || (cantMovY != 0));
+	//printf("movimientos de x para llegar a la pokenest: %d", movDeX);
+	//printf("movimientos de y para llegar a la pokenest: %d", movDeY);
+
+	return;
 }
