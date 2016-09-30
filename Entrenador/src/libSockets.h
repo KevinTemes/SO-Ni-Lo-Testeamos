@@ -21,6 +21,9 @@
 #include <commons/collections/list.h>
 #include <commons/config.h>
 
+t_list* ips;
+t_list* puertos;
+
 typedef struct{
 	char* ipMapa;
 	int puertoMapa;
@@ -100,6 +103,6 @@ Paquete *deserializar_header(char *buffer);
 void deserializar_data(Paquete *unPaquete, char *buffer);
 void destruirPaquete(Paquete * unPaquete);
 int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje);
-void obtengoNombreMapa(char* elemento);
+void obtengoCadaUno(char* elemento);
 
 #endif /* LIBSOCKETS_H_ */
