@@ -10,6 +10,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/mman.h>
 #include <netdb.h>
 #include <unistd.h>
 #include "libSockets.h"
@@ -22,6 +23,7 @@
 #include <poll.h>
 #include <semaphore.h>
 #include <signal.h>
+#include "osada.h"
 
 typedef struct{
 	int cliente;
