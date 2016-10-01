@@ -1,5 +1,7 @@
 /*
  ============================================================================
+ /*
+ ============================================================================
  Name        : Entrenador.c
  Author      : 
  Version     :
@@ -36,11 +38,37 @@
 #define PUERTO "7900"
 #define PACKAGESIZE 10
 
+int servidor;
+
 t_log* logs;
 void* recibirUbicacionPokenest(int, int);
 void moverseEnUnaDireccion(int,int,int,int,char*,int);
 
+void mostrarMotivo(){
+	printf("Un motivo");
+}
 
+void borrarArchivosBill(t_entrenador* ent){
+
+}
+
+int leQuedanVidas(t_entrenador* ent){
+	return ent->cantidadInicialVidas;
+}
+
+void resetear(t_entrenador* ent){
+	//reiniciarHojaDeViaje(ent);
+	//borrarMedallas(ent);
+	//borrarPokemons(ent);
+}
+
+int capturaUltimoOK(t_entrenador* entrenador){
+	return 1;
+}
+
+void reconectarse(t_entrenador* ent){
+
+}
 
 int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso/workspace/pokedex
 
@@ -72,8 +100,6 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 list_iterate(puertos, (void*)obtengoCadaUno); */
 
 	 //CONEXIONES
-
-    int servidor;
     servidor = conectarCliente(IP, PUERTO);
 
     int enviar = 1;
@@ -92,8 +118,9 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
     char* coordPokenest;
     char** posPokenest;
 
-    int posXInicial =0;
-    int posYInicial = 0;
+
+    int posXInicial =15;
+    int posYInicial =15;
 
     while(enviar){
 
@@ -104,10 +131,16 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
     posPokenest = string_split(coordPokenest,";");
     int x = atoi (posPokenest[0]);
+    printf("Coordenada X pokenest: %d\n", x);
     int y = atoi (posPokenest[1]);
+    printf("Coordenada Y pokenest: %d\n", y);
 
     moverseEnUnaDireccion(posXInicial, posYInicial, x, y, protocolo, servidor);
 
+   /* if (estaEnPokenest){
+    	protocolo = "@100"; // Solicitud Atrapar Pokemon
+    	send(servidor,protocolo,2,0);
+    } */
 
     // por si se cae
     recv(servidor, (void *)resultado, sizeof(int), 0);
@@ -118,9 +151,16 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 		exit(0);
 	}
 
+	//if(capturaUltimoOk(ent)){
+	//	copiarMedalla();
+	//	close(servidor);
+	//}
+
 	enviar = 0;
     }
     close(servidor);
+
+   // verificarHojadeViaje(ent); // Se fija a donde tiene que ir y se conecta al mapa
 
 return EXIT_SUCCESS;
 
@@ -188,3 +228,28 @@ void moverseEnUnaDireccion(int posXInicial, int posYInicial,int x, int y, char* 
 
 	return;
 }
+
+void morir(t_entrenador* ent){
+	mostrarMotivo();
+	borrarArchivosBill(ent);
+	close(servidor); // o cerrarConexion(ent);
+	if (leQuedanVidas(ent)){
+		ent->cantidadInicialVidas = ent->cantidadInicialVidas-1;
+		reconectarse(ent);
+	}
+	else
+	{
+	 printf("Desea reiniciar juego?\n");
+	 char* respuesta;
+     fgets(respuesta, PACKAGESIZE, stdin);
+     if (!strcmp(respuesta,"si\n")){
+    	 ent->reintentos = ent->reintentos+1;
+    	 resetear(ent);
+     	 }
+     else {
+    	 exit(0);
+     }
+	}
+
+}
+
