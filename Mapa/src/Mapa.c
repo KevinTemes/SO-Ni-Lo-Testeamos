@@ -204,12 +204,15 @@ int main(int argc, char* argv[]) {
     CrearPersonaje(items, '@', p, q);
     CrearPersonaje(items, '#', x, y);
 
-    //CrearCaja(items, 'H', 26, 10, 5);
-    //CrearCaja(items, 'M', 8, 15, 3);
-    //CrearCaja(items, 'F', 19, 9, 2);
+
 
     //POKENEST
     int ka;
+
+
+
+
+
     for(ka=0; ka<list_size(pokenests); ka++){
     	    datosPokenest = (metaDataPokeNest*) list_get(pokenests,ka);
     	    char** posPoke;
@@ -286,7 +289,7 @@ int main(int argc, char* argv[]) {
     MoverPersonaje(items, '@', p, q);
     MoverPersonaje(items, '#', x, y);
 
-    if (   ((p == 26) && (q == 10)) || ((x == 26) && (y == 10)) ) {
+   /* if (   ((p == 26) && (q == 10)) || ((x == 26) && (y == 10)) ) {
         restarRecurso(items, 'H');
     }
 
@@ -296,11 +299,8 @@ int main(int argc, char* argv[]) {
 
     if (   ((p == 8) && (q == 15)) || ((x == 8) && (y == 15)) ) {
         restarRecurso(items, 'M');
-    }
+    } */
 
-    if((p == x) && (q == y)) {
-        BorrarItem(items, '#'); //si chocan, borramos uno (!)
-    }
 
     nivel_gui_dibujar(items, "Mapa con Entrenadores");
     }
@@ -308,11 +308,14 @@ int main(int argc, char* argv[]) {
         BorrarItem(items, '#');
         BorrarItem(items, '@');
 
-        //BorrarItem(items, 'H');
-       // BorrarItem(items, 'M');
-       // BorrarItem(items, 'F');
 
-      //  BorrarItem(items, ide);
+        for(ka=0; ka<list_size(pokenests); ka++){
+         	    datosPokenest = (metaDataPokeNest*) list_get(pokenests,ka);
+         	    char ide;
+         	    ide = datosPokenest->caracterPokeNest[0];
+         	    BorrarItem(items,ide);
+         }
+
 
         nivel_gui_terminar();
 
