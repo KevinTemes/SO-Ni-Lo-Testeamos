@@ -149,8 +149,6 @@ int main(int argc, char* argv[]) {
        datosPokenest= malloc(sizeof(metaDataPokeNest));
        datosPokemon= malloc(sizeof(metaDataPokemon));
 
-       argv[2]="/home/utnso/workspace/pokedex";
-       argv[1]="PuebloPaleta";
 
 
        char* configMetaMapa = string_from_format("%s/Mapas/%s/metadata",argv[2],argv[1]);
