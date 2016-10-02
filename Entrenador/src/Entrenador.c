@@ -89,8 +89,12 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 for(pos = 0;pos<list_size((ent)->hojaDeViaje);pos++){
 
+
 		char* miIP= list_get(ips,pos); // no se estan usando por el momento
 		char* miPuerto = list_get(puertos,pos); // no se esta usando por el momento
+
+		printf("%s \n", miIP);
+		printf("%s \n", miPuerto);
 
 		servidor = conectarCliente(IP, PUERTO); // siguen los valores hardcodeados
 
@@ -102,9 +106,10 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 
 		//////////////// recibo y mando datos al Mapa /////////////////////
-		int num = 0;
-		char* numConcatenado = string_itoa(num);
+		//int num=0;
+		//char* numConcatenado = string_itoa(num);
 		char* protocolo = string_new();
+		char* numConcatenado;
 		string_append(&protocolo,(ent)->caracter);
 		string_append(&protocolo,numConcatenado);
 		char* protocAManejar = strdup(protocolo);
@@ -119,12 +124,14 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 		for(posObjetivo=0;posObjetivo<list_size((ent)->objetivosPorMapa);posObjetivo++){
 
-			// MANDO: CARACTER + 1 + POKENEST
-			protocAManejar[1]='1';
-			char caracterPoke = list_get((ent)->objetivosPorMapa,posObjetivo);
-			protocAManejar[2]= caracterPoke;
+			// MANDO: CARACTER + POKENEST
+			char* caracterPoke = list_get((ent)->objetivosPorMapa,posObjetivo);
+			string_append(&protocolo,caracterPoke);
+			printf("%s \n", caracterPoke);
 
-			send(servidor, protocAManejar, 3, 0);
+			protocAManejar[1]='P';
+
+			send(servidor, protocAManejar, 2, 0);
 			//recibo 5 chars, ej: "34;12"
 			//coordPokenest = (char*)recibirUbicacionPokenest(servidor,5);
 
@@ -135,6 +142,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 			printf("Coordenada X pokenest: %d\n", x);
 			int y = atoi (posPokenest[1]);
 			printf("Coordenada Y pokenest: %d\n", y);
+
 
 			moverseEnUnaDireccion(posXInicial, posYInicial, x, y, protocAManejar, servidor);
 
@@ -157,10 +165,10 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 			//	copiarMedalla();
 			//	close(servidor);
 			//}
-		}
+		} // cierro el for de los objetivos
 
 		free(protocAManejar);
-		close(servidor); // puse
+		close(servidor); // puse aca por ahora
 	}
 
 /*list_destroy_and_destroy_elements(ips,free);
