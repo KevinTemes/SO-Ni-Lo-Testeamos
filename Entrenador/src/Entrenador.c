@@ -1,6 +1,6 @@
 /*
  ============================================================================
- /*
+
  ============================================================================
  Name        : Entrenador.c
  Author      : 
@@ -39,36 +39,18 @@
 #define PACKAGESIZE 10
 
 int servidor;
-
 t_log* logs;
 void* recibirUbicacionPokenest(int, int);
 void moverseEnUnaDireccion(int,int,int,int,char*,int);
+//void morir(t_entrenador*);
+void mostrarMotivo();
+void borrarArchivosBill(t_entrenador*);
+int leQuedanVidas(t_entrenador*);
+void resetear(t_entrenador*);
+int capturaUltimoOK(t_entrenador*);
+void reconectarse(t_entrenador*);
 
-void mostrarMotivo(){
-	printf("Un motivo");
-}
 
-void borrarArchivosBill(t_entrenador* ent){
-
-}
-
-int leQuedanVidas(t_entrenador* ent){
-	return ent->cantidadInicialVidas;
-}
-
-void resetear(t_entrenador* ent){
-	//reiniciarHojaDeViaje(ent);
-	//borrarMedallas(ent);
-	//borrarPokemons(ent);
-}
-
-int capturaUltimoOK(t_entrenador* entrenador){
-	return 1;
-}
-
-void reconectarse(t_entrenador* ent){
-
-}
 
 int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso/workspace/pokedex
 
@@ -85,6 +67,9 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 char* configEntrenador = string_from_format("%s/Entrenadores/%s/metadata",argv[2],argv[1]);
 
+	 //para cuando debuggeamos
+	 //char* configEntrenador = "/home/utnso/workspace/pokedex/Entrenadores/Red/metadata";
+
 	 if (!leerConfigEnt(configEntrenador,&ent, argv[2])) {
 	     log_error(logs,"Error al leer el archivo de configuracion de Metadata Entrenador\n");
 	     return 1;
@@ -92,73 +77,96 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 log_info(logs,"Archivo de config Entrenador creado exitosamente!\n");
 
-	 // DE ACA SACO CADA MAPA Y CADA OBJETIVO,CADA IP Y CADA PUERTO
 
+	 // DE ACA SACO CADA MAPA Y CADA OBJETIVO,CADA IP Y CADA PUERTO
 	 //list_iterate((ent)->hojaDeViaje,(void*)obtengoCadaUno);
 	 //list_iterate((ent)->objetivosPorMapa,(void*)obtengoCadaUno);
 	 /*list_iterate(ips, (void*)obtengoCadaUno);
 	 list_iterate(puertos, (void*)obtengoCadaUno); */
 
 	 //CONEXIONES
-    servidor = conectarCliente(IP, PUERTO);
+	 int pos;
 
-    int enviar = 1;
-    //char message[PACKAGESIZE];
-    char *resultado = malloc(sizeof(int));
-	int resultadoEnvio = 0;
-    printf("Conectado al Mapa. Ingrese el mensaje que desee enviar, o cerrar para salir\n");
+	 for(pos = 0;pos<list_size((ent)->hojaDeViaje);pos++){
 
+		char* miIP= list_get(ips,pos); // no se estan usando por el momento
+		char* miPuerto = list_get(puertos,pos); // no se esta usando por el momento
 
-    //////////////// recibo y mando datos al Mapa /////////////////////
-    int num = 1;
-    char* numConcatenado = string_itoa(num);
-    char* protocolo = string_new();
-    string_append(&protocolo,(ent)->caracter);
-    string_append(&protocolo,numConcatenado);
-    char* coordPokenest;
-    char** posPokenest;
+		servidor = conectarCliente(IP, PUERTO); // siguen los valores hardcodeados
+
+		//int enviar = 1;
+		//char message[PACKAGESIZE];
+		char *resultado = malloc(sizeof(int));
+		int resultadoEnvio = 0;
+		printf("Conectado al Mapa. Ingrese el mensaje que desee enviar, o cerrar para salir\n");
 
 
-    int posXInicial =15;
-    int posYInicial =15;
+		//////////////// recibo y mando datos al Mapa /////////////////////
+		int num = 0;
+		char* numConcatenado = string_itoa(num);
+		char* protocolo = string_new();
+		string_append(&protocolo,(ent)->caracter);
+		string_append(&protocolo,numConcatenado);
+		char* protocAManejar = strdup(protocolo);
 
-    while(enviar){
+		char* coordPokenest;
+		char** posPokenest;
 
-    // le mando mi caracter y que quiero solicitar ubicacion de pokenest
-    send(servidor, protocolo, 2, 0);
-    //recibo 5 chars, ej: "34;12"
-    coordPokenest = (char*)recibirUbicacionPokenest(servidor,5);
+		int posXInicial =0;
+		int posYInicial =0;
 
-    posPokenest = string_split(coordPokenest,";");
-    int x = atoi (posPokenest[0]);
-    printf("Coordenada X pokenest: %d\n", x);
-    int y = atoi (posPokenest[1]);
-    printf("Coordenada Y pokenest: %d\n", y);
+		int posObjetivo;
 
-    moverseEnUnaDireccion(posXInicial, posYInicial, x, y, protocolo, servidor);
+		for(posObjetivo=0;posObjetivo<list_size((ent)->objetivosPorMapa);posObjetivo++){
 
-   /* if (estaEnPokenest){
-    	protocolo = "@100"; // Solicitud Atrapar Pokemon
-    	send(servidor,protocolo,2,0);
-    } */
+			// MANDO: CARACTER + 1 + POKENEST
+			protocAManejar[1]='1';
+			char caracterPoke = list_get((ent)->objetivosPorMapa,posObjetivo);
+			protocAManejar[2]= caracterPoke;
 
-    // por si se cae
-    recv(servidor, (void *)resultado, sizeof(int), 0);
-    resultadoEnvio = *((int *)resultado);
+			send(servidor, protocAManejar, 3, 0);
+			//recibo 5 chars, ej: "34;12"
+			//coordPokenest = (char*)recibirUbicacionPokenest(servidor,5);
 
-	if(resultadoEnvio == 9){
-		printf("Servidor caído! imposible reconectar. Cerrando...\n");
-		exit(0);
+			coordPokenest= "02;03";
+
+			posPokenest = string_split(coordPokenest,";");
+			int x = atoi (posPokenest[0]);
+			printf("Coordenada X pokenest: %d\n", x);
+			int y = atoi (posPokenest[1]);
+			printf("Coordenada Y pokenest: %d\n", y);
+
+			moverseEnUnaDireccion(posXInicial, posYInicial, x, y, protocAManejar, servidor);
+
+
+			protocAManejar[1]='9'; // Solicitud Atrapar Pokemon
+			send(servidor,protocAManejar,2,0);
+
+
+
+			// por si se cae
+			recv(servidor, (void *)resultado, sizeof(int), 0);
+			resultadoEnvio = *((int *)resultado);
+
+			if(resultadoEnvio == 9){
+				printf("Servidor caído! imposible reconectar. Cerrando...\n");
+				exit(0);
+			}
+
+			//if(capturaUltimoOk(ent)){
+			//	copiarMedalla();
+			//	close(servidor);
+			//}
+		}
+
+		free(protocAManejar);
+		close(servidor); // puse
 	}
 
-	//if(capturaUltimoOk(ent)){
-	//	copiarMedalla();
-	//	close(servidor);
-	//}
-
-	enviar = 0;
-    }
-    close(servidor);
+/*list_destroy_and_destroy_elements(ips,free);
+list_destroy_and_destroy_elements(puertos,free);
+list_destroy_and_destroy_elements((ent)->hojaDeViaje,free);
+list_destroy_and_destroy_elements((ent)->objetivosPorMapa,free);*/
 
    // verificarHojadeViaje(ent); // Se fija a donde tiene que ir y se conecta al mapa
 
@@ -182,26 +190,26 @@ void* recibirUbicacionPokenest(int conexion, int tamanio){
 }
 
 
-void moverseEnUnaDireccion(int posXInicial, int posYInicial,int x, int y, char* protocolo, int servidor){
+void moverseEnUnaDireccion(int posXInicial, int posYInicial,int x, int y, char* protocAManejar, int servidor){
 	int cantMovX = x - posXInicial; // cant total mov de x
 	int cantMovY = y - posYInicial; // cant total mov de y
 	char ultMov;
-	int movDeX; // movimientos que se hicieron de x
-	int movDeY; // movimientos que se hicieron de y
+	int movDeX = 0; // movimientos que se hicieron de x
+	int movDeY = 0; // movimientos que se hicieron de y
 
 	do
 	{
 		if(cantMovY==0)
 			ultMov='y';
 		if((cantMovX>0) && (ultMov!='x')){
-			protocolo = "@6"; // derecha
-			send(servidor, protocolo, 2, 0);
+			protocAManejar[1]='6'; // derecha
+			send(servidor, protocAManejar, 2, 0);
 			ultMov = 'x';
 			cantMovX--;
 			movDeX++;
 		} else if((cantMovX<0) && (ultMov!='x')){
-			protocolo = "@4"; //izquierda
-			send(servidor, protocolo, 2, 0);
+			protocAManejar[1]='4'; //izquierda
+			send(servidor, protocAManejar, 2, 0);
 			ultMov = 'x';
 			cantMovX--;
 			movDeX++;
@@ -209,27 +217,26 @@ void moverseEnUnaDireccion(int posXInicial, int posYInicial,int x, int y, char* 
 
 		if (cantMovX==0) ultMov = 'x';
 		if((cantMovY>0) && (ultMov!='y')){
-			protocolo = "@2"; // abajo
-			send(servidor, protocolo, 2, 0);
+			protocAManejar[1]='2'; // abajo
+			send(servidor, protocAManejar, 2, 0);
 			ultMov = 'y';
 			cantMovY--;
 			movDeY++;
 		} else if((cantMovY<0) && (ultMov!='y')){
-			protocolo = "@8"; //arriba
-			send(servidor, protocolo, 2, 0);
+			protocAManejar[1]='8'; //arriba
+			send(servidor, protocAManejar, 2, 0);
 			ultMov = 'y';
 			cantMovY--;
 			movDeY++;
 		}
 
 	} while((cantMovX!=0) || (cantMovY != 0));
-	//printf("movimientos de x para llegar a la pokenest: %d", movDeX);
-	//printf("movimientos de y para llegar a la pokenest: %d", movDeY);
 
 	return;
 }
 
-void morir(t_entrenador* ent){
+
+/*void morir(t_entrenador* ent){
 	mostrarMotivo();
 	borrarArchivosBill(ent);
 	close(servidor); // o cerrarConexion(ent);
@@ -251,5 +258,35 @@ void morir(t_entrenador* ent){
      }
 	}
 
+}*/
+
+void mostrarMotivo(){
+	printf("Un motivo");
 }
 
+
+void borrarArchivosBill(t_entrenador* ent){
+	return;
+}
+
+
+int leQuedanVidas(t_entrenador* ent){
+	return ent->cantidadInicialVidas;
+}
+
+
+void resetear(t_entrenador* ent){
+	//reiniciarHojaDeViaje(ent);
+	//borrarMedallas(ent);
+	//borrarPokemons(ent);
+}
+
+
+int capturaUltimoOK(t_entrenador* entrenador){
+	return 1;
+}
+
+
+void reconectarse(t_entrenador* ent){
+	return;
+}
