@@ -177,9 +177,10 @@ struct addrinfo* cargarInfoSocket(char *IP, char* Port) {
 
 int conectarCliente(char *IP, char* Port) {
 	struct addrinfo* serverInfo = cargarInfoSocket(IP, Port);
-/*	if (serverInfo == NULL) {
+	/*if (serverInfo == NULL) {
+		printf("rompio aca \n");
 		return -1;
-	} */
+	}*/
 	while(serverInfo == NULL){
 		serverInfo = cargarInfoSocket(IP, Port);
 	}
@@ -189,12 +190,12 @@ int conectarCliente(char *IP, char* Port) {
 		printf("Error en la creacion del socket\n");
 		return -1;
 	}
-/*	if (connect(serverSocket, serverInfo->ai_addr, serverInfo->ai_addrlen)
+	/*if (connect(serverSocket, serverInfo->ai_addr, serverInfo->ai_addrlen)
 			== -1) {
 		printf("No se pudo conectar con el socket servidor\n");
 		close(serverSocket);
 		exit(-1);
-	} */
+	}*/
 	while (connect(serverSocket, serverInfo->ai_addr, serverInfo->ai_addrlen)
 			== -1){
 		connect(serverSocket, serverInfo->ai_addr, serverInfo->ai_addrlen);

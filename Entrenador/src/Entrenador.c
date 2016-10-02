@@ -93,10 +93,8 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 		char* miIP= list_get(ips,pos); // no se estan usando por el momento
 		char* miPuerto = list_get(puertos,pos); // no se esta usando por el momento
 
-		printf("%s \n", miIP);
-		printf("%s \n", miPuerto);
 
-		servidor = conectarCliente(IP, PUERTO); // siguen los valores hardcodeados
+		servidor = conectarCliente(miIP, miPuerto);
 
 		//int enviar = 1;
 		//char message[PACKAGESIZE];
@@ -106,8 +104,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 
 		//////////////// recibo y mando datos al Mapa /////////////////////
-		//int num=0;
-		//char* numConcatenado = string_itoa(num);
+
 		char* protocolo = string_new();
 		char* numConcatenado;
 		string_append(&protocolo,(ent)->caracter);
@@ -129,7 +126,8 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 			string_append(&protocolo,caracterPoke);
 			printf("%s \n", caracterPoke);
 
-			protocAManejar[1]='P';
+			char carPoke = caracterPoke[0];
+			protocAManejar[1]=carPoke;
 
 			send(servidor, protocAManejar, 2, 0);
 			//recibo 5 chars, ej: "34;12"
@@ -167,19 +165,18 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 			//}
 		} // cierro el for de los objetivos
 
-		free(protocAManejar);
+		free(protocolo);
 		close(servidor); // puse aca por ahora
 	}
 
 /*list_destroy_and_destroy_elements(ips,free);
 list_destroy_and_destroy_elements(puertos,free);
 list_destroy_and_destroy_elements((ent)->hojaDeViaje,free);
-list_destroy_and_destroy_elements((ent)->objetivosPorMapa,free);*/
+list_destroy_and_destroy_elements((ent)->objetivosPorMapa,free);
+verificarHojadeViaje(ent); // Se fija a donde tiene que ir y se conecta al map*/
 
-   // verificarHojadeViaje(ent); // Se fija a donde tiene que ir y se conecta al mapa
 
 return EXIT_SUCCESS;
-
 }
 
 

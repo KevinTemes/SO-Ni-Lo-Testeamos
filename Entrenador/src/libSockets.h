@@ -23,6 +23,8 @@
 
 t_list* ips;
 t_list* puertos;
+char* objetivoDeMapa;
+char** objetivosMapa;
 
 typedef struct{
 	char* ipMapa;
