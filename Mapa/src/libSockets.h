@@ -19,6 +19,7 @@
 #include <arpa/inet.h>
 #include <commons/config.h>
 #include <commons/log.h>
+#include <commons/collections/list.h>
 
 
 
@@ -45,7 +46,7 @@ typedef struct{
 }metaDataPokemon;
 
 int leerConfiguracion(char* ruta, metaDataComun **datos);
-int leerConfigPokenest(char* ruta, metaDataPokeNest **datos);
+int leerConfigPokenest(char* ruta, t_list *pokenests);
 int leerConfigPokemon(char* ruta, metaDataPokemon **datos);
 
 int setup_listen(char* IP, char* Port);

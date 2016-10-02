@@ -87,16 +87,19 @@ void notificarCaida(){
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void atenderConexion(void *numeroCliente){
 	int unCliente = *((int *) numeroCliente);
-	char paquete[1024];
+	char paquete[10];
 	int status = 1;
 
 	printf("Entrenador #%d conectado! esperando mensajes... \n",
 				clientesActivos[unCliente].cliente);
 
 	while(status !=0){
-		status = recv(clientesActivos[unCliente].socket, (void*) paquete, 1024, 0);
+		status = recv(clientesActivos[unCliente].socket, (void*) paquete, 10, 0);
 		if (status != 0) {
-			printf("el Entrenador #%d dijo: \n %s", clientesActivos[unCliente].cliente, paquete);
+			//printf("el Entrenador #%d dijo: \n %s", clientesActivos[unCliente].cliente, paquete);
+			paqueton[0] = paquete[0];
+			paqueton[1] = paquete[1];
+			paqueton[2] = paquete[2];
 			enviarHeader(clientesActivos[unCliente].socket, 1);
 			}
 
