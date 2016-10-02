@@ -32,27 +32,8 @@
 #define IP "127.0.0.1"
 #define PUERTO "7900"
 #define PACKAGESIZE 1024
-t_log* logs;
 
-/*
-void crearDirectorioDeMapa(t_mapa* mapa){
-    char* comando_Directorio_Mapa = string_from_format
-            ("mkdir -p /home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/Mapas/%s/", mapa->nombreMapa);
-    system(comando_Directorio_Mapa);
 
-    char* comando_Directorio_Mapa_Medallas = string_from_format
-            ("mkdir -p /home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/Mapas/%s/Medalla-%s/", mapa->nombreMapa, mapa->nombreMapa);
-    system(comando_Directorio_Mapa_Medallas);
-
-    char* comando_Directorio_Mapa_Metadata = string_from_format
-            ("mkdir -p /home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/Mapas/%s/%s/", mapa->nombreMapa, "PokeNest");
-    system(comando_Directorio_Mapa_Metadata);
-
-    char* comando_Directorio_Entren
-    ador_DirBill = string_from_format
-            ("mkdir -p /home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/Entrenadores/%s/%s/", mapa->nombreMapa, "Dir\\ de\\ Bill");
-    system(comando_Directorio_Entrenador_DirBill);
-}*/
 
 void* socketin(){
     int socketEscucha, retornoPoll;
@@ -74,7 +55,7 @@ void* socketin(){
         t_infoCliente unCliente;
         int n = 0;
         int *numeroCliente;
-        pthread_t hiloImprimirGiladas[1024];
+      //  pthread_t hiloImprimirGiladas[1024];
         pthread_t hiloAtenderConexiones[1024];
 
 
@@ -131,6 +112,24 @@ while(enviar){
 }
 
 int main(int argc, char* argv[]) {
+	//VARIABLES PIOLA
+	t_log* logs;
+	t_list *pokenests = list_create();
+	t_list* items = list_create();
+	//t_queue* listoParaMoverse;
+	//t_queue* esperaCapturarPokemon;
+	//t_list* finalizaAnormal;
+	//listoParaMoverse=queue_create();
+	//esperaCapturarPokemon=queue_create();
+	//finalizaAnormal=list_create();
+
+	//char simboloEntrenador = paqueton[0];
+	//int protocol = paqueton[1];
+	//char pokenest = paqueton[2];
+
+	//int quantum = 3;
+
+
 
     //LOGS
     remove("Mapa.log");
@@ -144,27 +143,29 @@ int main(int argc, char* argv[]) {
        metaDataPokeNest* datosPokenest;
        metaDataPokemon* datosPokemon;
 
+
+
        datosMapa=malloc(sizeof(metaDataComun));
        datosPokenest= malloc(sizeof(metaDataPokeNest));
        datosPokemon= malloc(sizeof(metaDataPokemon));
 
-       char* configMetaMapa = string_from_format("%s/Mapas/%s/metadata",argv[2],argv[1]);
 
+
+       char* configMetaMapa = string_from_format("%s/Mapas/%s/metadata",argv[2],argv[1]);
        if (!leerConfiguracion(configMetaMapa, &datosMapa)) {
                log_error(logs,"Error al leer el archivo de configuracion de Metadata\n");
                return 1;
        }
 
        //por ahora
-       char* configPokenest = string_from_format("%s/Mapas/%s/PokeNests/Pikachu/metadata",argv[2],argv[1]);
-
-       if (!leerConfigPokenest(configPokenest,&datosPokenest)){
+       char* configPokenest = string_from_format("%s/Mapas/%s/PokeNests",argv[2],argv[1]);
+       if (!leerConfigPokenest(configPokenest,pokenests)){
            log_error(logs,"Error al leer el archivo de configuracion de Metadata Pokenest\n");
            return 2;
        }
 
        char* configPoke = string_from_format("%s/Mapas/%s/PokeNests/Pikachu/Pikachu001.dat",argv[2],argv[1]);
-       if (!leerConfigPokemon(configPoke,&datosPokemon)){
+       if (!leerConfigPokemon(configPoke, &datosPokemon)){
            log_error(logs,"Error al leer el archivo de configuracion de Metadata de Pokemons\n");
            return 3;
        }
@@ -172,35 +173,20 @@ int main(int argc, char* argv[]) {
        log_info(logs,"Los tres archivos de config fueron creados exitosamente!\n");
 
 
-       signal(SIGINT, notificarCaida);
+
 
 
     //SOCKETS
     log_info(logs, "iniciado el servidor principal del Mapa. Aguardando conexiones...\n\n");
     pthread_t socketServMapa;
-
+    signal(SIGINT, notificarCaida);
     pthread_create(&socketServMapa,NULL,socketin,NULL);
 
 
 
-    t_queue* listoParaMoverse;
-    t_queue* esperaCapturarPokemon;
-    t_list* finalizaAnormal;
-    listoParaMoverse=queue_create();
-    esperaCapturarPokemon=queue_create();
-    finalizaAnormal=list_create();
 
 
 
-
-    //char* inicio = string_new();
-
-   /* printf("Queres dibujar el mapa? Responde \"Si\" si queres dibujarlo, o otra cosa si no queres\n");
-    scanf("%s", inicio);*/
-
-    //if(!strcmp(inicio,"Si")){ // porque el strcmp devuelve 0 si son iguales, si lo negamos devuelve 1 y entra al if
-
-    t_list* items = list_create();
     int rows; // nro de filas
     int cols; // nro de columnas
     int q, p; // dos valores para que se ubique un personaje
@@ -218,18 +204,24 @@ int main(int argc, char* argv[]) {
     CrearPersonaje(items, '@', p, q);
     CrearPersonaje(items, '#', x, y);
 
-    //CrearCaja(items, 'H', 26, 10, 5);
-    //CrearCaja(items, 'M', 8, 15, 3);
-    //CrearCaja(items, 'F', 19, 9, 2);
+
 
     //POKENEST
-    char** posPoke;
+    int ka;
 
-    posPoke = string_split(datosPokenest->posicion,";");
-    char ide;
-    ide = datosPokenest->caracterPokeNest[0];
 
-    CrearCaja(items, ide, atoi (posPoke[0]),atoi (posPoke[1]), datosPokenest->cantPokemons);
+
+
+
+    for(ka=0; ka<list_size(pokenests); ka++){
+    	    datosPokenest = (metaDataPokeNest*) list_get(pokenests,ka);
+    	    char** posPoke;
+    	    posPoke = string_split(datosPokenest->posicion,";");
+    	    char ide;
+    	    ide = datosPokenest->caracterPokeNest[0];
+
+    	    CrearCaja(items, ide, atoi (posPoke[0]),atoi (posPoke[1]), datosPokenest->cantPokemons);
+    }
 
 
     nivel_gui_dibujar(items, "Mapa con Entrenadores");
@@ -297,7 +289,7 @@ int main(int argc, char* argv[]) {
     MoverPersonaje(items, '@', p, q);
     MoverPersonaje(items, '#', x, y);
 
-    if (   ((p == 26) && (q == 10)) || ((x == 26) && (y == 10)) ) {
+   /* if (   ((p == 26) && (q == 10)) || ((x == 26) && (y == 10)) ) {
         restarRecurso(items, 'H');
     }
 
@@ -307,11 +299,8 @@ int main(int argc, char* argv[]) {
 
     if (   ((p == 8) && (q == 15)) || ((x == 8) && (y == 15)) ) {
         restarRecurso(items, 'M');
-    }
+    } */
 
-    if((p == x) && (q == y)) {
-        BorrarItem(items, '#'); //si chocan, borramos uno (!)
-    }
 
     nivel_gui_dibujar(items, "Mapa con Entrenadores");
     }
@@ -319,14 +308,16 @@ int main(int argc, char* argv[]) {
         BorrarItem(items, '#');
         BorrarItem(items, '@');
 
-        BorrarItem(items, 'H');
-        BorrarItem(items, 'M');
-        BorrarItem(items, 'F');
 
-        BorrarItem(items, ide);
+        for(ka=0; ka<list_size(pokenests); ka++){
+         	    datosPokenest = (metaDataPokeNest*) list_get(pokenests,ka);
+         	    char ide;
+         	    ide = datosPokenest->caracterPokeNest[0];
+         	    BorrarItem(items,ide);
+         }
+
 
         nivel_gui_terminar();
-
 
 
 

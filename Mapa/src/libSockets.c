@@ -10,7 +10,7 @@
 #define HEADER_PAQUETE (sizeof(int)*3)
 
 int leerConfiguracion(char *ruta, metaDataComun **datos) {
-	t_config* archivoConfiguracion = config_create(ruta);//Crea struct de configuracion
+	t_config* archivoConfiguracion = config_create(ruta); //Crea struct de configuracion
 	if (archivoConfiguracion == NULL) {
 		return 0;
 	} else {
@@ -19,32 +19,36 @@ int leerConfiguracion(char *ruta, metaDataComun **datos) {
 			return 0; // sale, 0 es false
 		} else {
 
+			(*datos)->tiempoChequeoDeadlock = config_get_int_value(
+					archivoConfiguracion, "TiempoChequeoDeadlock");
+			//printf("TiempoChequeo %d\n",(*datos)->tiempoChequeoDeadlock);
 
-
-			(*datos)->tiempoChequeoDeadlock = config_get_int_value(archivoConfiguracion, "TiempoChequeoDeadlock");
-            //printf("TiempoChequeo %d\n",(*datos)->tiempoChequeoDeadlock);
-
-			(*datos)->batalla = config_get_int_value(archivoConfiguracion,"Batalla");
+			(*datos)->batalla = config_get_int_value(archivoConfiguracion,
+					"Batalla");
 			//printf("batalla %d\n",(*datos)->batalla);
 
-			char* algoritmo=string_new();
-			string_append(&algoritmo, config_get_string_value(archivoConfiguracion, "algoritmo"));
-			(*datos)->algoritmo=algoritmo;
+			char* algoritmo = string_new();
+			string_append(&algoritmo,
+					config_get_string_value(archivoConfiguracion, "algoritmo"));
+			(*datos)->algoritmo = algoritmo;
 			//printf("algoritmo  %s\n",(*datos)->algoritmo);
 
-
-			(*datos)->quantum = config_get_int_value(archivoConfiguracion, "quantum");
+			(*datos)->quantum = config_get_int_value(archivoConfiguracion,
+					"quantum");
 			//printf("quantum  %d\n",(*datos)->quantum);
 
-			(*datos)->retardoQ = config_get_int_value(archivoConfiguracion, "retardo");
+			(*datos)->retardoQ = config_get_int_value(archivoConfiguracion,
+					"retardo");
 			//printf("retardo  %d\n",(*datos)->retardoQ);
 
-			char* ip=string_new();
-			string_append(&ip,config_get_string_value(archivoConfiguracion,"IP"));
-			(*datos)->ip=ip;
+			char* ip = string_new();
+			string_append(&ip,
+					config_get_string_value(archivoConfiguracion, "IP"));
+			(*datos)->ip = ip;
 			//printf("ip  %s\n",(*datos)->ip);
 
-			(*datos)->puerto= config_get_int_value(archivoConfiguracion,"Puerto");
+			(*datos)->puerto = config_get_int_value(archivoConfiguracion,
+					"Puerto");
 			//printf("puerto %d\n",(*datos)->puerto);
 
 			config_destroy(archivoConfiguracion);
@@ -53,63 +57,117 @@ int leerConfiguracion(char *ruta, metaDataComun **datos) {
 	}
 }
 
-int leerConfigPokenest(char *ruta, metaDataPokeNest **datos) {
-	t_config* archivoConfigPokenest = config_create(ruta);//Crea struct de configuracion
-		if (archivoConfigPokenest == NULL) {
+int leerConfigPokenest(char *name, t_list *pokenests) {
+
+
+	{
+		DIR *d;
+		struct dirent *dir;
+		d = opendir(name);
+		if (!d) {
 			return 0;
-		} else {
-			int cantidadKeys = config_keys_amount(archivoConfigPokenest);
-			if (cantidadKeys < 3) {
-				return 0;
-			} else {
-				char* tipo=string_new();
-				string_append(&tipo, config_get_string_value(archivoConfigPokenest, "Tipo"));
-				(*datos)->tipoPokemon=tipo;
-				char* posicion=string_new();
-				string_append(&posicion,config_get_string_value(archivoConfigPokenest,"Posicion"));
-				(*datos)->posicion=posicion;
-				char* simbolo=string_new();
-				string_append(&simbolo,config_get_string_value(archivoConfigPokenest,"Identificador"));
-				(*datos)->caracterPokeNest=simbolo;
-				// despues para crear el .dat de cada pokemon que tenga en la pokenest
-				{
-				int file_count = 0;
-				DIR * dirp;
-				struct dirent * entry;
+		}
 
-				dirp = opendir("/home/utnso/workspace/pokedex/Mapas/PuebloPaleta/PokeNests/Pikachu");
-				while ((entry = readdir(dirp)) != NULL) {
-				    if (entry->d_type == DT_REG) { /*Si entry es un tipo regular de archivo (DT_RETG)*/
-				         file_count++;
-				    }
+
+		while ((dir = readdir(d)) != NULL ) {
+			metaDataPokeNest* datos;
+			datos = malloc(sizeof(metaDataPokeNest));
+
+			if (dir->d_type == DT_DIR && (strcmp(dir->d_name, ".") != 0) && (strcmp(dir->d_name, "..") != 0)) {
+
+				char* ruta = string_new();
+				string_append(&ruta,string_from_format("%s/%s/metadata", name,dir->d_name));
+				t_config* archivoConfigPokenest = config_create(ruta);
+				printf("%s\n", dir->d_name);
+
+				if (archivoConfigPokenest == NULL) {
+					return 0;
+				} else {
+					int cantidadKeys = config_keys_amount(
+							archivoConfigPokenest);
+					if (cantidadKeys < 3) {
+						return 0;
+					} else {
+						char* tipo = string_new();
+						string_append(&tipo,
+								config_get_string_value(archivoConfigPokenest,
+										"Tipo"));
+						datos->tipoPokemon = tipo;
+
+
+						char* posicion = string_new();
+						string_append(&posicion,
+								config_get_string_value(archivoConfigPokenest,
+										"Posicion"));
+						datos->posicion = posicion;
+
+						char* simbolo = string_new();
+						string_append(&simbolo,
+								config_get_string_value(archivoConfigPokenest,
+										"Identificador"));
+						datos->caracterPokeNest = simbolo;
+
+						{
+							int file_count = 0;
+							DIR * dirp;
+							struct dirent * entry;
+
+							dirp = opendir(
+									string_from_format("%s/%s", name,
+											dir->d_name));
+							while ((entry = readdir(dirp)) != NULL) {
+								if (entry->d_type == DT_REG) {
+									file_count++;
+								}
+							}
+							closedir(dirp);
+							datos->cantPokemons = (file_count - 1);
+						}
+
+						list_add(pokenests, (void*) datos);
+
+						config_destroy(archivoConfigPokenest);
+						//free(datos);
+					}
 				}
-				closedir(dirp);
-				(*datos)->cantPokemons=(file_count-1);
-				}
 
-
-				config_destroy(archivoConfigPokenest);
-				return 1;
 			}
 		}
 
+		/*int ka;
+					metaDataPokeNest *a;
+					a = malloc(sizeof(metaDataPokeNest));
+					   for(ka=0; ka<list_size(pokenests); ka++){
+					    	    a = (metaDataPokeNest*) list_get(pokenests,ka);
+					    	    printf("%s\n",a->caracterPokeNest);
+	                            printf("%s\n",a->tipoPokemon);
+	                            printf("%d\n",a->cantPokemons);
+	                            printf("%s\n",a->posicion);
+					    }*/
+
+		closedir(d);
+
+	}
+
+	return 1;
 }
 
-int leerConfigPokemon(char* ruta, metaDataPokemon **datos){
-	t_config* archivoConfigPokemon = config_create(ruta);//Crea struct de configuracion
-			if (archivoConfigPokemon == NULL) {
-				return 0;
-			} else {
-				int cantidadKeys = config_keys_amount(archivoConfigPokemon);
-				if (cantidadKeys < 1) {
-					return 0;
-				} else {
-					(*datos)->nivel = config_get_int_value(archivoConfigPokemon, "Nivel");
+int leerConfigPokemon(char* ruta, metaDataPokemon **datos) {
+	t_config* archivoConfigPokemon = config_create(ruta); //Crea struct de configuracion
+	if (archivoConfigPokemon == NULL) {
+		return 0;
+	} else {
+		int cantidadKeys = config_keys_amount(archivoConfigPokemon);
+		if (cantidadKeys < 1) {
+			return 0;
+		} else {
+			(*datos)->nivel = config_get_int_value(archivoConfigPokemon,
+					"Nivel");
 
-					config_destroy(archivoConfigPokemon);
-					return 1;
-				}
-			}
+			config_destroy(archivoConfigPokemon);
+			return 1;
+		}
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -255,6 +313,4 @@ int conectarServidor(char* IP, char* Port, int backlog) {
 	}
 	return socketCliente;
 }
-
-
 
