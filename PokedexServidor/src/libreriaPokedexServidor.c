@@ -114,79 +114,75 @@ void atenderConexion(void *numeroCliente){
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-void osada_leerContenidoDirectorio(char *unDirectorio, archivoOsada unArchivo){
+char *osada_leerContenidoDirectorio(char *unDirectorio){
 
-	// Declaro variables
-	unsigned char* directorio;
-	strncpy((char *)directorio, unDirectorio);
-	char *bloques = (malloc(sizeof(osada_file)) * 2048);
-	osada_file tablaDeArchivos[2048];
-	int inicioTablaDeArchivos;
-	int tamanioBitmap;
-	int tamanioTablaDeAsignaciones;
-	int bloquesTablaDeAsignaciones;
-	int bloquesDeDatos;
-
-	// Asigno lo que haya que asignar
-
-	archivoOsada archivo = unArchivo;
-	osada_header header;
-	osada(&header, &archivo);
-	tamanioBitmap = (header.fs_blocks / 8 / 64);
-	inicioTablaDeArchivos = 1 + tamanioBitmap;
-	tamanioTablaDeAsignaciones = header.fs_blocks - 1 - tamanioBitmap - 1024;
-	bloquesTablaDeAsignaciones = tamanioTablaDeAsignaciones / 64;
-	bloquesDeDatos = header.data_blocks;
-
-	//Me muevo al inicio del bloque de archivos
-	//y copio el bloque en mi variable (REVISAR! No estoy seguro de que esta parte esté bien)
-	seekBloques(&archivo, inicioTablaDeArchivos);
-	memcpy(bloques, &archivo, sizeof(osada_file)*2048);
-
-	tablaDeArchivos = (char *)bloques;
-
-	// Me muevo al inicio del bloque de la tabla de asignaciones, y me la copio
-	seekBloques(&archivo, header.allocations_table_offset);
-	char *asignaciones = malloc(tamanioTablaDeAsignaciones);
-	memcpy(asignaciones, &archivo, tamanioTablaDeAsignaciones);
-	int tablaDeAsignaciones[bloquesDeDatos] = (char *)asignaciones; // Revisar también este casteo!
-
-	// Me muevo al inicio del bloque de datos y lo copio
-
-	/* NOTA: esta solución es la "maso maso" que decian los ayudantes durante la charla;
-	 * lo que habria que hacer acá es lo de mmap(), para no
-	 * consumir memoria al cuete (en los pasos de arriba creo que también
-	 * se puede hacer), pero no estoy muy canchero con eso todavia
-	 * (y me tengo que ir en media hora :P ) asi que va esta negrada, por ahora...
-	 * */
-
-	seekBloques(&archivo, (header.allocations_table_offset + bloquesTablaDeAsignaciones));
-	char *datos = malloc(header.data_blocks * 64);
-	memcpy(datos, &archivo, header.data_blocks * 64);
-	int tablaDeDatos[bloquesDeDatos] = (char *)datos;
-
-
-	// Recorro la tabla, busco el directorio en cuestión, y copio el contenido
+	char *contenido = string_new();
+	char *separador = ";";
+	int tamanioBloque = 64;
+	int *disco;
+	int tamanioHeader = 1;
+	int tamanioBitmap = mainHeader.bitmap_blocks;
+	int directorioPadre;
 	int i;
-	for(i = 0; i <= 2048; i++){
+
+	// Puede que acá haya que agregar un if() adicional para el caso del directorio raíz
+
+	for (i = 0; i <= 2048; i++){
+		// Recorro la tabla buscando la estructura asociada al directorio que nos pasaron
 		if(tablaDeArchivos[i].fname == unDirectorio){
-			char *contenido = malloc(tablaDeArchivos[i].file_size);
-			/* Acá habría que hacer lo siguiente: revisar el campo
-			 * tablaDeArchivos[i].first_block para saber el N° del primer bloque de datos
-			 * del archivo. voy a la tabla de bloques de datos, copio el contenido de ese bloque
-			 * en un buffer, y me muevo al siguiente bloque, cuyo N° va a ser el que esté en la
-			 * posición de la tabla de asignaciones que leimos antes. Agregamos el contenido de
-			 * ese bloque al buffer, y repetimos lo de buscar-siguiente-bloque,
-			 * copiar-contenido-del bloque, hasta llegar al final. Devolvemos el contenido
-			 * total del buffer(cambiar el tipo de la función!), LO LIBERAMOS DESPUES, y listo.
-			 * */
+				directorioPadre = i;
+		};
+	}
+	// Busco todos los archivos hijos de ese directorio padre, y me copio el nombre de cada uno
+	for (i = 0; i <= 2048; i++){
+			if(tablaDeArchivos[i].parent_directory == directorioPadre){
+				string_append(&contenido, tablaDeArchivos[i].fname);
+				// Concateno los nombres en un string, separados por la variable separador.
+				// Después la idea es separarlos y manejarlos como corresponda afuera de esta función
+				string_append(&contenido, separador);
+			}
+		}
+
+free(tablaDeArchivos);
+return contenido;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+void *osada_leerArchivo(char *unArchivo){
+	void *buffer;
+	int tamanioBloque = 64;
+	int tamanioBitmap = mainHeader.bitmap_blocks;
+	int inicioBloquesDeDatos = mainHeader.fs_blocks - (mainHeader.fs_blocks - mainHeader.data_blocks);
+	int tamanioTablaAsignaciones = ((mainHeader.fs_blocks - 1 - tamanioBitmap) * 4)
+									/ tamanioBloque;
+	int i;
+	tabla_Asignaciones *tablaDeAsignaciones = malloc(tamanioTablaAsignaciones);
+	// Me copio la tabla de asignaciones
+	memcpy(tablaDeAsignaciones, discoMapeado[mainHeader.allocations_table_offset * 64],
+			tamanioTablaAsignaciones);
+
+	for(i = 0; i <= 2048; i++){
+		//Busco en la tabla de archivos el que tiene el mismo nombre
+		if(tablaDeArchivos[i].fname == unArchivo){
+
+			buffer = malloc(tablaDeArchivos[i].file_size);
+			int desplazamiento = 0;
+			int siguienteBloque = tablaDeAsignaciones[tablaDeArchivos[i].first_block];
+
+			// Voy agregando al buffer los bloques de datos correspondientes al archivo, uno a uno
+
+			while(tablaDeAsignaciones[siguienteBloque]){ //Valido así porque FFFFFFFF == -1
+				memcpy(buffer + desplazamiento, discoMapeado[siguienteBloque * 64], tamanioBloque);
+				desplazamiento += 64;
+			}
 
 		}
 	}
+	free(tablaDeArchivos);
+	free(tablaDeAsignaciones);
 
-	free(bloques);
-	free(asignaciones);
-	free(datos);
-
+	return(buffer);
+	free(buffer);
 }
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////

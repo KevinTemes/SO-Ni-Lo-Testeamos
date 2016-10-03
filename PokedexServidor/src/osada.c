@@ -14,6 +14,7 @@
 #include "osada.h"
 #include <commons/log.h>
 #include <commons/string.h>
+#include <sys/mman.h>
 
 archivoOsada* archi;
 extern t_log* logs;
@@ -71,7 +72,7 @@ void seekBloques(FILE* archivo,int cantidad){
 	fseek(archivo,cantidad*(OSADA_BLOCK_SIZE),SEEK_CUR);
 }
 
-int osada(osada_header *head, osada_file *tablaArchivo) {
+int osada(osada_header *head, osada_file *tablaArchivo, int *fd) {
 
 // Antes esto tiraba error de tipos, cambie el osada.h para que reciba punteros
 // Porque antes recibia solo las structs
@@ -118,6 +119,11 @@ int osada(osada_header *head, osada_file *tablaArchivo) {
     	c = head->magic_number[i];
     	printf("%c", c);
     }*/
+
+    // Mapeo el archivo en un puntero, con mmap
+    fd = mmap(0, sz, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+
     log_info(logs, "Identificador: %s\n", head->magic_number);
     log_info(logs,"Version: %d\n",head->version);
     log_info(logs,"Tamaño del FS (en bloques): %d\n",head->fs_blocks);

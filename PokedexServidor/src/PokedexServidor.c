@@ -11,6 +11,14 @@
 #include "PokedexServidor.h"
 #include <pthread.h>
 
+#define KNORMAL "\x1B[0m"
+#define KROJO "\x1B[31m"
+#define KVERDE "\x1B[32m"
+#define KAMARILLO "\x1B[33m"
+#define KAZUL "\x1B[34m"
+#define KMAGENTA "\x1B[35m"
+#define KCYAN "\x1B[36m"
+#define KBLANCO "\x1B[37m"
 
 #define BACKLOG 100
 /* para testear sockets */
@@ -27,13 +35,9 @@ int main() {
 	puts("Log Pokedex Servidor creado exitosamente \n");
 
 
-	//carga de variables
+	//Levanto el disco Osada
+	osada(&mainHeader, &tablaDeArchivos, discoMapeado);
 
-	osada_header head;
-	osada_file archi;
-
-
-	osada(&head,&archi);
 
 
 	signal(SIGINT, notificarCaida);
@@ -57,11 +61,9 @@ int main() {
 
 	int enviar = 1;
 	int cliente = 1;
-	t_infoCliente *infoCliente;
 	t_infoCliente unCliente;
 	int n = 0;
 	int *numeroCliente;
-	pthread_t hiloImprimirGiladas[1024];
 	pthread_t hiloAtenderConexiones[1024];
 
 
@@ -88,9 +90,6 @@ int main() {
 				int socketCliente = accept(socketEscucha,
 				(struct sockaddr *) &addr, &addrlen);
 
-				infoCliente = malloc(sizeof(t_infoCliente));
-				infoCliente->cliente = cliente;
-				infoCliente->socket = socketCliente;
 
 				unCliente.cliente = cliente;
 				unCliente.socket = socketCliente;
@@ -99,7 +98,6 @@ int main() {
 				numeroCliente = malloc(sizeof(int));
 				numeroCliente = &nroCliente;
 
-			//	pthread_create(&hiloImprimirGiladas[n],NULL, imprimirGiladas, infoCliente);
 				pthread_create(&hiloAtenderConexiones[n], NULL, atenderConexion, numeroCliente);
 
 				cliente++;

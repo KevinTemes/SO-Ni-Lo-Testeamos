@@ -30,7 +30,13 @@ typedef struct{
 	int socket;
 } t_infoCliente;
 
+typedef char bloque[64];
+
 t_infoCliente clientesActivos[1024];
+
+osada_header mainHeader;
+osada_file tablaDeArchivos;
+int *discoMapeado;
 
 /* Función loca para testear rececpción de mensajes a través de un socket. */
 void imprimirGiladas(void *unCliente);
