@@ -9,6 +9,7 @@
 
 #define MAX_LEN 128
 
+pthread_mutex_t mutexPaqueton=PTHREAD_MUTEX_INITIALIZER;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void imprimirGiladas(void *unCliente){
@@ -97,9 +98,11 @@ void atenderConexion(void *numeroCliente){
 		status = recv(clientesActivos[unCliente].socket, (void*) paquete, 10, 0);
 		if (status != 0) {
 			//printf("el Entrenador #%d dijo: \n %s", clientesActivos[unCliente].cliente, paquete);
+			pthread_mutex_lock(&mutexPaqueton);
 			paqueton[0] = paquete[0];
 			paqueton[1] = paquete[1];
-			paqueton[2] = paquete[2];
+			pthread_mutex_unlock(&mutexPaqueton);
+
 			enviarHeader(clientesActivos[unCliente].socket, 1);
 			}
 

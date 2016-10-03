@@ -116,18 +116,19 @@ int main(int argc, char* argv[]) {
 	t_log* logs;
 	t_list *pokenests = list_create();
 	t_list* items = list_create();
-	//t_queue* listoParaMoverse;
-	//t_queue* esperaCapturarPokemon;
-	//t_list* finalizaAnormal;
-	//listoParaMoverse=queue_create();
-	//esperaCapturarPokemon=queue_create();
-	//finalizaAnormal=list_create();
+	t_queue* listoParaMoverse;
+	t_queue* esperaCapturarPokemon;
+	t_queue* ColaNuevos;
+	t_list* finalizaAnormal;
+	listoParaMoverse=queue_create();
+	esperaCapturarPokemon=queue_create();
+	finalizaAnormal=list_create();
 
-	//char simboloEntrenador = paqueton[0];
-	//int protocol = paqueton[1];
-	//char pokenest = paqueton[2];
 
-	//int quantum = 3;
+	char simboloEntrenador = paqueton[0];
+	char pokenest = paqueton[2];
+
+
 
 
 
@@ -227,6 +228,30 @@ int main(int argc, char* argv[]) {
     nivel_gui_dibujar(items, "Mapa con Entrenadores");
 
     while (1) {
+
+    	void atender_Nuevos(){
+    		char identificador= (char)paqueton[0];
+    		while(1){
+
+    			 if(!queue_is_empty(ColaNuevos)){ //si hay alguno
+    				 identificador = queue_pop(colaNuevos);
+    			 	 queue_push(colaListos,char identificador); //entonces lo mando a Listos
+    				 log_info(archivoLog,"Proceso %d: [Nuevo] => [Listo]",obtenerPID(pcbNuevo));
+
+    			 }
+    		}
+    	}
+
+
+
+
+
+
+
+
+
+
+
             int key = getch();
 
             switch( key ) {
