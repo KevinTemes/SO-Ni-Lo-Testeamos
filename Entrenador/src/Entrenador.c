@@ -78,26 +78,36 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 log_info(logs,"Archivo de config Entrenador creado exitosamente!\n");
 
 
-	 // DE ACA SACO CADA MAPA Y CADA OBJETIVO,CADA IP Y CADA PUERTO
-	 //list_iterate((ent)->hojaDeViaje,(void*)obtengoCadaUno);
-	 //list_iterate((ent)->objetivosPorMapa,(void*)obtengoCadaUno);
-	 /*list_iterate(ips, (void*)obtengoCadaUno);
-	 list_iterate(puertos, (void*)obtengoCadaUno); */
+	 //VARIABLES USADAS Y CONEXION
 
-	 //CONEXIONES
 	 int pos;
+	 int cantMapas = list_size((ent)->hojaDeViaje);
+	 int cantPokemonesPorMapa = list_size((ent)->objetivosPorMapa);
+	 int posObjetivo;
+	 char* miIP;
+	 char* miPuerto;
+	 char* protocolo = string_new();
+	 char* numConcatenado;
+	 string_append(&protocolo,(ent)->caracter);
+	 string_append(&protocolo,numConcatenado);
+	 char* protocAManejar = strdup(protocolo);
+	 char* coordPokenest;
+	 char** posPokenest;
 
-	 for(pos = 0;pos<list_size((ent)->hojaDeViaje);pos++){
 
+	 for(pos = 0;pos<cantMapas;pos++){
 
-		char* miIP= list_get(ips,pos); // no se estan usando por el momento
-		char* miPuerto = list_get(puertos,pos); // no se esta usando por el momento
+		printf("entra devuelta \n");
 
+		miIP= list_get(ips,pos);
+		miPuerto = list_get(puertos,pos);
+		printf("llegue a saber ip y puerto \n");
 
+		//el problema esta aca porque el mapa se cierra, hay que revisar mapa
 		servidor = conectarCliente(miIP, miPuerto);
+		printf("aca no llega");
 
-		//int enviar = 1;
-		//char message[PACKAGESIZE];
+
 		char *resultado = malloc(sizeof(int));
 		int resultadoEnvio = 0;
 		printf("Conectado al Mapa. Ingrese el mensaje que desee enviar, o cerrar para salir\n");
@@ -105,21 +115,12 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 		//////////////// recibo y mando datos al Mapa /////////////////////
 
-		char* protocolo = string_new();
-		char* numConcatenado;
-		string_append(&protocolo,(ent)->caracter);
-		string_append(&protocolo,numConcatenado);
-		char* protocAManejar = strdup(protocolo);
-
-		char* coordPokenest;
-		char** posPokenest;
-
+		// cuando pase a otro mapa, vuelve a arrancar en (0;0)
 		int posXInicial =0;
 		int posYInicial =0;
 
-		int posObjetivo;
 
-		for(posObjetivo=0;posObjetivo<list_size((ent)->objetivosPorMapa);posObjetivo++){
+		for(posObjetivo=0;posObjetivo<cantPokemonesPorMapa;posObjetivo++){
 
 			// MANDO: CARACTER + POKENEST
 			char* caracterPoke = list_get((ent)->objetivosPorMapa,posObjetivo);
@@ -148,8 +149,6 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 			protocAManejar[1]='9'; // Solicitud Atrapar Pokemon
 			send(servidor,protocAManejar,2,0);
 
-
-
 			// por si se cae
 			recv(servidor, (void *)resultado, sizeof(int), 0);
 			resultadoEnvio = *((int *)resultado);
@@ -159,22 +158,21 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 				exit(0);
 			}
 
-			//if(capturaUltimoOk(ent)){
-			//	copiarMedalla();
-			//	close(servidor);
-			//}
+			/*if(capturaUltimoOk(ent)){
+				copiarMedalla();
+				close(servidor);
+			}*/
+
 		} // cierro el for de los objetivos
 
-		free(protocolo);
-		close(servidor); // puse aca por ahora
+		close(servidor); // se desconecta el entrenador
 	}
 
-/*list_destroy_and_destroy_elements(ips,free);
+list_destroy_and_destroy_elements(ips,free);
 list_destroy_and_destroy_elements(puertos,free);
-list_destroy_and_destroy_elements((ent)->hojaDeViaje,free);
-list_destroy_and_destroy_elements((ent)->objetivosPorMapa,free);
-verificarHojadeViaje(ent); // Se fija a donde tiene que ir y se conecta al map*/
-
+free(protocAManejar);
+free(protocolo);
+free(ent);
 
 return EXIT_SUCCESS;
 }

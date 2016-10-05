@@ -35,14 +35,17 @@
 
 
 
-void* socketin(){
+void* socketin(metaDataComun **datosMapa){
     int socketEscucha, retornoPoll;
         int fd_index = 0;
 
 
         struct pollfd fileDescriptors[100];
         int cantfds = 0;
-        socketEscucha = setup_listen("localhost", PUERTO);
+
+        char* puertoChar = string_itoa((*datosMapa)->puerto);
+        socketEscucha = setup_listen((*datosMapa)->ip, puertoChar);
+
         listen(socketEscucha, 1024);
 
         fileDescriptors[0].fd = socketEscucha;
@@ -59,77 +62,72 @@ void* socketin(){
         pthread_t hiloAtenderConexiones[1024];
 
 
-while(enviar){
+        while(enviar){
 
-        llamadaPoll:
+				llamadaPoll:
 
-    // Inicio la función poll()
-         retornoPoll = poll(fileDescriptors, cantfds, -1);
+			// Inicio la función poll()
+				 retornoPoll = poll(fileDescriptors, cantfds, -1);
 
-    // valido que haya iniciado bien
-        if (retornoPoll == -1) {
-            printf("Error en la funcion poll\n");
+			// valido que haya iniciado bien
+				if (retornoPoll == -1) {
+					printf("Error en la funcion poll\n");
+				}
+
+			// Recorro la lista de file descriptors chequeando si el poll() retornó por una modificación.
+			// De ser así, acepto la conexión, delego la atención del socket
+			// a un hilo y vuelvo para arriba.
+
+				for (fd_index = 0; fd_index < cantfds; fd_index++) {
+					if (fileDescriptors[fd_index].fd == socketEscucha) {
+						listen(socketEscucha, 100);
+						struct sockaddr_in addr;
+						socklen_t addrlen = sizeof(addr);
+						int socketCliente = accept(socketEscucha,
+						(struct sockaddr *) &addr, &addrlen);
+
+						infoCliente = malloc(sizeof(t_infoCliente));
+						infoCliente->cliente = cliente;
+						infoCliente->socket = socketCliente;
+
+						unCliente.cliente = cliente;
+						unCliente.socket = socketCliente;
+						clientesActivos[n] = unCliente;
+						int nroCliente = n++;
+						numeroCliente = malloc(sizeof(int));
+						numeroCliente = &nroCliente;
+
+					//    pthread_create(&hiloImprimirGiladas[n],NULL, imprimirGiladas, infoCliente);
+						pthread_create(&hiloAtenderConexiones[n], NULL, atenderConexion, numeroCliente);
+
+
+						cliente++;
+						n++;
+
+						fileDescriptors[cantfds].fd = socketCliente;
+						fileDescriptors[cantfds].events = POLLIN;
+						cantfds++;
+
+						goto llamadaPoll;
+					}
+				}
         }
-
-    // Recorro la lista de file descriptors chequeando si el poll() retornó por una modificación.
-    // De ser así, acepto la conexión, delego la atención del socket
-    // a un hilo y vuelvo para arriba.
-
-        for (fd_index = 0; fd_index < cantfds; fd_index++) {
-            if (fileDescriptors[fd_index].fd == socketEscucha) {
-                listen(socketEscucha, 100);
-                struct sockaddr_in addr;
-                socklen_t addrlen = sizeof(addr);
-                int socketCliente = accept(socketEscucha,
-                (struct sockaddr *) &addr, &addrlen);
-
-                infoCliente = malloc(sizeof(t_infoCliente));
-                infoCliente->cliente = cliente;
-                infoCliente->socket = socketCliente;
-
-                unCliente.cliente = cliente;
-                unCliente.socket = socketCliente;
-                clientesActivos[n] = unCliente;
-                int nroCliente = n++;
-                numeroCliente = malloc(sizeof(int));
-                numeroCliente = &nroCliente;
-
-            //    pthread_create(&hiloImprimirGiladas[n],NULL, imprimirGiladas, infoCliente);
-                pthread_create(&hiloAtenderConexiones[n], NULL, atenderConexion, numeroCliente);
-
-
-                cliente++;
-                n++;
-
-                fileDescriptors[cantfds].fd = socketCliente;
-                fileDescriptors[cantfds].events = POLLIN;
-                cantfds++;
-
-                goto llamadaPoll;
-            }
-        }
-    }
 }
 
 int main(int argc, char* argv[]) {
 	//VARIABLES PIOLA
 	t_log* logs;
+
 	t_list *pokenests = list_create();
 	t_list* items = list_create();
-	t_queue* listoParaMoverse;
-	t_queue* esperaCapturarPokemon;
-	t_queue* ColaNuevos;
-	t_list* finalizaAnormal;
-	listoParaMoverse=queue_create();
-	esperaCapturarPokemon=queue_create();
-	finalizaAnormal=list_create();
+	t_list* finalizaAnormal = list_create();
 
+	t_queue* colaListos = queue_create();
+	t_queue* esperaCapturarPokemon = queue_create();
+	t_queue* colaNuevos = queue_create();
 
 	char simboloEntrenador = paqueton[0];
 	char pokenest = paqueton[2];
-
-
-
 
 
     //LOGS
@@ -175,16 +173,11 @@ int main(int argc, char* argv[]) {
 
 
 
-
-
     //SOCKETS
     log_info(logs, "iniciado el servidor principal del Mapa. Aguardando conexiones...\n\n");
     pthread_t socketServMapa;
     signal(SIGINT, notificarCaida);
-    pthread_create(&socketServMapa,NULL,socketin,NULL);
-
-
-
+    pthread_create(&socketServMapa,NULL,socketin(&datosMapa),NULL);
 
 
 
@@ -211,9 +204,6 @@ int main(int argc, char* argv[]) {
     int ka;
 
 
-
-
-
     for(ka=0; ka<list_size(pokenests); ka++){
     	    datosPokenest = (metaDataPokeNest*) list_get(pokenests,ka);
     	    char** posPoke;
@@ -233,20 +223,14 @@ int main(int argc, char* argv[]) {
     		char identificador= (char)paqueton[0];
     		while(1){
 
-    			 if(!queue_is_empty(ColaNuevos)){ //si hay alguno
-    				 identificador = queue_pop(colaNuevos);
-    			 	 queue_push(colaListos,char identificador); //entonces lo mando a Listos
-    				 log_info(archivoLog,"Proceso %d: [Nuevo] => [Listo]",obtenerPID(pcbNuevo));
+    			 if(!queue_is_empty(colaNuevos)){ //si hay alguno
+    				 //identificador = queue_pop(colaNuevos);
+    			 	 //queue_push(colaListos, identificador); //entonces lo mando a Listos
+    				 //log_info(logs,"Proceso %d: [Nuevo] => [Listo]",obtenerPID(pcbNuevo));
 
     			 }
     		}
     	}
-
-
-
-
-
-
 
 
 
