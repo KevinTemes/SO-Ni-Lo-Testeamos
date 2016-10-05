@@ -40,19 +40,26 @@
 
 int servidor;
 t_log* logs;
+
+void terminarAventura(char*);
+char* empezarAventura();
+void copiarMedalla(char*, char*, t_entrenador*);
 void* recibirUbicacionPokenest(int, int);
 void moverseEnUnaDireccion(int,int,int,int,char*,int);
+
+// estas no estan implementadas
 //void morir(t_entrenador*);
 void mostrarMotivo();
 void borrarArchivosBill(t_entrenador*);
 int leQuedanVidas(t_entrenador*);
 void resetear(t_entrenador*);
-int capturaUltimoOK(t_entrenador*);
 void reconectarse(t_entrenador*);
 
 
 
 int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso/workspace/pokedex
+	char* nombreEnt = argv[1];
+	char* puntoMontaje = argv[2];
 
 	// LOGS
 	 remove("Entrenador.log");
@@ -65,12 +72,12 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 ent = malloc(sizeof(t_entrenador));
 
-	 char* configEntrenador = string_from_format("%s/Entrenadores/%s/metadata",argv[2],argv[1]);
+	 char* configEntrenador = string_from_format("%s/Entrenadores/%s/metadata",puntoMontaje,nombreEnt);
 
 	 //para cuando debuggeamos
 	 //char* configEntrenador = "/home/utnso/workspace/pokedex/Entrenadores/Red/metadata";
 
-	 if (!leerConfigEnt(configEntrenador,&ent, argv[2])) {
+	 if (!leerConfigEnt(configEntrenador,&ent, puntoMontaje)) {
 	     log_error(logs,"Error al leer el archivo de configuracion de Metadata Entrenador\n");
 	     return 1;
 	 }
@@ -93,27 +100,31 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 char* protocAManejar = strdup(protocolo);
 	 char* coordPokenest;
 	 char** posPokenest;
+	 char* horaInicio;
 
 
 	 for(pos = 0;pos<cantMapas;pos++){
 
-		printf("entra devuelta \n");
+		//printf("entra devuelta \n");
 
 		miIP= list_get(ips,pos);
 		miPuerto = list_get(puertos,pos);
-		printf("llegue a saber ip y puerto \n");
+		//printf("llegue a saber ip y puerto \n");
 
 		//el problema esta aca porque el mapa se cierra, hay que revisar mapa
 		servidor = conectarCliente(miIP, miPuerto);
-		printf("aca no llega");
+		//printf("aca no llega");
 
 
 		char *resultado = malloc(sizeof(int));
 		int resultadoEnvio = 0;
-		printf("Conectado al Mapa. Ingrese el mensaje que desee enviar, o cerrar para salir\n");
+
+		char* mapa = list_get((ent)->hojaDeViaje,pos);
+		printf("Conectado al Mapa %s. Ingrese el mensaje que desee enviar, o cerrar para salir\n",mapa);
 
 
 		//////////////// recibo y mando datos al Mapa /////////////////////
+		horaInicio = empezarAventura();
 
 		// cuando pase a otro mapa, vuelve a arrancar en (0;0)
 		int posXInicial =0;
@@ -158,15 +169,15 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 				exit(0);
 			}
 
-			/*if(capturaUltimoOk(ent)){
-				copiarMedalla();
-				close(servidor);
-			}*/
-
 		} // cierro el for de los objetivos
+
+
+		copiarMedalla(puntoMontaje, mapa, ent);
 
 		close(servidor); // se desconecta el entrenador
 	}
+
+terminarAventura(horaInicio);
 
 list_destroy_and_destroy_elements(ips,free);
 list_destroy_and_destroy_elements(puertos,free);
@@ -179,6 +190,36 @@ return EXIT_SUCCESS;
 
 
 ///////////////////// FUNCIONES DEL ENTRENADOR ///////////////////////////
+void terminarAventura(char* horaInicio){
+	log_info(logs, "Ahora sos un maestro pokemon \n");
+	time_t fechaFin;
+	time(&fechaFin);
+	char* horaFin = ctime(&fechaFin);
+	int fin = atoi(horaFin);
+	int inicio = atoi(horaInicio);
+	int tiempoAventura = fin-inicio;
+	char* mensTiempo = string_from_format("La aventura duró: %d \n",tiempoAventura);
+	log_info(logs,mensTiempo);
+	return;
+}
+
+char* empezarAventura(){
+	time_t fechaActual;
+	time(&fechaActual);
+	char* horaInicio = ctime(&fechaActual);
+	return horaInicio;
+}
+
+void copiarMedalla(char* puntoMontaje, char* mapa, t_entrenador* ent){
+
+	char* medalla=string_from_format("cp %s/Mapas/%s/medalla-%s.jpg %s/Entrenadores/%s/medallas/medalla-%s.jpg", puntoMontaje, mapa, mapa, puntoMontaje, (ent)->nombreEntrenador,mapa);
+	system(medalla);
+
+	char* logueo = string_from_format("Copiada medalla del Mapa %s con exito \n", mapa);
+	log_info(logs, logueo);
+	return;
+}
+
 
 void* recibirUbicacionPokenest(int conexion, int tamanio){
 	void* mensaje=(void*)malloc(tamanio);

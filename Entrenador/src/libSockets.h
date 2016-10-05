@@ -7,6 +7,8 @@
 
 #ifndef LIBSOCKETS_H_
 #define LIBSOCKETS_H_
+
+#include <time.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
