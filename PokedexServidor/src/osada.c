@@ -15,6 +15,8 @@
 #include <commons/log.h>
 #include <commons/string.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 archivoOsada* archi;
 extern t_log* logs;
@@ -72,17 +74,19 @@ void seekBloques(FILE* archivo,int cantidad){
 	fseek(archivo,cantidad*(OSADA_BLOCK_SIZE),SEEK_CUR);
 }
 
-int osada_iniciar(osada_header *head, osada_file *tablaArchivo, int *fd) {
+int osada_iniciar(osada_header *head, osada_file tablaArchivo[2048], int *fd) {
 
 // Antes esto tiraba error de tipos, cambie el osada.h para que reciba punteros
 // Porque antes recibia solo las structs
 
 	FILE* archivo;
-	if ((archivo = fopen("../disco.bin" , "r")) == NULL) {
+	if ((archivo = fopen("../challenge.bin" , "r")) == NULL) {
 		log_error(logs,"No se pudo abrir archivo\n");
 
 		return -99;
 			}
+	int disco;
+	disco= open("../basic.bin",O_RDWR);
 
 
 	//datos del archivo, no lo pongo en funcion auxiliar porque despues necesito los int
@@ -108,7 +112,7 @@ int osada_iniciar(osada_header *head, osada_file *tablaArchivo, int *fd) {
 	int X = bloques-1-N-1024-A;
 
 
-	//leo un header
+	//leo el header
     fread(head,sizeof(osada_header),1,archivo);
 
     //esto muestra el header
@@ -121,7 +125,7 @@ int osada_iniciar(osada_header *head, osada_file *tablaArchivo, int *fd) {
     }*/
 
     // Mapeo el archivo en un puntero, con mmap
-    fd = mmap(0, sz, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    fd = mmap(0, sz, PROT_READ | PROT_WRITE, MAP_SHARED, disco, 0);
 
 
     log_info(logs, "Identificador: %s\n", head->magic_number);
@@ -144,7 +148,8 @@ int osada_iniciar(osada_header *head, osada_file *tablaArchivo, int *fd) {
     	exit(1);
     }
 
-    fread(tablaArchivo,sizeof(osada_file),1,archivo);
+    fread(tablaArchivo, sizeof(osada_file), 2048, archivo);
+
 
     log_info(logs,"\n\n----TABLA----\n\n");
     log_info(logs,"Estado: %c\n",tablaArchivo->state);
@@ -155,14 +160,19 @@ int osada_iniciar(osada_header *head, osada_file *tablaArchivo, int *fd) {
     	printf("%c",a);
     }*/
 
-    log_info(logs, "Nombre del archivo: %s \n",tablaArchivo->fname);
-    log_info(logs,"Bloque Padre: %d\n",tablaArchivo->parent_directory);
-    log_info(logs,"Tamaño del Archivo: %d\n",tablaArchivo->file_size);
-    log_info(logs,"Fecha de ultima modificacion: %d\n",tablaArchivo->lastmod);
-    log_info(logs,"Bloque inicial: %d\n\n",tablaArchivo->first_block);
+
+    int i;
+    for(i=0; i<=140; i++){
+    log_info(logs, "Nombre del archivo: %s \n",tablaArchivo[i].fname);
+    log_info(logs,"Bloque Padre: %d\n",tablaArchivo[i].parent_directory);
+    log_info(logs,"Tamaño del Archivo: %d\n",tablaArchivo[i].file_size);
+    log_info(logs,"Fecha de ultima modificacion: %d\n",tablaArchivo[i].lastmod);
+    log_info(logs,"Bloque inicial: %d\n\n",tablaArchivo[i].first_block);
+    }
 
 
     fclose(archivo);
+    free(logs);
 
 	return 0;
 }

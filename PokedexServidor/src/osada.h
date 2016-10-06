@@ -24,11 +24,7 @@ typedef struct{
 }archivoOsada;
 
 
-typedef struct{
-	char** posBloqueDeDatos;
-	int datoDelBloque;
-	osada_block_pointer* moverAlBloqueSig;
-}tabla_Asignaciones;
+typedef int tabla_asignaciones[2048];
 
 
 typedef struct {
@@ -78,7 +74,7 @@ void seekBloques(FILE*,int);
 
 //METE DATOS DEL ARCHIVO EN VARIABLES DE ESTRUCTURA, HAY QUE PASARLE LOS VALORES POR REFERENCIA
 //TAMBIEN LOS IMPRIME
-int osada_iniciar(osada_header*,osada_file*, int*);
+int osada_iniciar(osada_header*,osada_file[2048], int*);
 
 
  #pragma pack(pop)
