@@ -22,11 +22,13 @@
 #include <commons/string.h>
 #include <commons/collections/list.h>
 #include <commons/config.h>
+#include <commons/collections/dictionary.h>
 
 t_list* ips;
 t_list* puertos;
 char* objetivoDeMapa;
 char** objetivosMapa;
+t_dictionary* pokesDeCadaMapa;
 
 typedef struct{
 	char* ipMapa;

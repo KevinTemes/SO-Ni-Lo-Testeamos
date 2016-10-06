@@ -41,6 +41,7 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 			char* poke = string_new();
 			(*datos)->hojaDeViaje = list_create();
 			(*datos)->objetivosPorMapa = list_create();
+			pokesDeCadaMapa =dictionary_create();
 
 			ips = list_create();
 			puertos= list_create();
@@ -64,6 +65,7 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 							list_add((*datos)->objetivosPorMapa, cadaPoke);
 							// y con el list iterate recorro y hago que agarre cada pokemon
 							printf("tengo que conseguir el Poke %s del mapa %s \n", cadaPoke, hojaViaje[j] );
+							dictionary_put(pokesDeCadaMapa,hojaViaje[j] , cadaPoke);
 							k++;
 						} else {
 							l=0;

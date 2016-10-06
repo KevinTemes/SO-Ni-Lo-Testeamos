@@ -84,17 +84,14 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 log_info(logs,"Archivo de config Entrenador creado exitosamente!\n");
 
-
 	 //VARIABLES USADAS Y CONEXION
 
 	 int pos;
 	 int cantMapas = list_size((ent)->hojaDeViaje);
 	 int cantPokemonesPorMapa = list_size((ent)->objetivosPorMapa);
 	 int posObjetivo;
-	 char* miIP;
-	 char* miPuerto;
 	 char* protocolo = string_new();
-	 char* numConcatenado;
+	 char* numConcatenado="1";
 	 string_append(&protocolo,(ent)->caracter);
 	 string_append(&protocolo,numConcatenado);
 	 char* protocAManejar = strdup(protocolo);
@@ -102,10 +99,12 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 char** posPokenest;
 	 char* horaInicio;
 
-
 	 for(pos = 0;pos<cantMapas;pos++){
 
 		//printf("entra devuelta \n");
+
+		char* miIP;
+		char* miPuerto;
 
 		miIP= list_get(ips,pos);
 		miPuerto = list_get(puertos,pos);
@@ -207,6 +206,8 @@ char* empezarAventura(){
 	time_t fechaActual;
 	time(&fechaActual);
 	char* horaInicio = ctime(&fechaActual);
+	char* mensaje = string_from_format("Empezo: %s \n", ctime(&fechaActual));
+	log_info(logs, mensaje);
 	return horaInicio;
 }
 
