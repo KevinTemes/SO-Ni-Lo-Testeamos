@@ -72,7 +72,7 @@ void seekBloques(FILE* archivo,int cantidad){
 	fseek(archivo,cantidad*(OSADA_BLOCK_SIZE),SEEK_CUR);
 }
 
-int osada(osada_header *head, osada_file *tablaArchivo, int *fd) {
+int osada_iniciar(osada_header *head, osada_file *tablaArchivo, int *fd) {
 
 // Antes esto tiraba error de tipos, cambie el osada.h para que reciba punteros
 // Porque antes recibia solo las structs
