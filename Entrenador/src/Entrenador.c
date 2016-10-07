@@ -74,7 +74,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 char* configEntrenador = string_from_format("%s/Entrenadores/%s/metadata",puntoMontaje,nombreEnt);
 
-	 //para cuando debuggeamos
+	 //para cuando debuggeamos, descomentar lo de abajo y comentar lo de arriba
 	 //char* configEntrenador = "/home/utnso/workspace/pokedex/Entrenadores/Red/metadata";
 
 	 if (!leerConfigEnt(configEntrenador,&ent, puntoMontaje)) {
@@ -88,7 +88,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 int pos;
 	 int cantMapas = list_size((ent)->hojaDeViaje);
-	 int cantPokemonesPorMapa = list_size((ent)->objetivosPorMapa);
+	 int cantPokemonesPorMapa = dictionary_size(pokesDeCadaMapa);
 	 int posObjetivo;
 	 char* protocolo = string_new();
 	 char* numConcatenado="1";
@@ -98,24 +98,24 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 char* coordPokenest;
 	 char** posPokenest;
 	 char* horaInicio;
+	 char *resultado = malloc(sizeof(int));
+	 char* miIP;
+	 char* miPuerto;
+
+	 horaInicio = empezarAventura();
 
 	 for(pos = 0;pos<cantMapas;pos++){
 
-		//printf("entra devuelta \n");
-
-		char* miIP;
-		char* miPuerto;
 
 		miIP= list_get(ips,pos);
 		miPuerto = list_get(puertos,pos);
-		//printf("llegue a saber ip y puerto \n");
 
-		//el problema esta aca porque el mapa se cierra, hay que revisar mapa
+		//printf("ip %s \n", miIP);
+		//printf("puerto %s \n",miPuerto);
+
+
 		servidor = conectarCliente(miIP, miPuerto);
-		//printf("aca no llega");
 
-
-		char *resultado = malloc(sizeof(int));
 		int resultadoEnvio = 0;
 
 		char* mapa = list_get((ent)->hojaDeViaje,pos);
@@ -123,19 +123,20 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 
 		//////////////// recibo y mando datos al Mapa /////////////////////
-		horaInicio = empezarAventura();
 
 		// cuando pase a otro mapa, vuelve a arrancar en (0;0)
 		int posXInicial =0;
 		int posYInicial =0;
 
 
-		for(posObjetivo=0;posObjetivo<cantPokemonesPorMapa;posObjetivo++){
+		for(posObjetivo=0;(posObjetivo<cantPokemonesPorMapa && dictionary_get(pokesDeCadaMapa,mapa)!=NULL);posObjetivo++){
 
 			// MANDO: CARACTER + POKENEST
-			char* caracterPoke = list_get((ent)->objetivosPorMapa,posObjetivo);
+
+			char* caracterPoke = dictionary_get(pokesDeCadaMapa,mapa);
 			string_append(&protocolo,caracterPoke);
-			printf("%s \n", caracterPoke);
+
+			printf("Voy a buscar este pokemon: %s \n", caracterPoke);
 
 			char carPoke = caracterPoke[0];
 			protocAManejar[1]=carPoke;
@@ -168,6 +169,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 				exit(0);
 			}
 
+			dictionary_remove(pokesDeCadaMapa,mapa);
 		} // cierro el for de los objetivos
 
 
@@ -180,8 +182,21 @@ terminarAventura(horaInicio);
 
 list_destroy_and_destroy_elements(ips,free);
 list_destroy_and_destroy_elements(puertos,free);
-free(protocAManejar);
+
+//free(coordPokenest); invalid free
+//free(horaInicio); invalid free
+free(objetivoDeMapa);
+free(objetivosMapa);
+free(posPokenest);
+free(resultado);
 free(protocolo);
+free(protocAManejar);
+free(cosasMapa);
+free(configEntrenador);
+free(nombre);
+free(simbolo);
+free(ent->objetivosPorMapa);
+free(ent->hojaDeViaje);
 free(ent);
 
 return EXIT_SUCCESS;
@@ -199,6 +214,7 @@ void terminarAventura(char* horaInicio){
 	int tiempoAventura = fin-inicio;
 	char* mensTiempo = string_from_format("La aventura duró: %d \n",tiempoAventura);
 	log_info(logs,mensTiempo);
+	free(mensTiempo);
 	return;
 }
 
@@ -208,6 +224,7 @@ char* empezarAventura(){
 	char* horaInicio = ctime(&fechaActual);
 	char* mensaje = string_from_format("Empezo: %s \n", ctime(&fechaActual));
 	log_info(logs, mensaje);
+	free(mensaje);
 	return horaInicio;
 }
 
@@ -218,6 +235,9 @@ void copiarMedalla(char* puntoMontaje, char* mapa, t_entrenador* ent){
 
 	char* logueo = string_from_format("Copiada medalla del Mapa %s con exito \n", mapa);
 	log_info(logs, logueo);
+
+	free(medalla);
+	free(logueo);
 	return;
 }
 

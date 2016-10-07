@@ -18,15 +18,16 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 			if (cantidadKeys < 8) {
 				return 0;
 			} else {
-			char* nombre=string_new();
+
+			char* nombre = string_new();
 			string_append(&nombre, config_get_string_value(archivoConfiguracion, "nombre"));
 			(*datos)->nombreEntrenador=nombre;
-			printf("nombre=%s \n",(*datos)->nombreEntrenador);
+			//printf("nombre=%s \n",(*datos)->nombreEntrenador);
 
-			char* simbolo=string_new();
+			char* simbolo = string_new();
 			string_append(&simbolo,config_get_string_value(archivoConfiguracion,"simbolo"));
 			(*datos)->caracter=simbolo;
-			printf("simbolo= %s \n",(*datos)->caracter);
+			//printf("simbolo= %s \n",(*datos)->caracter);
 
 			char** hojaViaje =config_get_array_value(archivoConfiguracion,"hojaDeViaje");
 
@@ -52,7 +53,6 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 					char* cadaMapa = string_from_format("%s",hojaViaje[j]);
 					string_append(&mapa, cadaMapa);
 					list_add((*datos)->hojaDeViaje,cadaMapa);
-					// y con el list iterate aca le digo que recorra todos los mapas
 
 					char* objetivoDeMapa = string_from_format("obj[%s]",hojaViaje[j]);
 
@@ -62,19 +62,19 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 						if (objetivosMapa[k]!=NULL){
 							char* cadaPoke = string_from_format("%s",objetivosMapa[k]);
 							string_append(&poke, cadaPoke);
-							list_add((*datos)->objetivosPorMapa, cadaPoke);
-							// y con el list iterate recorro y hago que agarre cada pokemon
-							printf("tengo que conseguir el Poke %s del mapa %s \n", cadaPoke, hojaViaje[j] );
+
 							dictionary_put(pokesDeCadaMapa,hojaViaje[j] , cadaPoke);
+
+							//printf("tengo que conseguir el Poke %s del mapa %s \n", cadaPoke, hojaViaje[j] );
 							k++;
 						} else {
 							l=0;
 						}
 					} while (l);
-					printf("\n");
+					//printf("\n");
 
-					 t_mapa* cosasMapa;;
-					 cosasMapa = malloc(sizeof(t_mapa));
+
+					cosasMapa = malloc(sizeof(t_mapa));
 
 					char* configMapa = string_from_format("%s/Mapas/%s/metadata",puntoMontaje,hojaViaje[j]);
 					//creamos el config para leer las cosas de mapa
@@ -89,6 +89,7 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 						(cosasMapa)->puertoMapa=config_get_int_value(archivoMapa,"Puerto");
 						//printf("%d \n", (cosasMapa)->puertoMapa);
 						}
+					free(configMapa);
 					config_destroy(archivoMapa);
 					//printf("\n");
 
@@ -105,12 +106,17 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 			} while(i);
 
 			(*datos)->cantidadInicialVidas= config_get_int_value(archivoConfiguracion,"vidas");
-			printf("vidas=%d \n",(*datos)->cantidadInicialVidas);
+			//printf("vidas=%d \n",(*datos)->cantidadInicialVidas);
 
 			(*datos)->reintentos= config_get_int_value(archivoConfiguracion,"reintentos");
-			printf("reintentos=%d \n",(*datos)->reintentos);
+			//printf("reintentos=%d \n",(*datos)->reintentos);
 
+
+			free(mapa);
+			free(poke);
+			free(hojaViaje);
 			config_destroy(archivoConfiguracion);
+
 			return 1;
 			}
 	}

@@ -29,11 +29,15 @@ t_list* puertos;
 char* objetivoDeMapa;
 char** objetivosMapa;
 t_dictionary* pokesDeCadaMapa;
+char* nombre;
+char* simbolo;
 
 typedef struct{
 	char* ipMapa;
 	int puertoMapa;
 }t_mapa;
+
+t_mapa* cosasMapa;
 
 typedef struct {
     char* nombreEntrenador;
