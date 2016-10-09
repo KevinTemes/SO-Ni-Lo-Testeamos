@@ -101,6 +101,7 @@ void atenderConexion(void *numeroCliente){
 			pthread_mutex_lock(&mutexPaqueton);
 			paqueton[0] = paquete[0];
 			paqueton[1] = paquete[1];
+			numEntrenador = unCliente;
 			pthread_mutex_unlock(&mutexPaqueton);
 
 			enviarHeader(clientesActivos[unCliente].socket, 1);

@@ -32,6 +32,8 @@ t_infoCliente clientesActivos[1024];
 
 char paqueton[10];
 
+int numEntrenador;
+
 /* Función loca para testear rececpción de mensajes a través de un socket. */
 void imprimirGiladas(void *unCliente);
 
