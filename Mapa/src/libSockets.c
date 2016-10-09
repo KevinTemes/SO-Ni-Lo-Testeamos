@@ -70,7 +70,6 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 
 
 		while ((dir = readdir(d)) != NULL ) {
-			metaDataPokeNest* datos;
 			datos = malloc(sizeof(metaDataPokeNest));
 
 			if (dir->d_type == DT_DIR && (strcmp(dir->d_name, ".") != 0) && (strcmp(dir->d_name, "..") != 0)) {
@@ -132,9 +131,10 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 				}
 
 			}
-		}
 
-		/*int ka;
+		}
+	/*
+		int ka;
 					metaDataPokeNest *a;
 					a = malloc(sizeof(metaDataPokeNest));
 					   for(ka=0; ka<list_size(pokenests); ka++){
@@ -143,7 +143,7 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 	                            printf("%s\n",a->tipoPokemon);
 	                            printf("%d\n",a->cantPokemons);
 	                            printf("%s\n",a->posicion);
-					    }*/
+					    } */
 
 		closedir(d);
 
