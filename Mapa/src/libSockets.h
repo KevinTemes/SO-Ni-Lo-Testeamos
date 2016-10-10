@@ -21,8 +21,6 @@
 #include <commons/log.h>
 #include <commons/collections/list.h>
 
-
-
 typedef struct{
 	int tiempoChequeoDeadlock;
 	bool batalla; // 0= desactivado 1=activado
@@ -39,6 +37,8 @@ typedef struct{
 	char* caracterPokeNest;
 	int cantPokemons;
 }metaDataPokeNest;
+
+extern metaDataPokeNest *datos; // Variable global
 
 typedef struct{
 	int nivel;

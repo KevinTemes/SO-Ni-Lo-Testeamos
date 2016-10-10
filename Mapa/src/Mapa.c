@@ -30,6 +30,8 @@
 
 #define PACKAGESIZE 1024
 
+metaDataPokeNest *datos;
+
 void* socketin(metaDataComun **datosMapa) {
 	int socketEscucha, retornoPoll;
 	int fd_index = 0;
@@ -91,8 +93,7 @@ void* socketin(metaDataComun **datosMapa) {
 				numeroCliente = &nroCliente;
 
 //    pthread_create(&hiloImprimirGiladas[n],NULL, imprimirGiladas, infoCliente);
-				pthread_create(&hiloAtenderConexiones[n], NULL, atenderConexion,
-						numeroCliente);
+				pthread_create(&hiloAtenderConexiones[n], NULL, (void*)atenderConexion,numeroCliente);
 
 				cliente++;
 				n++;
@@ -107,7 +108,9 @@ void* socketin(metaDataComun **datosMapa) {
 	}
 }
 
+
 int main(int argc, char* argv[]) {
+
 //VARIABLES PIOLA
 	int nE = 0; //numero entrenador
 
@@ -178,7 +181,7 @@ int main(int argc, char* argv[]) {
 			"iniciado el servidor principal del Mapa. Aguardando conexiones...\n\n");
 	pthread_t socketServMapa;
 	signal(SIGINT, notificarCaida);
-	pthread_create(&socketServMapa, NULL, socketin, &datosMapa);
+	pthread_create(&socketServMapa, NULL, (void*) socketin, &datosMapa); // Habre flashiado?
 
 	int rows; // nro de filas
 	int cols; // nro de columnas
@@ -216,32 +219,31 @@ int main(int argc, char* argv[]) {
 	while (1) {
 		//gestion de entrenadores y sus acciones
 		while (1) {
-			entrenador entrenador;
-			entrenador.simbolo = paqueton[0];
-			entrenador.accion = paqueton[1];
-			entrenador.flagEstaEnLista = 0;
-			entrenador.numeroCliente = numEntrenador;
+			entrenador* entrenador; // antes era entrenador entrenador
+			entrenador->simbolo = paqueton[0]; // entrenador.simbolo = paqueton[0];
+			entrenador->accion = paqueton[1]; //asi sucesivamente en vez de -> era .
+			entrenador->flagEstaEnLista = 0;
+			entrenador->numeroCliente = numEntrenador;
 
-			if (!entrenador.flagEstaEnLista) {
-				entrenador.numeroLlegada = nE;
-				entrenador.flagEstaEnLista = 1;
+			if (!entrenador->flagEstaEnLista) {
+				entrenador->numeroLlegada = nE;
+				entrenador->flagEstaEnLista = 1;
 
 				t_queue *colaAccion = queue_create();
-				queue_push(colaAccion, entrenador.accion);
+				queue_push(colaAccion, &entrenador->accion); // Fijarse el &
 				//agrego cola con acciones del entrenador a una lista
 				list_replace(listaDeColasAccion, nE, (void*) colaAccion);
 
 				nE++;
 
-				CrearPersonaje(items, entrenador.simbolo, p, q);
-
-				queue_push(colaListos, entrenador);
+				CrearPersonaje(items, entrenador->simbolo, p, q);
+				queue_push(colaListos,entrenador);
 			}
 
 			else {
 				t_queue *cola = queue_create();
 				cola = (t_queue*) list_get(listaDeColasAccion, nE);
-				queue_push(cola, entrenador.accion);
+				queue_push(cola, &entrenador->accion);
 				list_replace(listaDeColasAccion, nE, (void*) cola);
 
 			}
@@ -251,9 +253,9 @@ int main(int argc, char* argv[]) {
 		while (1) {
 			int acto;
 			t_queue *colaAction = queue_create();
-			entrenador ent1;
-			ent1 = (entrenador) queue_pop(colaListos);
-			colaAction = (t_queue *) list_get(listaDeColasAccion, ent1.numeroLlegada);
+			entrenador* ent1;
+			ent1 = (entrenador*) queue_pop(colaListos);
+			colaAction = (t_queue *) list_get(listaDeColasAccion, ent1->numeroLlegada);
 			acto = (int) queue_pop(colaAction);
 
 			if (isalpha(acto)) {
@@ -261,10 +263,10 @@ int main(int argc, char* argv[]) {
 				for (ka = 0; ka < list_size(pokenests); ka++) {
 					datosPokenest = (metaDataPokeNest*) list_get(pokenests, ka);
 					if(datosPokenest->caracterPokeNest == acto){
-						send(clientesActivos[ent1.numeroCliente], datosPokenest->posicion, string_length(datosPokenest->posicion), 0);
-					}
-				}
-			}
+						send((clientesActivos[ent1->numeroCliente]).socket, datosPokenest->posicion, string_length(datosPokenest->posicion), 0);
+					}// antes era send (clientesActivos[ent1.numeroCliente], ...
+				}   // Tiene que ser .socket en vez de ->socket porque al hacer clienteActivos
+			}      // [algo] ya lo estas desreferenciando y no va a funcionar porque ya no seria un puntero
 
 		}
 		/*

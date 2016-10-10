@@ -46,15 +46,15 @@ char* empezarAventura();
 void copiarMedalla(char*, char*, t_entrenador*);
 void* recibirUbicacionPokenest(int, int);
 void moverseEnUnaDireccion(int,int,int,int,char*,int);
-
-// estas no estan implementadas
-//void morir(t_entrenador*);
 void mostrarMotivo();
-void borrarArchivosBill(t_entrenador*);
+void borrarArchivosBill(t_entrenador*, char*);
+void borrarMedallas(t_entrenador*, char*);
 int leQuedanVidas(t_entrenador*);
-void resetear(t_entrenador*);
+void resetear(t_entrenador*, char*);
 void reconectarse(t_entrenador*);
-
+int murioEntrenador(t_entrenador*);
+void morir(t_entrenador*, char*);
+void reiniciarHojaDeViaje(t_entrenador*);
 
 
 int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso/workspace/pokedex
@@ -96,7 +96,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 string_append(&protocolo,numConcatenado);
 	 char* protocAManejar = strdup(protocolo);
 	 char* coordPokenest;
-	 char** posPokenest;
+	 char** posPokenest = (char**) malloc(2 * sizeof(char*)); // Revisar bien si no hay que hacer un for para liberar los elementos de esta
 	 char* horaInicio;
 	 char *resultado = malloc(sizeof(int));
 	 char* miIP;
@@ -104,6 +104,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 horaInicio = empezarAventura();
 
+while (murioEntrenador(ent)==0){ // No murio = 0
 	 for(pos = 0;pos<cantMapas;pos++){
 
 
@@ -179,6 +180,12 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	}
 
 terminarAventura(horaInicio);
+}
+
+if (murioEntrenador(ent)){
+	morir(ent,puntoMontaje);
+	close(servidor);
+}
 
 list_destroy_and_destroy_elements(ips,free);
 list_destroy_and_destroy_elements(puertos,free);
@@ -195,13 +202,12 @@ free(cosasMapa);
 free(configEntrenador);
 free(nombre);
 free(simbolo);
+free(ent);
 free(ent->objetivosPorMapa);
 free(ent->hojaDeViaje);
-free(ent);
 
 return EXIT_SUCCESS;
 }
-
 
 ///////////////////// FUNCIONES DEL ENTRENADOR ///////////////////////////
 void terminarAventura(char* horaInicio){
@@ -301,56 +307,69 @@ void moverseEnUnaDireccion(int posXInicial, int posYInicial,int x, int y, char* 
 }
 
 
-/*void morir(t_entrenador* ent){
-	mostrarMotivo();
-	borrarArchivosBill(ent);
-	close(servidor); // o cerrarConexion(ent);
-	if (leQuedanVidas(ent)){
-		ent->cantidadInicialVidas = ent->cantidadInicialVidas-1;
-		reconectarse(ent);
-	}
-	else
-	{
-	 printf("Desea reiniciar juego?\n");
-	 char* respuesta;
-     fgets(respuesta, PACKAGESIZE, stdin);
-     if (!strcmp(respuesta,"si\n")){
-    	 ent->reintentos = ent->reintentos+1;
-    	 resetear(ent);
-     	 }
-     else {
-    	 exit(0);
-     }
-	}
+int murioEntrenador(t_entrenador *ent){ // Poner return 1 para habilitar muerte de entrenador
 
-}*/
+	//if(murioPorDeadlock(ent) || murioPorSIGTERM(ent) || murioPorKill(ent)){ //Mapa informa de esto
+	//	return 1;
+	//}
+	return 0;
+}
+
+
+void morir(t_entrenador* ent, char* puntoMontaje){
+	mostrarMotivo();
+	borrarArchivosBill(ent, puntoMontaje);
+	if (leQuedanVidas(ent)){
+		ent->cantidadInicialVidas = ent->cantidadInicialVidas-1; //Hacer que persista en metadatas de entrenador tambien
+		reconectarse(ent); // Ver bien como llevar a cabo esto
+	}
+	else {
+	char respuesta[3];
+	printf("Numero de reintentos: %d\n", ent->reintentos);
+	printf("Desea reiniciar juego?\n");
+	fgets(respuesta, 3, stdin);
+    if (!strcmp(respuesta,"si")){
+    	printf("Reseteando...\n");
+    	 ent->reintentos = ent->reintentos+1;
+    	 resetear(ent, puntoMontaje);
+    	 reconectarse(ent);
+    	}
+     else {
+    	 puts("Cerrando programa");
+    	 exit(0);
+     	 }
+	}
+	}
 
 void mostrarMotivo(){
-	printf("Un motivo");
+	printf("Motivo de muerte: HARDCODEADO\n");
 }
 
-
-void borrarArchivosBill(t_entrenador* ent){
-	return;
+void borrarArchivosBill(t_entrenador* ent, char* puntoMontaje){ // Al momento de testear va a decir que no encontro nada si la carpeta estaba vacia
+		char* borrarBill = string_from_format("rm -r %s/Entrenadores/%s/Dir\\ De\\ Bill/*",puntoMontaje,ent->nombreEntrenador);
+		system(borrarBill);
+		free(borrarBill);
 }
 
+void borrarMedallas(t_entrenador* ent, char* puntoMontaje){
+		char* borrarMedallas = string_from_format("rm -r %s/Entrenadores/%s/medallas/*",puntoMontaje,ent->nombreEntrenador);
+		system(borrarMedallas);
+		free(borrarMedallas);
+}
 
 int leQuedanVidas(t_entrenador* ent){
 	return ent->cantidadInicialVidas;
 }
 
-
-void resetear(t_entrenador* ent){
-	//reiniciarHojaDeViaje(ent);
-	//borrarMedallas(ent);
-	//borrarPokemons(ent);
+void resetear(t_entrenador* ent, char* puntoMontaje){
+	//reiniciarHojaDeViaje(ent); //Falta implementar, como seria esto?
+	borrarMedallas(ent, puntoMontaje);
+	borrarArchivosBill(ent, puntoMontaje);
 }
 
+void reiniciarHojaDeViaje(t_entrenador *entrenador){
 
-int capturaUltimoOK(t_entrenador* entrenador){
-	return 1;
 }
-
 
 void reconectarse(t_entrenador* ent){
 	return;
