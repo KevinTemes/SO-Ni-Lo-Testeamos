@@ -58,6 +58,13 @@ typedef struct {
 }osada_file;
 
 
+typedef struct{
+	osada_header *header;
+	osada_file tablaDeArchivos[2048];
+	int tablaDeAsignaciones[2048];
+	int *discoMapeado;
+}disco_osada;
+
 _Static_assert( sizeof(osada_file) == (sizeof(osada_block) / 2.0), "osada_file size does not half osada_block size");
 
 
@@ -74,7 +81,7 @@ void seekBloques(FILE*,int);
 
 //METE DATOS DEL ARCHIVO EN VARIABLES DE ESTRUCTURA, HAY QUE PASARLE LOS VALORES POR REFERENCIA
 //TAMBIEN LOS IMPRIME
-int osada_iniciar(osada_header*,osada_file[2048], int*);
+disco_osada osada_iniciar();
 
 
  #pragma pack(pop)

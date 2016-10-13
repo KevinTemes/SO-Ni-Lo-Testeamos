@@ -26,7 +26,11 @@
 #define PUERTO "7777"
 t_log* logs;
 
-int main() {
+int main(int argc, char **argv) {
+
+
+
+
 
 	//LOGS
 	remove("PokeServidor.log");
@@ -34,15 +38,31 @@ int main() {
 	logs = log_create("PokeServidor.log", "PokedexServidor", true, log_level_from_string("INFO"));
 	puts("Log Pokedex Servidor creado exitosamente \n");
 
-
 	//Levanto el disco Osada
-	osada(&mainHeader, &tablaDeArchivos, discoMapeado);
+	 miDisco = osada_iniciar();
+//	osada_iniciar(&mainHeader, &tablaDeArchivos, discoMapeado);
+
+
+
+		// ZONA DE TESTEO
+		printf("ingrese la accion a testear, o escriba 'ayuda' para ver comandos disponibles:\n");
+		char *accion = malloc(sizeof(char) * 32);
+		scanf("%[^\n]%*c", accion);
+		while(strcmp(accion,"exit")!=0){
+		test_funcionalidad(accion);
+		printf("ingrese la accion a testear, o escriba 'ayuda' para ver comandos disponibles:\n");
+		scanf("%[^\n]%*c", accion);
+		};
+		// FIN ZONA DE TESTEO
+
+
+		/*
 
 
 
 	signal(SIGINT, notificarCaida);
 
-/* inicio todas las variables para arrancar */
+// inicio todas las variables para arrancar
 	//SOCKETS
 	log_info(logs, "iniciado el servidor principal de la Pokedéx. Aguardando conexiones...\n\n");
 
@@ -114,6 +134,7 @@ int main() {
 
 close(socketEscucha);
 
+ */
 return 0;
 
 }

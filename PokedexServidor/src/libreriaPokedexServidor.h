@@ -24,6 +24,7 @@
 #include <semaphore.h>
 #include <signal.h>
 #include "osada.h"
+#include "TestServidor.h"
 
 typedef struct{
 	int cliente;
@@ -35,8 +36,9 @@ typedef char bloque[64];
 t_infoCliente clientesActivos[1024];
 
 osada_header mainHeader;
-osada_file tablaDeArchivos;
+osada_file tablaDeArchivos[2048];
 int *discoMapeado;
+disco_osada miDisco;
 
 /* Función loca para testear rececpción de mensajes a través de un socket. */
 void imprimirGiladas(void *unCliente);
@@ -56,5 +58,7 @@ void notificarCaida();
 
 /* Función para atender una conexión en particular */
 void atenderConexion(void *numeroCliente);
+
+char *osada_leerContenidoDirectorio(char *unDirectorio);
 
 #endif /* LIBRERIAPOKEDEXSERVIDOR_H_ */

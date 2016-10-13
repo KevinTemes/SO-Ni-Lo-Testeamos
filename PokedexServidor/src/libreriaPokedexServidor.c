@@ -116,47 +116,51 @@ void atenderConexion(void *numeroCliente){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 char *osada_leerContenidoDirectorio(char *unDirectorio){
 
-	char *contenido = string_new();
+	char *contenido = malloc(2048 * 17);
 	char *separador = ";";
-	int tamanioBloque = 64;
-	int *disco;
-	int tamanioHeader = 1;
-	int tamanioBitmap = mainHeader.bitmap_blocks;
-	int directorioPadre;
+	int directorioPadre = 999999;
 	int i;
+	char *fname = malloc(17);
 
 	// Puede que acá haya que agregar un if() adicional para el caso del directorio raíz
 
 	for (i = 0; i <= 2048; i++){
 		// Recorro la tabla buscando la estructura asociada al directorio que nos pasaron
-		if(tablaDeArchivos[i].fname == unDirectorio){
+		memcpy(fname, miDisco.tablaDeArchivos[i].fname, 17);
+		if(fname == unDirectorio){
 				directorioPadre = i;
 		};
 	}
+	if(directorioPadre == 999999){
+		printf("no existe el directorio o subdirectorio especificado\n");
+	}
 	// Busco todos los archivos hijos de ese directorio padre, y me copio el nombre de cada uno
 	for (i = 0; i <= 2048; i++){
-			if(tablaDeArchivos[i].parent_directory == directorioPadre){
-				string_append(&contenido, tablaDeArchivos[i].fname);
+			if(miDisco.tablaDeArchivos[i].parent_directory == directorioPadre){
+				string_append(&contenido, (char*)tablaDeArchivos[i].fname);
 				// Concateno los nombres en un string, separados por la variable separador.
 				// Después la idea es separarlos y manejarlos como corresponda afuera de esta función
 				string_append(&contenido, separador);
 			}
 		}
+printf("contenido del directorio:\n %s", contenido);
 
-free(tablaDeArchivos);
 return contenido;
+free(contenido);
+free(fname);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void *osada_leerArchivo(char *unArchivo){
 	void *buffer;
 	int tamanioBloque = 64;
-	int tamanioBitmap = mainHeader.bitmap_blocks;
-	int inicioBloquesDeDatos = mainHeader.fs_blocks - (mainHeader.fs_blocks - mainHeader.data_blocks);
-	int tamanioTablaAsignaciones = ((mainHeader.fs_blocks - 1 - tamanioBitmap) * 4)
+	int tamanioBitmap = miDisco.header->bitmap_blocks;
+	int inicioBloquesDeDatos = miDisco.header->fs_blocks - (miDisco.header->fs_blocks
+								- miDisco.header->data_blocks);
+	int tamanioTablaAsignaciones = ((miDisco.header->fs_blocks - 1 - tamanioBitmap) * 4)
 									/ tamanioBloque;
 	int i;
-	tabla_Asignaciones *tablaDeAsignaciones = malloc(tamanioTablaAsignaciones);
+	tabla_asignaciones *tablaDeAsignaciones = malloc(tamanioTablaAsignaciones);
 	// Me copio la tabla de asignaciones
 	memcpy(tablaDeAsignaciones, discoMapeado[mainHeader.allocations_table_offset * 64],
 			tamanioTablaAsignaciones);
@@ -167,18 +171,18 @@ void *osada_leerArchivo(char *unArchivo){
 
 			buffer = malloc(tablaDeArchivos[i].file_size);
 			int desplazamiento = 0;
-			int siguienteBloque = tablaDeAsignaciones[tablaDeArchivos[i].first_block];
+			int siguienteBloque = (int)tablaDeAsignaciones[tablaDeArchivos[i].first_block];
 
 			// Voy agregando al buffer los bloques de datos correspondientes al archivo, uno a uno
 
 			while(tablaDeAsignaciones[siguienteBloque]){ //Valido así porque FFFFFFFF == -1
-				memcpy(buffer + desplazamiento, discoMapeado[siguienteBloque * 64], tamanioBloque);
+				memcpy(buffer + desplazamiento, &discoMapeado[siguienteBloque * 64], tamanioBloque);
 				desplazamiento += 64;
 			}
 
 		}
 	}
-	free(tablaDeArchivos);
+
 	free(tablaDeAsignaciones);
 
 	return(buffer);
