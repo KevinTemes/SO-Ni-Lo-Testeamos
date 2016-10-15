@@ -24,17 +24,18 @@
 #include "libSockets.h"
 
 #define ATRAPA 1
-#define DEADLOCK 5
+#define DEADLOCK 3
 #define MORI 7
 
 #define PACKAGESIZE 10
 
 t_log* logs;
 
-void terminarAventura(char*,int,int,int,int,int,int,int,int);
+int agarrarPokeConMasNivel(t_list*, t_pokemonDeserializado*);
+void terminarAventura(int,char*,int,int,int,int,int,int,int,int);
 char* empezarAventura();
 void copiarMedalla(char*,char*,t_entrenador*);
-void copiarArchivo(char*, char*, t_entrenador*,char*);
+void copiarArchivo(char*, char*, char*, t_entrenador*,char*);
 void* recibirDatos(int, int);
 void moverseEnUnaDireccion(int,int,int,int,char*,int);
 void solicitarAtraparPokemon(t_pokemonDeserializado*,int, t_list*,char*, char*,t_entrenador*, int,int,int,int,int,int,int,int,int);
@@ -66,7 +67,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 ent = malloc(sizeof(t_entrenador));
 
 	 t_pokemonDeserializado* pokePiola;
-	 pokePiola =malloc(sizeof(pokePiola));
+	 pokePiola =malloc(sizeof(t_pokemonDeserializado));
 
 	 //CONFIG
 	 char* configEntrenador = string_from_format("%s/Entrenadores/%s/metadata",puntoMontaje,nombreEnt);
@@ -189,7 +190,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 		close(servidor); // se desconecta el entrenador
 	}
 
-terminarAventura(horaInicio, hInicio,mInicio,sInicio,milInicio,hFin,mFin,sFin,milFin);
+terminarAventura(cantDeadlocks,horaInicio, hInicio,mInicio,sInicio,milInicio,hFin,mFin,sFin,milFin);
 
 list_destroy_and_destroy_elements(ips,free);
 list_destroy_and_destroy_elements(puertos,free);
@@ -209,6 +210,7 @@ free(simbolo);
 free(ent->objetivosPorMapa);
 free(ent->hojaDeViaje);
 free(ent);
+free(pokePiola);
 
 return EXIT_SUCCESS;
 }
@@ -217,13 +219,15 @@ return EXIT_SUCCESS;
 void solicitarAtraparPokemon(t_pokemonDeserializado* pokePiola,int cantDeadlocks,t_list* listaNivAtrapados,char* puntoMontaje, char* mapa, t_entrenador* ent, int servidor,int hInicio,int mInicio,int sInicio,int milInicio,int hFin,int mFin,int sFin,int milFin){
 	//pongo el tiempo para despues restarlo y saber cuando estuve bloqueado
 	char* inicioBloq = temporal_get_string_time();
+	char* finBloq;
 
 	//char* operacion = recibirDatos(servidor,21);
 	/* podria recibir serializado:
 	caracter nro especie nombreMetadata nivel sin los ; porque usamos un offset*/
 
-	char* operacion =  "@1;Pikachu/Pikachu001;33";
 
+
+	char* operacion =  "@1;Pikachu/Pikachu001;33";
 	char** cosasRecibidas = string_n_split(operacion,3,";");
 
 	//manejo el caracter y el nro por un lado aca
@@ -242,24 +246,32 @@ void solicitarAtraparPokemon(t_pokemonDeserializado* pokePiola,int cantDeadlocks
 	char* rutaPokeAtrapado = cosasRecibidas[1];
 	pokePiola->nombreMetadata = rutaPokeAtrapado;
 
+	//divido la ruta para usarla para copiarArchivo y para mandarla a Mapa
+	char** especieYEspecifico = string_split(rutaPokeAtrapado,"/");
+	//agarro Pikachu001
+	char* especifico = especieYEspecifico[1];
+
 	//nivel poke atrapado, hacer el atoi y castearlo a (int*)
 	char* nivelPoke = cosasRecibidas[2];
-	//int nivelInt = atoi(nivelPoke);
-	//pokePiola->nivelPokemon=nivelInt;
+	int nivelInt = atoi(nivelPoke);
+	pokePiola->nivelPokemon=nivelInt;
 
 	if(!strcmp(ent->caracter,pokePiola->caracter)){
-		char* finBloq;
 		switch(pokePiola->protocolo){
 			case ATRAPA:
-				list_add(listaNivAtrapados,nivelPoke);
+				// el problema esta aca
+				list_add(listaNivAtrapados,pokePiola->nivelPokemon);
 				finBloq = temporal_get_string_time();
-				copiarArchivo(puntoMontaje,mapa,ent,pokePiola->nombreMetadata);
+				copiarArchivo(especifico, puntoMontaje,mapa,ent,pokePiola->nombreMetadata);
 				sacarTiempo("bloqueado",inicioBloq,finBloq, hInicio, mInicio, sInicio, milInicio,hFin,mFin,sFin,milFin);
 			break;
 
 			case DEADLOCK:
 				cantDeadlocks = cantDeadlocks + 1;
-				//int nivelPokeAtrapado = agarrarPokeConMasNivel(listaNivAtrapados, nivelPoke);
+				int nivelPokeAtrapado = agarrarPokeConMasNivel(listaNivAtrapados, pokePiola);
+				char* pokeMFuerte = string_from_format("%s5;%s;%d",ent->caracter,especifico,nivelPokeAtrapado);
+				send(servidor,pokeMFuerte,sizeof(pokeMFuerte),0);
+				free(pokeMFuerte);
 			break;
 
 			case MORI:
@@ -268,23 +280,34 @@ void solicitarAtraparPokemon(t_pokemonDeserializado* pokePiola,int cantDeadlocks
 		}
 	}
 
-	free(caracYNro);
-	free(caracterRecString);
+	free(nivelPoke);
 	free(nroRecString);
+	free(caracterRecString);
+	free(caracYNro);
 	return;
 }
 
-void agarrarPokeConMasNivel(t_list* listaNivAtrapados, char* nivelPoke){
-	//int nivelInt = atoi(nivelPoke);
-	//list_sort();
+int agarrarPokeConMasNivel(t_list* listaNivAtrapados, t_pokemonDeserializado* pokePiola){
 
-	return;
+	int ordenarDeMayorAMenor(t_pokemonDeserializado* niv1, t_pokemonDeserializado* niv2){
+		return (niv1->nivelPokemon>niv2->nivelPokemon);
+	}
+
+	list_sort(listaNivAtrapados,(void*)ordenarDeMayorAMenor);
+
+	int nivelPokeDevuelto = list_get(listaNivAtrapados,0);
+	return nivelPokeDevuelto;
 }
 
 
-void terminarAventura(char* horaInicio, int hInicio,int mInicio,int sInicio,int milInicio,int hFin,int mFin,int sFin,int milFin){
+void terminarAventura(int cantDeadlocks,char* horaInicio, int hInicio,int mInicio,int sInicio,int milInicio,int hFin,int mFin,int sFin,int milFin){
 	char* horaFin = temporal_get_string_time();
 	sacarTiempo("aventura",horaInicio,horaFin, hInicio, mInicio, sInicio, milInicio,hFin,mFin,sFin,milFin);
+
+	char* deadlocks = string_from_format("la cantidad de deadlocks es: %d \n", cantDeadlocks);
+	log_info(logs,deadlocks);
+	free(deadlocks);
+
 	return;
 }
 
@@ -350,10 +373,7 @@ void copiarMedalla(char* puntoMontaje, char* mapa, t_entrenador* ent){
 return;
 }
 
-void copiarArchivo(char* puntoMontaje,char* mapa,t_entrenador* ent,char* rutaPokeAtrapado){
-	char** especieYEspecifico = string_split(rutaPokeAtrapado,"/");
-	//agarro Pikachu001
-	char* especifico = especieYEspecifico[1];
+void copiarArchivo(char* especifico, char* puntoMontaje,char* mapa,t_entrenador* ent,char* rutaPokeAtrapado){
 
 	char* poke = string_from_format("cp %s/Mapas/%s/PokeNests/%s.dat %s/Entrenadores/%s/Dir\\ de\\ Bill/%s.dat", puntoMontaje, mapa, rutaPokeAtrapado, puntoMontaje, (ent)->nombreEntrenador,especifico);
 	system(poke);
@@ -424,6 +444,7 @@ void moverseEnUnaDireccion(int posXInicial, int posYInicial,int x, int y, char* 
 	return;
 }
 
+//ENGANCHAR ESTAS FUNCIONES
 
 int murioEntrenador(t_entrenador *ent){ // Poner return 1 para habilitar muerte de entrenador
 
