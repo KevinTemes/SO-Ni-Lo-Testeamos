@@ -23,13 +23,13 @@
 
 #include "libSockets.h"
 
+t_log* logs;
+
 #define ATRAPA 1
 #define DEADLOCK 3
 #define MORI 7
 
 #define PACKAGESIZE 10
-
-t_log* logs;
 
 int agarrarPokeConMasNivel(t_list*, t_pokemonDeserializado*);
 void terminarAventura(int,char*,int,int,int,int,int,int,int,int);
@@ -38,7 +38,7 @@ void copiarMedalla(char*,char*,t_entrenador*);
 void copiarArchivo(char*, char*, char*, t_entrenador*,char*);
 void* recibirDatos(int, int);
 void moverseEnUnaDireccion(int,int,int,int,char*,int);
-void solicitarAtraparPokemon(t_pokemonDeserializado*,int, t_list*,char*, char*,t_entrenador*, int,int,int,int,int,int,int,int,int);
+void solicitarAtraparPokemon(t_dictionary*,t_pokemonDeserializado*,int, t_list*,char*, char*,t_entrenador*, int,int,int,int,int,int,int,int,int);
 void sacarTiempo(char*,char*,char*,int,int,int,int,int,int,int,int);
 
 void mostrarMotivo();
@@ -66,8 +66,10 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 t_entrenador* ent;
 	 ent = malloc(sizeof(t_entrenador));
 
+	 //si rompe, meterlo adentro del for de cada pokemon
 	 t_pokemonDeserializado* pokePiola;
 	 pokePiola =malloc(sizeof(t_pokemonDeserializado));
+
 
 	 //CONFIG
 	 char* configEntrenador = string_from_format("%s/Entrenadores/%s/metadata",puntoMontaje,nombreEnt);
@@ -112,6 +114,8 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 char* miPuerto;
 	 t_list* listaNivAtrapados= list_create();
 	 int cantDeadlocks = 0;
+	 t_dictionary* masFuertePokeYNivel = dictionary_create();
+	 tiempoBloqCadaPokenest = list_create();
 
 	 horaInicio = empezarAventura();
 
@@ -170,7 +174,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 			protocAManejar[1]='9'; // Solicitud Atrapar Pokemon
 			send(servidor,protocAManejar,2,0);
-			solicitarAtraparPokemon(pokePiola, cantDeadlocks,listaNivAtrapados,puntoMontaje,mapa, ent,servidor, hInicio, mInicio, sInicio, milInicio,hFin,mFin,sFin,milFin);
+			solicitarAtraparPokemon(masFuertePokeYNivel,pokePiola, cantDeadlocks,listaNivAtrapados,puntoMontaje,mapa, ent,servidor, hInicio, mInicio, sInicio, milInicio,hFin,mFin,sFin,milFin);
 
 			// por si se cae
 			recv(servidor, (void *)resultado, sizeof(int), 0);
@@ -194,6 +198,8 @@ terminarAventura(cantDeadlocks,horaInicio, hInicio,mInicio,sInicio,milInicio,hFi
 
 list_destroy_and_destroy_elements(ips,free);
 list_destroy_and_destroy_elements(puertos,free);
+//list_destroy_and_destroy_elements(tiempoBloqCadaPokenest,free); invalid free
+dictionary_destroy_and_destroy_elements(masFuertePokeYNivel,free);
 
 //free(coordPokenest); invalid free
 //free(horaInicio); invalid free
@@ -216,7 +222,7 @@ return EXIT_SUCCESS;
 }
 
 ///////////////////// FUNCIONES DEL ENTRENADOR ///////////////////////////
-void solicitarAtraparPokemon(t_pokemonDeserializado* pokePiola,int cantDeadlocks,t_list* listaNivAtrapados,char* puntoMontaje, char* mapa, t_entrenador* ent, int servidor,int hInicio,int mInicio,int sInicio,int milInicio,int hFin,int mFin,int sFin,int milFin){
+void solicitarAtraparPokemon(t_dictionary* masFuertePokeYNivel,t_pokemonDeserializado* pokePiola,int cantDeadlocks,t_list* listaNivAtrapados,char* puntoMontaje, char* mapa, t_entrenador* ent, int servidor,int hInicio,int mInicio,int sInicio,int milInicio,int hFin,int mFin,int sFin,int milFin){
 	//pongo el tiempo para despues restarlo y saber cuando estuve bloqueado
 	char* inicioBloq = temporal_get_string_time();
 	char* finBloq;
@@ -247,7 +253,7 @@ void solicitarAtraparPokemon(t_pokemonDeserializado* pokePiola,int cantDeadlocks
 	pokePiola->nombreMetadata = rutaPokeAtrapado;
 
 	//divido la ruta para usarla para copiarArchivo y para mandarla a Mapa
-	char** especieYEspecifico = string_split(rutaPokeAtrapado,"/");
+	char** especieYEspecifico = string_split(pokePiola->nombreMetadata,"/");
 	//agarro Pikachu001
 	char* especifico = especieYEspecifico[1];
 
@@ -259,17 +265,24 @@ void solicitarAtraparPokemon(t_pokemonDeserializado* pokePiola,int cantDeadlocks
 	if(!strcmp(ent->caracter,pokePiola->caracter)){
 		switch(pokePiola->protocolo){
 			case ATRAPA:
-				// el problema esta aca
+				//simulo un tiempo de bloqueado de pokenest por el momento
+				usleep(1000);
 				list_add(listaNivAtrapados,pokePiola->nivelPokemon);
 				finBloq = temporal_get_string_time();
 				copiarArchivo(especifico, puntoMontaje,mapa,ent,pokePiola->nombreMetadata);
 				sacarTiempo("bloqueado",inicioBloq,finBloq, hInicio, mInicio, sInicio, milInicio,hFin,mFin,sFin,milFin);
+				//revisar si lo puedo manejar casteandolo o con el char* y fue
+				dictionary_put(masFuertePokeYNivel,nivelPoke,especifico);
 			break;
 
 			case DEADLOCK:
 				cantDeadlocks = cantDeadlocks + 1;
 				int nivelPokeAtrapado = agarrarPokeConMasNivel(listaNivAtrapados, pokePiola);
-				char* pokeMFuerte = string_from_format("%s5;%s;%d",ent->caracter,especifico,nivelPokeAtrapado);
+				char* nivelString = string_itoa(nivelPokeAtrapado);
+				char* especificoMasFuerte = dictionary_get(masFuertePokeYNivel,nivelString);
+				char* pokeMFuerte = string_from_format("%s5;%s;%d",ent->caracter,especificoMasFuerte,nivelPokeAtrapado);
+
+				//revisar ese sizeof
 				send(servidor,pokeMFuerte,sizeof(pokeMFuerte),0);
 				free(pokeMFuerte);
 			break;
@@ -333,6 +346,18 @@ void sacarTiempo(char* estado,char* horaInicio,char* horaFin,int hInicio,int mIn
 		int milAventura = milFin - milInicio;
 
 		if(!strcmp(estado,"bloqueado")){
+			t_tiempoBloqCadaPokenest* tBloqPoke;
+			tBloqPoke = malloc(sizeof(t_tiempoBloqCadaPokenest));
+
+			tBloqPoke->horas=horasAventura;
+			tBloqPoke->minutos=minAventura;
+			tBloqPoke->segundos=segAventura;
+			tBloqPoke->milesimas=milAventura;
+
+			//le agrego la estructura entera, y despues ya la libero y me manejo con la lista
+			list_add(tiempoBloqCadaPokenest,tBloqPoke);
+			free(tBloqPoke);
+
 			char* mensBloq = string_from_format("El tiempo que paso bloqueado fue: %d:%d:%d:%d  \n",horasAventura,minAventura,segAventura,milAventura);
 			log_info(logs,mensBloq);
 			free(mensBloq);

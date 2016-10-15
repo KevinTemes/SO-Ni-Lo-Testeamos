@@ -34,6 +34,7 @@ char** objetivosMapa;
 t_dictionary* pokesDeCadaMapa; // lo uso en el main
 char* nombre;
 char* simbolo;
+t_list* tiempoBloqCadaPokenest;
 
 typedef struct{
 	char* caracter;
@@ -58,6 +59,14 @@ typedef struct {
     int cantidadInicialVidas;
     int reintentos;
 }t_entrenador;
+
+typedef struct{
+	int horas;
+	int minutos;
+	int segundos;
+	int milesimas;
+}t_tiempoBloqCadaPokenest;
+
 
 typedef struct Paquete {
 	int codigoOperacion;
