@@ -8,10 +8,11 @@
 #ifndef LIBSOCKETS_H_
 #define LIBSOCKETS_H_
 
-#include <time.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -23,14 +24,24 @@
 #include <commons/collections/list.h>
 #include <commons/config.h>
 #include <commons/collections/dictionary.h>
+#include <commons/temporal.h>
 
-t_list* ips;
-t_list* puertos;
+
+t_list* ips; // lo libero en el main
+t_list* puertos; // lo libero en el main
 char* objetivoDeMapa;
 char** objetivosMapa;
-t_dictionary* pokesDeCadaMapa;
+t_dictionary* pokesDeCadaMapa; // lo uso en el main
 char* nombre;
 char* simbolo;
+
+typedef struct{
+	char* caracter;
+	int protocolo;
+	char* especie;
+	char* nombreMetadata;
+	int nivelPokemon;
+}t_pokemonDeserializado;
 
 typedef struct{
 	char* ipMapa;

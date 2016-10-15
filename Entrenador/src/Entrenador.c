@@ -20,32 +20,26 @@
  ============================================================================
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include <commons/config.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <commons/string.h>
-#include <commons/collections/list.h>
-#include "libSockets.h"
-#include <commons/collections/dictionary.h>
 
-#define IP "127.0.0.1"
-#define PUERTO "7900"
+#include "libSockets.h"
+
+#define ATRAPA 1
+#define DEADLOCK 5
+#define MORI 7
+
 #define PACKAGESIZE 10
 
-int servidor;
 t_log* logs;
 
-void terminarAventura(char*);
+void terminarAventura(char*,int,int,int,int,int,int,int,int);
 char* empezarAventura();
-void copiarMedalla(char*, char*, t_entrenador*);
-void* recibirUbicacionPokenest(int, int);
+void copiarMedalla(char*,char*,t_entrenador*);
+void copiarArchivo(char*, char*, t_entrenador*,char*);
+void* recibirDatos(int, int);
 void moverseEnUnaDireccion(int,int,int,int,char*,int);
+void solicitarAtraparPokemon(t_pokemonDeserializado*,int, t_list*,char*, char*,t_entrenador*, int,int,int,int,int,int,int,int,int);
+void sacarTiempo(char*,char*,char*,int,int,int,int,int,int,int,int);
+
 void mostrarMotivo();
 void borrarArchivosBill(t_entrenador*, char*);
 void borrarMedallas(t_entrenador*, char*);
@@ -67,11 +61,14 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 logs = log_create("Entrenador.log", "Entrenador", true, log_level_from_string("INFO"));
 	 puts("Log Entrenador creado exitosamente \n");
 
-	 //CONFIG
+	 //STRUCTS
 	 t_entrenador* ent;
-
 	 ent = malloc(sizeof(t_entrenador));
 
+	 t_pokemonDeserializado* pokePiola;
+	 pokePiola =malloc(sizeof(pokePiola));
+
+	 //CONFIG
 	 char* configEntrenador = string_from_format("%s/Entrenadores/%s/metadata",puntoMontaje,nombreEnt);
 
 	 //para cuando debuggeamos, descomentar lo de abajo y comentar lo de arriba
@@ -86,25 +83,37 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 //VARIABLES USADAS Y CONEXION
 
+	 int servidor;
 	 int pos;
 	 int cantMapas = list_size((ent)->hojaDeViaje);
-	 int cantPokemonesPorMapa = dictionary_size(pokesDeCadaMapa);
 	 int posObjetivo;
+
+	 int hInicio=0;
+	 int mInicio=0;
+	 int sInicio=0;
+	 int milInicio=0;
+
+	 int hFin=0;
+	 int mFin=0;
+	 int sFin=0;
+	 int milFin=0;
+
 	 char* protocolo = string_new();
 	 char* numConcatenado="1";
 	 string_append(&protocolo,(ent)->caracter);
 	 string_append(&protocolo,numConcatenado);
 	 char* protocAManejar = strdup(protocolo);
 	 char* coordPokenest;
-	 char** posPokenest = (char**) malloc(2 * sizeof(char*)); // Revisar bien si no hay que hacer un for para liberar los elementos de esta
+	 char** posPokenest;
 	 char* horaInicio;
 	 char *resultado = malloc(sizeof(int));
 	 char* miIP;
 	 char* miPuerto;
+	 t_list* listaNivAtrapados= list_create();
+	 int cantDeadlocks = 0;
 
 	 horaInicio = empezarAventura();
 
-while (murioEntrenador(ent)==0){ // No murio = 0
 	 for(pos = 0;pos<cantMapas;pos++){
 
 
@@ -130,7 +139,7 @@ while (murioEntrenador(ent)==0){ // No murio = 0
 		int posYInicial =0;
 
 
-		for(posObjetivo=0;(posObjetivo<cantPokemonesPorMapa && dictionary_get(pokesDeCadaMapa,mapa)!=NULL);posObjetivo++){
+		for(posObjetivo=0;dictionary_get(pokesDeCadaMapa,mapa)!=NULL;posObjetivo++){
 
 			// MANDO: CARACTER + POKENEST
 
@@ -144,7 +153,7 @@ while (murioEntrenador(ent)==0){ // No murio = 0
 
 			send(servidor, protocAManejar, 2, 0);
 			//recibo 5 chars, ej: "34;12"
-			//coordPokenest = (char*)recibirUbicacionPokenest(servidor,5);
+			//coordPokenest = (char*)recibirDatos(servidor,5);
 
 			coordPokenest= "02;03";
 
@@ -160,6 +169,7 @@ while (murioEntrenador(ent)==0){ // No murio = 0
 
 			protocAManejar[1]='9'; // Solicitud Atrapar Pokemon
 			send(servidor,protocAManejar,2,0);
+			solicitarAtraparPokemon(pokePiola, cantDeadlocks,listaNivAtrapados,puntoMontaje,mapa, ent,servidor, hInicio, mInicio, sInicio, milInicio,hFin,mFin,sFin,milFin);
 
 			// por si se cae
 			recv(servidor, (void *)resultado, sizeof(int), 0);
@@ -179,13 +189,7 @@ while (murioEntrenador(ent)==0){ // No murio = 0
 		close(servidor); // se desconecta el entrenador
 	}
 
-terminarAventura(horaInicio);
-}
-
-if (murioEntrenador(ent)){
-	morir(ent,puntoMontaje);
-	close(servidor);
-}
+terminarAventura(horaInicio, hInicio,mInicio,sInicio,milInicio,hFin,mFin,sFin,milFin);
 
 list_destroy_and_destroy_elements(ips,free);
 list_destroy_and_destroy_elements(puertos,free);
@@ -202,33 +206,131 @@ free(cosasMapa);
 free(configEntrenador);
 free(nombre);
 free(simbolo);
-free(ent);
 free(ent->objetivosPorMapa);
 free(ent->hojaDeViaje);
+free(ent);
 
 return EXIT_SUCCESS;
 }
 
 ///////////////////// FUNCIONES DEL ENTRENADOR ///////////////////////////
-void terminarAventura(char* horaInicio){
-	log_info(logs, "Ahora sos un maestro pokemon \n");
-	time_t fechaFin;
-	time(&fechaFin);
-	char* horaFin = ctime(&fechaFin);
-	int fin = atoi(horaFin);
-	int inicio = atoi(horaInicio);
-	int tiempoAventura = fin-inicio;
-	char* mensTiempo = string_from_format("La aventura duró: %d \n",tiempoAventura);
-	log_info(logs,mensTiempo);
-	free(mensTiempo);
+void solicitarAtraparPokemon(t_pokemonDeserializado* pokePiola,int cantDeadlocks,t_list* listaNivAtrapados,char* puntoMontaje, char* mapa, t_entrenador* ent, int servidor,int hInicio,int mInicio,int sInicio,int milInicio,int hFin,int mFin,int sFin,int milFin){
+	//pongo el tiempo para despues restarlo y saber cuando estuve bloqueado
+	char* inicioBloq = temporal_get_string_time();
+
+	//char* operacion = recibirDatos(servidor,21);
+	/* podria recibir serializado:
+	caracter nro especie nombreMetadata nivel sin los ; porque usamos un offset*/
+
+	char* operacion =  "@1;Pikachu/Pikachu001;33";
+
+	char** cosasRecibidas = string_n_split(operacion,3,";");
+
+	//manejo el caracter y el nro por un lado aca
+	char* caracYNro = strdup(cosasRecibidas[0]);
+
+	char caracterRec = caracYNro[0];
+	char* caracterRecString = string_from_format("%c", caracterRec);
+	pokePiola->caracter=caracterRecString;
+
+	char nroRecChar = caracYNro[1];
+	char* nroRecString = string_from_format("%c",nroRecChar);
+	int nroRec = atoi (nroRecString);
+	pokePiola->protocolo=nroRec;
+
+	// la ruta de mi poke atrapado
+	char* rutaPokeAtrapado = cosasRecibidas[1];
+	pokePiola->nombreMetadata = rutaPokeAtrapado;
+
+	//nivel poke atrapado, hacer el atoi y castearlo a (int*)
+	char* nivelPoke = cosasRecibidas[2];
+	//int nivelInt = atoi(nivelPoke);
+	//pokePiola->nivelPokemon=nivelInt;
+
+	if(!strcmp(ent->caracter,pokePiola->caracter)){
+		char* finBloq;
+		switch(pokePiola->protocolo){
+			case ATRAPA:
+				list_add(listaNivAtrapados,nivelPoke);
+				finBloq = temporal_get_string_time();
+				copiarArchivo(puntoMontaje,mapa,ent,pokePiola->nombreMetadata);
+				sacarTiempo("bloqueado",inicioBloq,finBloq, hInicio, mInicio, sInicio, milInicio,hFin,mFin,sFin,milFin);
+			break;
+
+			case DEADLOCK:
+				cantDeadlocks = cantDeadlocks + 1;
+				//int nivelPokeAtrapado = agarrarPokeConMasNivel(listaNivAtrapados, nivelPoke);
+			break;
+
+			case MORI:
+
+			break;
+		}
+	}
+
+	free(caracYNro);
+	free(caracterRecString);
+	free(nroRecString);
 	return;
 }
 
+void agarrarPokeConMasNivel(t_list* listaNivAtrapados, char* nivelPoke){
+	//int nivelInt = atoi(nivelPoke);
+	//list_sort();
+
+	return;
+}
+
+
+void terminarAventura(char* horaInicio, int hInicio,int mInicio,int sInicio,int milInicio,int hFin,int mFin,int sFin,int milFin){
+	char* horaFin = temporal_get_string_time();
+	sacarTiempo("aventura",horaInicio,horaFin, hInicio, mInicio, sInicio, milInicio,hFin,mFin,sFin,milFin);
+	return;
+}
+
+void sacarTiempo(char* estado,char* horaInicio,char* horaFin,int hInicio,int mInicio, int sInicio,int milInicio,int hFin,int mFin,int sFin,int milFin){
+	//separo hh mm ss mmmm y los guardo en char**, fundamental
+		char** inicio = string_n_split(horaInicio,4,":");
+		char** fin = string_n_split(horaFin,4,":");
+
+		// convierto a enteros los char*
+		hInicio = atoi(inicio[0]);
+		mInicio = atoi(inicio[1]);
+		sInicio = atoi(inicio[2]);
+		milInicio = atoi(inicio[3]);
+
+		hFin = atoi(fin[0]);
+		mFin = atoi(fin[1]);
+		sFin = atoi(fin[2]);
+		milFin = atoi(fin[3]);
+
+		int horasAventura = hFin - hInicio;
+		int minAventura = mFin - mInicio;
+		int segAventura = sFin - sInicio;
+		int milAventura = milFin - milInicio;
+
+		if(!strcmp(estado,"bloqueado")){
+			char* mensBloq = string_from_format("El tiempo que paso bloqueado fue: %d:%d:%d:%d  \n",horasAventura,minAventura,segAventura,milAventura);
+			log_info(logs,mensBloq);
+			free(mensBloq);
+		} else if (!strcmp(estado,"aventura")){
+			char* aviso = string_from_format("Ahora sos un maestro pokemon, lo lograste a las %s \n", horaFin);
+			log_info(logs,aviso);
+			free(aviso);
+
+			char* mensTiempo = string_from_format("La aventura duró: %d:%d:%d:%d  \n",horasAventura,minAventura,segAventura,milAventura);
+			log_info(logs,mensTiempo);
+			free(mensTiempo);
+		}
+
+	return;
+}
+
+
+
 char* empezarAventura(){
-	time_t fechaActual;
-	time(&fechaActual);
-	char* horaInicio = ctime(&fechaActual);
-	char* mensaje = string_from_format("Empezo: %s \n", ctime(&fechaActual));
+	char* horaInicio = temporal_get_string_time();
+	char* mensaje = string_from_format("Empezo a las: %s \n", horaInicio);
 	log_info(logs, mensaje);
 	free(mensaje);
 	return horaInicio;
@@ -244,11 +346,27 @@ void copiarMedalla(char* puntoMontaje, char* mapa, t_entrenador* ent){
 
 	free(medalla);
 	free(logueo);
+
+return;
+}
+
+void copiarArchivo(char* puntoMontaje,char* mapa,t_entrenador* ent,char* rutaPokeAtrapado){
+	char** especieYEspecifico = string_split(rutaPokeAtrapado,"/");
+	//agarro Pikachu001
+	char* especifico = especieYEspecifico[1];
+
+	char* poke = string_from_format("cp %s/Mapas/%s/PokeNests/%s.dat %s/Entrenadores/%s/Dir\\ de\\ Bill/%s.dat", puntoMontaje, mapa, rutaPokeAtrapado, puntoMontaje, (ent)->nombreEntrenador,especifico);
+	system(poke);
+
+	char* logueo = string_from_format("Copiada metadata de %s exitosamente \n", especifico);
+	log_info(logs, logueo);
+
+	free(poke);
+	free(logueo);
 	return;
 }
 
-
-void* recibirUbicacionPokenest(int conexion, int tamanio){
+void* recibirDatos(int conexion, int tamanio){
 	void* mensaje=(void*)malloc(tamanio);
 	int bytesRecibidos = recv(conexion, mensaje, tamanio, MSG_WAITALL);
 	if (bytesRecibidos != tamanio) {
