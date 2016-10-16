@@ -38,7 +38,7 @@ typedef struct{
 	int cantPokemons;
 }metaDataPokeNest;
 
-extern metaDataPokeNest *datos; // Variable global
+metaDataPokeNest *datos; // Variable global
 
 typedef struct{
 	int nivel;
