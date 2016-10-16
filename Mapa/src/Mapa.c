@@ -264,6 +264,7 @@ int main(int argc, char* argv[]) {
 					datosPokenest = (metaDataPokeNest*) list_get(pokenests, ka);
 					if(datosPokenest->caracterPokeNest == acto){
 						send((clientesActivos[ent1->numeroCliente]).socket, datosPokenest->posicion, string_length(datosPokenest->posicion), 0);
+						ka = list_size(pokenests);
 					}// antes era send (clientesActivos[ent1.numeroCliente], ...
 				}   // Tiene que ser .socket en vez de ->socket porque al hacer clienteActivos
 			}      // [algo] ya lo estas desreferenciando y no va a funcionar porque ya no seria un puntero
