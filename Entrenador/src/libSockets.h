@@ -36,6 +36,14 @@ char* nombre;
 char* simbolo;
 t_list* tiempoBloqCadaPokenest;
 
+
+typedef struct{
+int horasBloqueado;
+int minutosBloqueado;
+int segundosBloqueado;
+int milesimasBloqueado;
+}t_tiempoBloqueado;
+
 typedef struct{
 	char* caracter;
 	int protocolo;
@@ -59,13 +67,6 @@ typedef struct {
     int cantidadInicialVidas;
     int reintentos;
 }t_entrenador;
-
-typedef struct{
-	int horas;
-	int minutos;
-	int segundos;
-	int milesimas;
-}t_tiempoBloqCadaPokenest;
 
 
 typedef struct Paquete {
