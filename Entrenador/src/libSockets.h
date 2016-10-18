@@ -25,8 +25,9 @@
 #include <commons/config.h>
 #include <commons/collections/dictionary.h>
 #include <commons/temporal.h>
+#include <signal.h>
 
-
+int servidor;
 t_list* ips; // lo libero en el main
 t_list* puertos; // lo libero en el main
 char* objetivoDeMapa;
@@ -34,7 +35,6 @@ char** objetivosMapa;
 t_dictionary* pokesDeCadaMapa; // lo uso en el main
 char* nombre;
 char* simbolo;
-t_list* tiempoBloqCadaPokenest;
 
 
 typedef struct{

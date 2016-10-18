@@ -40,11 +40,11 @@ void* recibirDatos(int, int);
 void moverseEnUnaDireccion(int,int,int,int,char*,int);
 void* solicitarAtraparPokemon(t_tiempoBloqueado*, t_dictionary*,t_pokemonDeserializado*,int, t_list*,char*, char*,t_entrenador*, int,int,int,int,int,int,int,int,int);
 void* sacarTiempo(t_tiempoBloqueado*,char*,char*,char*,int,int,int,int,int,int,int,int);
-
-void mostrarMotivo();
 void borrarArchivosBill(t_entrenador*, char*);
 void borrarMedallas(t_entrenador*, char*);
-int leQuedanVidas(t_entrenador*);
+void  usoDeSeniales(t_entrenador*, char*);
+
+void mostrarMotivo();
 void resetear(t_entrenador*, char*);
 void reconectarse(t_entrenador*);
 int murioEntrenador(t_entrenador*);
@@ -86,9 +86,9 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 log_info(logs,"Archivo de config Entrenador creado exitosamente!\n");
 
-	 //VARIABLES USADAS Y CONEXION
+	 usoDeSeniales(ent,puntoMontaje);
 
-	 int servidor;
+	 //VARIABLES USADAS Y CONEXION
 	 int pos;
 	 int cantMapas = list_size((ent)->hojaDeViaje);
 	 int posObjetivo;
@@ -117,85 +117,87 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 t_list* listaNivAtrapados= list_create();
 	 int cantDeadlocks = 0;
 	 t_dictionary* masFuertePokeYNivel = dictionary_create();
-	 tiempoBloqCadaPokenest = list_create();
 
 
 	 horaInicio = empezarAventura();
 
-	 for(pos = 0;pos<cantMapas;pos++){
+	 do{
+		 for(pos = 0;pos<cantMapas;pos++){
+		// reconectar el mismo mapa entra aca directo asi no le suma una posicion
+		//reconectarMapa:
+
+			miIP= list_get(ips,pos);
+			miPuerto = list_get(puertos,pos);
+
+			//printf("ip %s \n", miIP);
+			//printf("puerto %s \n",miPuerto);
 
 
-		miIP= list_get(ips,pos);
-		miPuerto = list_get(puertos,pos);
+			servidor = conectarCliente(miIP, miPuerto);
 
-		//printf("ip %s \n", miIP);
-		//printf("puerto %s \n",miPuerto);
+			int resultadoEnvio = 0;
 
-
-		servidor = conectarCliente(miIP, miPuerto);
-
-		int resultadoEnvio = 0;
-
-		char* mapa = list_get((ent)->hojaDeViaje,pos);
-		printf("Conectado al Mapa %s. Ingrese el mensaje que desee enviar, o cerrar para salir\n",mapa);
+			char* mapa = list_get((ent)->hojaDeViaje,pos);
+			printf("Conectado al Mapa %s. Ingrese el mensaje que desee enviar, o cerrar para salir\n",mapa);
 
 
-		//////////////// recibo y mando datos al Mapa /////////////////////
+			//////////////// recibo y mando datos al Mapa /////////////////////
 
-		// cuando pase a otro mapa, vuelve a arrancar en (0;0)
-		int posXInicial =0;
-		int posYInicial =0;
-
-
-		for(posObjetivo=0;dictionary_get(pokesDeCadaMapa,mapa)!=NULL;posObjetivo++){
-
-			// MANDO: CARACTER + POKENEST
-
-			char* caracterPoke = dictionary_get(pokesDeCadaMapa,mapa);
-			string_append(&protocolo,caracterPoke);
-
-			printf("Voy a buscar este pokemon: %s \n", caracterPoke);
-
-			char carPoke = caracterPoke[0];
-			protocAManejar[1]=carPoke;
-
-			send(servidor, protocAManejar, 2, 0);
-			//recibo 5 chars, ej: "34;12"
-			//coordPokenest = (char*)recibirDatos(servidor,5);
-
-			coordPokenest= "02;03";
-
-			posPokenest = string_split(coordPokenest,";");
-			int x = atoi (posPokenest[0]);
-			printf("Coordenada X pokenest: %d\n", x);
-			int y = atoi (posPokenest[1]);
-			printf("Coordenada Y pokenest: %d\n", y);
+			// cuando pase a otro mapa, vuelve a arrancar en (0;0)
+			int posXInicial =0;
+			int posYInicial =0;
 
 
-			moverseEnUnaDireccion(posXInicial, posYInicial, x, y, protocAManejar, servidor);
+			for(posObjetivo=0;dictionary_get(pokesDeCadaMapa,mapa)!=NULL;posObjetivo++){
+
+				// MANDO: CARACTER + POKENEST
+
+				char* caracterPoke = dictionary_get(pokesDeCadaMapa,mapa);
+				string_append(&protocolo,caracterPoke);
+
+				printf("Voy a buscar este pokemon: %s \n", caracterPoke);
+
+				char carPoke = caracterPoke[0];
+				protocAManejar[1]=carPoke;
+
+				send(servidor, protocAManejar, 2, 0);
+				//recibo 5 chars, ej: "34;12"
+				//coordPokenest = (char*)recibirDatos(servidor,5);
+
+				coordPokenest= "02;03";
+
+				posPokenest = string_split(coordPokenest,";");
+				int x = atoi (posPokenest[0]);
+				printf("Coordenada X pokenest: %d\n", x);
+				int y = atoi (posPokenest[1]);
+				printf("Coordenada Y pokenest: %d\n", y);
 
 
-			protocAManejar[1]='9'; // Solicitud Atrapar Pokemon
-			send(servidor,protocAManejar,2,0);
-			solicitarAtraparPokemon(tiempo,masFuertePokeYNivel,pokePiola, cantDeadlocks,listaNivAtrapados,puntoMontaje,mapa, ent,servidor, hInicio, mInicio, sInicio, milInicio,hFin,mFin,sFin,milFin);
-
-			// por si se cae
-			recv(servidor, (void *)resultado, sizeof(int), 0);
-			resultadoEnvio = *((int *)resultado);
-
-			if(resultadoEnvio == 9){
-				printf("Servidor caído! imposible reconectar. Cerrando...\n");
-				exit(0);
-			}
-
-			dictionary_remove(pokesDeCadaMapa,mapa);
-		} // cierro el for de los objetivos
+				moverseEnUnaDireccion(posXInicial, posYInicial, x, y, protocAManejar, servidor);
 
 
-		copiarMedalla(puntoMontaje, mapa, ent);
+				protocAManejar[1]='9'; // Solicitud Atrapar Pokemon
+				send(servidor,protocAManejar,2,0);
+				solicitarAtraparPokemon(tiempo,masFuertePokeYNivel,pokePiola, cantDeadlocks,listaNivAtrapados,puntoMontaje,mapa, ent,servidor, hInicio, mInicio, sInicio, milInicio,hFin,mFin,sFin,milFin);
 
-		close(servidor); // se desconecta el entrenador
-	}
+				// por si se cae
+				recv(servidor, (void *)resultado, sizeof(int), 0);
+				resultadoEnvio = *((int *)resultado);
+
+				if(resultadoEnvio == 9){
+					printf("Servidor caído! imposible reconectar. Cerrando...\n");
+					exit(0);
+				}
+
+				dictionary_remove(pokesDeCadaMapa,mapa);
+			} // cierro el for de los objetivos
+
+
+			copiarMedalla(puntoMontaje, mapa, ent);
+
+			close(servidor); // se desconecta el entrenador
+		 }
+	} while((ent->cantidadInicialVidas!=0) && (list_get(ent->hojaDeViaje,pos)!=NULL));
 
 terminarAventura(tiempo,cantDeadlocks,horaInicio, hInicio,mInicio,sInicio,milInicio,hFin,mFin,sFin,milFin);
 
@@ -226,6 +228,21 @@ return EXIT_SUCCESS;
 }
 
 ///////////////////// FUNCIONES DEL ENTRENADOR ///////////////////////////
+void  usoDeSeniales(t_entrenador* ent, char* puntoMontaje){
+
+void reciboUnaVida(){
+	ent->cantidadInicialVidas++;
+}
+
+void pierdoUnaVida(){
+	ent->cantidadInicialVidas--;
+	morir(ent,puntoMontaje);
+}
+
+signal(SIGUSR1, reciboUnaVida);
+signal(SIGTERM, pierdoUnaVida);
+}
+
 void* solicitarAtraparPokemon(t_tiempoBloqueado* tiempo, t_dictionary* masFuertePokeYNivel,t_pokemonDeserializado* pokePiola,int cantDeadlocks,t_list* listaNivAtrapados,char* puntoMontaje, char* mapa, t_entrenador* ent, int servidor,int hInicio,int mInicio,int sInicio,int milInicio,int hFin,int mFin,int sFin,int milFin){
 	//pongo el tiempo para despues restarlo y saber cuando estuve bloqueado
 	char* inicioBloq = temporal_get_string_time();
@@ -294,7 +311,7 @@ void* solicitarAtraparPokemon(t_tiempoBloqueado* tiempo, t_dictionary* masFuerte
 			break;
 
 			case MORI:
-
+				morir(ent,puntoMontaje);
 			break;
 		}
 	}
@@ -361,7 +378,7 @@ void* sacarTiempo(t_tiempoBloqueado* tiempo,char* estado,char* horaInicio,char* 
 			(tiempo)->minutosBloqueado = (tiempo)->minutosBloqueado + minAventura;
 			(tiempo)->segundosBloqueado = (tiempo)->segundosBloqueado + segAventura;
 			(tiempo)->milesimasBloqueado = (tiempo)->milesimasBloqueado + milAventura;
-			//printf("ahora tengo %d\n",milesimasBloqueado);
+
 
 			char* mensBloq = string_from_format("El tiempo que paso bloqueado en esta pokenest fue: %d:%d:%d:%d  \n",horasAventura,minAventura,segAventura,milAventura);
 			log_info(logs,mensBloq);
@@ -487,11 +504,13 @@ int murioEntrenador(t_entrenador *ent){ // Poner return 1 para habilitar muerte 
 
 
 void morir(t_entrenador* ent, char* puntoMontaje){
-	mostrarMotivo();
+	mostrarMotivo(); // no esta
 	borrarArchivosBill(ent, puntoMontaje);
-	if (leQuedanVidas(ent)){
-		ent->cantidadInicialVidas = ent->cantidadInicialVidas-1; //Hacer que persista en metadatas de entrenador tambien
-		reconectarse(ent); // Ver bien como llevar a cabo esto
+	close(servidor);
+	if (ent->cantidadInicialVidas>0){
+		ent->cantidadInicialVidas = ent->cantidadInicialVidas-1;
+		//goto reconectarMapa;
+		reconectarse(ent); // Ver bien como llevar a cabo esto, no esta
 	}
 	else {
 	char respuesta[3];
@@ -527,9 +546,6 @@ void borrarMedallas(t_entrenador* ent, char* puntoMontaje){
 		free(borrarMedallas);
 }
 
-int leQuedanVidas(t_entrenador* ent){
-	return ent->cantidadInicialVidas;
-}
 
 void resetear(t_entrenador* ent, char* puntoMontaje){
 	//reiniciarHojaDeViaje(ent); //Falta implementar, como seria esto?
