@@ -31,6 +31,15 @@ typedef struct{
 	int socket;
 } t_infoCliente;
 
+typedef struct{
+	char *nombre;
+	char *padre;
+	char *abuelo;
+	int largoNombre;
+	int largoPadre;
+	int largoAbuelo;
+}t_infoDirectorio;
+
 typedef char bloque[64];
 
 t_infoCliente clientesActivos[1024];
@@ -38,7 +47,14 @@ t_infoCliente clientesActivos[1024];
 osada_header mainHeader;
 osada_file tablaDeArchivos[2048];
 int *discoMapeado;
+
 disco_osada miDisco;
+
+/* Función para obtener el nombre de un archivo desde una tabla de archivos, en formato char * */
+char *getFileName(unsigned char *nombreArchivo);
+
+// Función para obtener el nombre de un directorio, dada su ruta
+char *getNombreDirectorio(char *ruta);
 
 /* Función loca para testear rececpción de mensajes a través de un socket. */
 void imprimirGiladas(void *unCliente);

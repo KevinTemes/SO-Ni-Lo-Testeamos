@@ -80,15 +80,24 @@ disco_osada osada_iniciar() {
 // Porque antes recibia solo las structs
 
 	disco_osada unDisco;
+	unDisco.header = malloc(sizeof(osada_header));
 
 	FILE* archivo;
-	if ((archivo = fopen("../challenge.bin" , "r")) == NULL) {
+/*	if ((archivo = fopen("../basic.bin" , "r")) == NULL) {
+		log_error(logs,"No se pudo abrir archivo\n");
+
+		exit(0);
+			} */
+
+	// Este fopen lo hago con la ruta completa para debugear en eclipse. hay que usar el de arriba!
+	if ((archivo = fopen("/home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/challenge.bin" , "r")) == NULL) {
 		log_error(logs,"No se pudo abrir archivo\n");
 
 		exit(0);
 			}
+
 	int disco;
-	disco= open("../basic.bin",O_RDWR);
+	disco= open("../challenge.bin",O_RDWR);
 
 
 	//datos del archivo, no lo pongo en funcion auxiliar porque despues necesito los int
@@ -115,7 +124,7 @@ disco_osada osada_iniciar() {
 
 
 	//leo el header
-  //  fread(head,sizeof(osada_header),1,archivo);
+	// fread(head,sizeof(osada_header),1,archivo);
     fread(unDisco.header,sizeof(osada_header),1,archivo);
 
     //esto muestra el header
@@ -138,6 +147,7 @@ disco_osada osada_iniciar() {
     log_info(logs,"Inicio de Tabla de Asignaciones (bloque): %d\n",unDisco.header->allocations_table_offset);
     log_info(logs,"Tamaño de Datos: %d\n",unDisco.header->data_blocks);
 
+
     int h=0; // despues lo cambiamos, sino tira warning
 
     //multiplico N bytes del bitmap por el tamaño de un bloque para desplazarme esa cantidad y saltear el bitmap
@@ -157,7 +167,7 @@ disco_osada osada_iniciar() {
 
 
     log_info(logs,"\n\n----TABLA----\n\n");
-    log_info(logs,"Estado: %c\n",unDisco.tablaDeArchivos->state);
+
 
 /*    int j;
     for(j=0;j<17;j++){
@@ -168,7 +178,8 @@ disco_osada osada_iniciar() {
 
 
     int i;
-    for(i=0; i<=140; i++){
+    for(i=0; i<=160; i++){
+    log_info(logs,"Estado: %c\n",unDisco.tablaDeArchivos[i].state);
     log_info(logs, "Nombre del archivo: %s \n",unDisco.tablaDeArchivos[i].fname);
     log_info(logs,"Bloque Padre: %d\n",unDisco.tablaDeArchivos[i].parent_directory);
     log_info(logs,"Tamaño del Archivo: %d\n",unDisco.tablaDeArchivos[i].file_size);
@@ -181,5 +192,6 @@ disco_osada osada_iniciar() {
     free(logs);
 
 	return unDisco;
+	free(unDisco.header);
 }
 

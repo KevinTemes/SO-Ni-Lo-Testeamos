@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
 
 
 	//LOGS
-	remove("PokeServidor.log");
+remove("PokeServidor.log");
 	puts("Creando archivo de logueo PokeServidor...\n");
 	logs = log_create("PokeServidor.log", "PokedexServidor", true, log_level_from_string("INFO"));
 	puts("Log Pokedex Servidor creado exitosamente \n");

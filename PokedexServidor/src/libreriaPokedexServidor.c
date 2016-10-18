@@ -95,6 +95,92 @@ void notificarCaida(){
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
+/* Función para remover un char en concreto de un string */
+void removeChar(char *string, char basura) {
+	char *src, *dst;
+	for (src = dst = string; *src != '\0'; src++) {
+		*dst = *src;
+		if (*dst != basura)
+			dst++;
+	}
+	*dst = '\0';
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+char *getFileName(unsigned char *nombreArchivo){
+	int i = 0;
+	while(nombreArchivo[i] != "\0" && i <= 17){
+		i++;
+	}
+	char *nombre = malloc(i);
+	memcpy(nombre, nombreArchivo, i);
+
+	return nombre;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+char *getNombreDirectorio(char *ruta){
+	char *nombre;
+	int i = 0;
+	char **separador = string_split(ruta, "/");
+	while(separador[i] != NULL){
+		nombre = separador[i];
+		i++;
+	}
+
+	return nombre;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+char *getDirectorioPadre(char *ruta){
+	char *nombrePadre = string_new();
+	int i = 0;
+	char **separador = string_split(ruta, "/");
+	int encontreNull = 0;
+	while(encontreNull == 0){
+		if(separador[i] == NULL){encontreNull = 1;}
+		i++;
+	}
+	if(i >= 3){
+		nombrePadre = separador[i - 3];
+	}
+	else{if(strlen(nombrePadre) <= 1){
+		nombrePadre = NULL;}
+	}
+	return nombrePadre;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+char *getDirectorioAbuelo(char *ruta){
+	char *nombreAbuelo = string_new();
+	int i = 0;
+	char **separador = string_split(ruta, "/");
+	int encontreNull = 0;
+	while(encontreNull == 0){
+		if(separador[i] == NULL){encontreNull = 1;}
+		i++;
+	}
+	if(i >= 4){
+		nombreAbuelo = separador[i - 4];
+	}
+	else{if (strlen(nombreAbuelo) <= 1){
+		nombreAbuelo = NULL;}
+	}
+	return nombreAbuelo;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+t_infoDirectorio getInfoDirectorio(char *ruta){
+	t_infoDirectorio directorio;
+	directorio.nombre = getNombreDirectorio(ruta);
+	directorio.padre = getDirectorioPadre(ruta);
+	directorio.abuelo = getDirectorioAbuelo(ruta);
+	directorio.largoNombre = strlen(directorio.nombre);
+	if(directorio.padre != NULL){
+	directorio.largoPadre = strlen(directorio.padre);
+	}
+	if(directorio.abuelo != NULL){
+	directorio.largoAbuelo = strlen(directorio.abuelo);
+	}
+	return directorio;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 void atenderConexion(void *numeroCliente){
 	int unCliente = *((int *) numeroCliente);
 	char paquete[1024];
@@ -114,39 +200,78 @@ void atenderConexion(void *numeroCliente){
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-char *osada_leerContenidoDirectorio(char *unDirectorio){
+char *osada_leerContenidoDirectorio(char *unaRuta){
 
-	char *contenido = malloc(2048 * 17);
+	char *contenido = string_new();
+	char *fname = string_new();
+	char *nombreArchivo = string_new();
+	char *nombrePadre = string_new();
+	char *nombreAbuelo = string_new();
 	char *separador = ";";
-	int directorioPadre = 999999;
+	int parentBlock = 999999;
 	int i;
-	char *fname = malloc(17);
+	int iPadre;
+	int iAbuelo;
+	t_infoDirectorio miDirectorio = getInfoDirectorio(unaRuta);
 
-	// Puede que acá haya que agregar un if() adicional para el caso del directorio raíz
 
 	for (i = 0; i <= 2048; i++){
 		// Recorro la tabla buscando la estructura asociada al directorio que nos pasaron
-		memcpy(fname, miDisco.tablaDeArchivos[i].fname, 17);
-		if(fname == unDirectorio){
-				directorioPadre = i;
-		};
+		fname = getFileName(miDisco.tablaDeArchivos[i].fname);
+		if(strncmp(fname, miDirectorio.nombre, miDirectorio.largoNombre) == 0){
+			if(miDirectorio.padre == NULL && (int)miDisco.tablaDeArchivos[i].parent_directory == 65535){
+				parentBlock = i;}
+
+			// Me fijo si el directorio que me pasaron está alojado en otra carpeta padre, y valido
+			else if (miDirectorio.padre != NULL){
+				iPadre = miDisco.tablaDeArchivos[i].parent_directory;
+				if(iPadre == 65535){nombrePadre = "root";}
+				else {nombrePadre = getFileName(miDisco.tablaDeArchivos[iPadre].fname);}
+
+				if(strncmp(nombrePadre, miDirectorio.padre, miDirectorio.largoPadre) == 0){
+			// Me fijo si el directorio padre también está alojado a su vez en otro directorio
+					if(miDirectorio.abuelo != NULL){
+						iAbuelo = miDisco.tablaDeArchivos[iPadre].parent_directory;
+						if(iAbuelo == 65535){nombreAbuelo = "root";}
+						else{nombreAbuelo = getFileName(miDisco.tablaDeArchivos[iAbuelo].fname);}
+						removeChar(nombreAbuelo, ' ');
+						removeChar(miDirectorio.abuelo, ' ');
+						if(strncmp(nombreAbuelo, miDirectorio.abuelo, miDirectorio.largoAbuelo) == 0){
+							parentBlock = i;
+						}
+					}
+					else {
+						parentBlock = i;
+					}
+				}
+			}
+		}
 	}
-	if(directorioPadre == 999999){
+	if(parentBlock == 999999){
 		printf("no existe el directorio o subdirectorio especificado\n");
+		exit(0);
 	}
 	// Busco todos los archivos hijos de ese directorio padre, y me copio el nombre de cada uno
 	for (i = 0; i <= 2048; i++){
-			if(miDisco.tablaDeArchivos[i].parent_directory == directorioPadre){
-				string_append(&contenido, (char*)tablaDeArchivos[i].fname);
+			if(miDisco.tablaDeArchivos[i].parent_directory == parentBlock){
+				nombreArchivo = getFileName(miDisco.tablaDeArchivos[i].fname);
+				if(strlen(nombreArchivo) > 0){
+				string_append(&contenido, nombreArchivo);
 				// Concateno los nombres en un string, separados por la variable separador.
 				// Después la idea es separarlos y manejarlos como corresponda afuera de esta función
 				string_append(&contenido, separador);
+				}
 			}
 		}
-printf("contenido del directorio:\n %s", contenido);
+
+char **contenidoDirectorio = string_split(contenido, ";");
+int j;
+printf("contenido del directorio:\n");
+for (j = 0; contenidoDirectorio[j] != NULL; j++){
+	printf("%s\n", contenidoDirectorio[j]);
+}
 
 return contenido;
-free(contenido);
 free(fname);
 }
 
