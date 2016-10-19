@@ -185,22 +185,162 @@ void atenderConexion(void *numeroCliente){
 	int unCliente = *((int *) numeroCliente);
 	char paquete[1024];
 	int status = 1;
+	int codOp;
+	int tamanioRuta, tamanioNuevoContenido, tamanioNombre;;
+	char *ruta;
+	void *buffer;
 
 	printf("%sPokeCliente #%d conectado! esperando mensajes... \n", KAMARILLO,
 				clientesActivos[unCliente].cliente);
 
 	while(status !=0){
-		status = recv(clientesActivos[unCliente].socket, (void*) paquete, 1024, 0);
+
+		//status = recv(clientesActivos[unCliente].socket, (void*) paquete, 1024, 0);
 		if (status != 0) {
-			printf("el PokeCliente #%d dijo: \n %s", clientesActivos[unCliente].cliente, paquete);
-			enviarHeader(clientesActivos[unCliente].socket, 1);
+			recv(clientesActivos[unCliente].socket, &codOp, sizeof(int), MSG_WAITALL);
+
+			switch(codOp){
+
+			case 0: // .getAttr
+
+				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				buffer = malloc(tamanioRuta);
+				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				ruta = (char *) buffer; // chequear este casteo y los proximos que sean iguales
+				// char *contenido = osada_getAttr(ruta);
+				// int tamanioContenido = (sizeof(char)) * strlen(contenido);
+				// void *buffer = malloc(tamanioContenido + sizeof(int));
+				// serializarString(buffer, contenido, tamanioContenido);
+				// send(clientesActivos[unCliente].socket, buffer, sizeof(int) + tamanioContenido, 0);
+				// free(buffer);
+
+			break;
+
+			case 1: // .readdir (- ls)
+
+				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				buffer = malloc(tamanioRuta);
+				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				ruta = (char *) buffer;
+				char *contenido = osada_readdir(ruta);
+				int tamanioContenido = sizeof(char) * strlen(contenido);
+				void *bufferDir = malloc(tamanioContenido + sizeof(int));
+				// serializarString(bufferDir, contenido, tamanioContenido);
+				send(clientesActivos[unCliente].socket, bufferDir, sizeof(int) + tamanioContenido, 0);
+				free(buffer);
+				free(bufferDir);
+
+			break;
+
+			case 2: // .read
+
+				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				void *buffer = malloc(tamanioRuta);
+				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				ruta = (char *) buffer;
+				void *contenidoArchivo = osada_read(ruta);
+				int tamanioArchivo; // ver después cómo obtener este valor;
+				buffer = malloc(tamanioArchivo + sizeof(int));
+				// serializarArchivo(buffer, contenidoArchivo, tamanioArchivo);
+				send(clientesActivos[unCliente].socket, buffer, sizeof(int) + tamanioContenido, 0);
+				free(buffer);
+
+			break;
+
+			case 3: // crear archivo (por ahora supungo que el nombre ya viene en la ruta)
+
+				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				buffer = malloc(tamanioRuta);
+				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				ruta = (char *) buffer;
+				// int exito = osada_crearArchivo(ruta);
+				// send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
+				free(buffer);
+
+			break;
+
+			case 4: // modificar archivo
+
+
+				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				recv(clientesActivos[unCliente].socket, &tamanioNuevoContenido, sizeof(int), MSG_WAITALL);
+				buffer = malloc(tamanioRuta);
+				ruta = (char *)buffer;
+				void *bufferContenido = malloc(tamanioNuevoContenido);
+				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				ruta = (char *) buffer;
+				recv(clientesActivos[unCliente].socket, bufferContenido,
+						tamanioNuevoContenido, MSG_WAITALL);
+				//int exito = osada_write(ruta, bufferContenido);
+				//send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
+				free(buffer);
+				free(bufferContenido);
+
+			break;
+
+			case 5: // borrar archivo (unlink)
+
+				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				buffer = malloc(tamanioRuta);
+				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				ruta = (char *) buffer;
+				// int exito = osada_unlink(ruta);
+				//send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
+				free(buffer);
+
+			break;
+
+			case 6: // Crear directorio/subdirectorio (mkdir)
+
+				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				buffer = malloc(tamanioRuta);
+				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				ruta = (char *) buffer;
+				// int exito = osada_mkdir(ruta);
+				//send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
+				free(buffer);
+
+			break;
+
+			case 7: // Borrar directorio (rmdir)
+
+				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				buffer = malloc(tamanioRuta);
+				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				ruta = (char *) buffer;
+				// int exito = osada_rmdir(ruta);
+				//send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
+				free(buffer);
+
+			break;
+
+			case 8: // Renombrar archivo (rename)
+
+
+				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				recv(clientesActivos[unCliente].socket, &tamanioNombre, sizeof(int), MSG_WAITALL);
+				buffer = malloc(tamanioRuta);
+				void *bufferNombre = malloc(tamanioNombre);
+				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				recv(clientesActivos[unCliente].socket, bufferNombre, tamanioNombre, MSG_WAITALL);
+				ruta = (char *) buffer;
+				char *nombre = (char *) bufferNombre;
+				// int exito = osada_rename(ruta, nombre);
+				//send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
+				free(buffer);
+				free(bufferNombre);
+
+			break;
+
 			}
+
+		}
 
 	}
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-char *osada_leerContenidoDirectorio(char *unaRuta){
+char *osada_readdir(char *unaRuta){
 
 	char *contenido = string_new();
 	char *fname = string_new();
@@ -276,7 +416,7 @@ free(fname);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-void *osada_leerArchivo(char *unArchivo){
+void *osada_read(char *unArchivo){
 	void *buffer;
 	int tamanioBloque = 64;
 	int tamanioBitmap = miDisco.header->bitmap_blocks;

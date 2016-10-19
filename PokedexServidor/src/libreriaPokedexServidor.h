@@ -75,6 +75,8 @@ void notificarCaida();
 /* Función para atender una conexión en particular */
 void atenderConexion(void *numeroCliente);
 
-char *osada_leerContenidoDirectorio(char *unDirectorio);
+char *osada_readdir(char *unDirectorio);
+
+void *osada_read(char *unArchivo);
 
 #endif /* LIBRERIAPOKEDEXSERVIDOR_H_ */
