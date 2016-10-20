@@ -19,6 +19,7 @@
 #include <commons/collections/list.h>
 #include <commons/string.h>
 #include <commons/log.h>
+#include <commons/bitarray.h>
 #include <pthread.h>
 #include <poll.h>
 #include <semaphore.h>
@@ -74,6 +75,12 @@ void notificarCaida();
 
 /* Función para atender una conexión en particular */
 void atenderConexion(void *numeroCliente);
+
+/* Serialización de strings */
+void *serializarString(char *unString);
+
+/* Búsqueda de la posicion de un un archivo/directorio en la tabla de archivos */
+int buscarArchivo(char *unaRuta);
 
 char *osada_readdir(char *unDirectorio);
 

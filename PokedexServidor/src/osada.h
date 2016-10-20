@@ -2,7 +2,7 @@
 #define OSADA_H_
 
 #include <stdint.h>
-
+#include <commons/bitarray.h>
 #define OSADA_BLOCK_SIZE 64
 #define OSADA_FILENAME_LENGTH 17
 
@@ -57,12 +57,21 @@ typedef struct {
 	osada_block_pointer first_block;
 }osada_file;
 
+typedef struct{
+	int bloques_header;
+	int bloques_bitmap;
+	int bloques_tablaDeArchivos;
+	int bloques_tablaDeAsignaciones;
+	int bloques_datos;
+}tamanio_osada;
 
 typedef struct{
 	osada_header *header;
+	t_bitarray *bitmap;
 	osada_file tablaDeArchivos[2048];
-	int tablaDeAsignaciones[2048];
+	int *tablaDeAsignaciones;
 	int *discoMapeado;
+	tamanio_osada cantBloques;
 }disco_osada;
 
 _Static_assert( sizeof(osada_file) == (sizeof(osada_block) / 2.0), "osada_file size does not half osada_block size");

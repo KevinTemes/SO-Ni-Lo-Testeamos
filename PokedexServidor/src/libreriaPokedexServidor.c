@@ -107,6 +107,16 @@ void removeChar(char *string, char basura) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
+void *serializarString(char *unString){
+	int tamanioString = sizeof(char) * strlen(unString);
+	void *buffer = malloc(sizeof(int) + tamanioString);
+	memcpy(buffer, &tamanioString, sizeof(int));
+	memcpy(buffer + sizeof(int), &unString, tamanioString);
+
+	return buffer;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 char *getFileName(unsigned char *nombreArchivo){
 	int i = 0;
 	while(nombreArchivo[i] != "\0" && i <= 17){
@@ -181,6 +191,64 @@ t_infoDirectorio getInfoDirectorio(char *ruta){
 	return directorio;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int buscarArchivo(char *unaRuta){
+	t_infoDirectorio miDirectorio = getInfoDirectorio(unaRuta);
+	int posicion = 0;
+	char *fname = string_new();
+	char *nombreArchivo = string_new();
+	char *nombrePadre = string_new();
+	char *nombreAbuelo = string_new();
+	int parentBlock = 999999;
+	int i;
+	int iPadre;
+	int iAbuelo;
+
+	for (i = 0; i <= 2048; i++){
+		// Recorro la tabla buscando la estructura asociada al directorio que nos pasaron
+		fname = getFileName(miDisco.tablaDeArchivos[i].fname);
+		if(strncmp(fname, miDirectorio.nombre, miDirectorio.largoNombre) == 0){
+			if(miDirectorio.padre == NULL && (int)miDisco.tablaDeArchivos[i].parent_directory == 65535){
+				parentBlock = i;}
+
+			// Me fijo si el directorio que me pasaron está alojado en otra carpeta padre, y valido
+			else if (miDirectorio.padre != NULL){
+				iPadre = miDisco.tablaDeArchivos[i].parent_directory;
+				if(iPadre == 65535){nombrePadre = "root";}
+				else {nombrePadre = getFileName(miDisco.tablaDeArchivos[iPadre].fname);}
+
+				if(strncmp(nombrePadre, miDirectorio.padre, miDirectorio.largoPadre) == 0){
+			// Me fijo si el directorio padre también está alojado a su vez en otro directorio
+					if(miDirectorio.abuelo != NULL){
+						iAbuelo = miDisco.tablaDeArchivos[iPadre].parent_directory;
+						if(iAbuelo == 65535){nombreAbuelo = "root";}
+						else{nombreAbuelo = getFileName(miDisco.tablaDeArchivos[iAbuelo].fname);}
+						removeChar(nombreAbuelo, ' ');
+						removeChar(miDirectorio.abuelo, ' ');
+						if(strncmp(nombreAbuelo, miDirectorio.abuelo, miDirectorio.largoAbuelo) == 0){
+							parentBlock = i;
+						}
+					}
+					else {
+						parentBlock = i;
+					}
+				}
+			}
+		}
+	}
+
+	if (parentBlock != 999999){
+		posicion = parentBlock;
+	}
+	else {
+		posicion = -1;
+	}
+
+	return posicion;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 void atenderConexion(void *numeroCliente){
 	int unCliente = *((int *) numeroCliente);
 	char paquete[1024];
@@ -207,11 +275,8 @@ void atenderConexion(void *numeroCliente){
 				buffer = malloc(tamanioRuta);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = (char *) buffer; // chequear este casteo y los proximos que sean iguales
-				// char *contenido = osada_getAttr(ruta);
-				// int tamanioContenido = (sizeof(char)) * strlen(contenido);
-				// void *buffer = malloc(tamanioContenido + sizeof(int));
-				// serializarString(buffer, contenido, tamanioContenido);
-				// send(clientesActivos[unCliente].socket, buffer, sizeof(int) + tamanioContenido, 0);
+				// int tipoArchivo = osada_getAttr(ruta);
+				// send(clientesActivos[unCliente].socket, tipoArchivo, sizeof(int) + tamanioContenido, 0);
 				// free(buffer);
 
 			break;
@@ -224,8 +289,7 @@ void atenderConexion(void *numeroCliente){
 				ruta = (char *) buffer;
 				char *contenido = osada_readdir(ruta);
 				int tamanioContenido = sizeof(char) * strlen(contenido);
-				void *bufferDir = malloc(tamanioContenido + sizeof(int));
-				// serializarString(bufferDir, contenido, tamanioContenido);
+				void *bufferDir = serializarString(contenido);
 				send(clientesActivos[unCliente].socket, bufferDir, sizeof(int) + tamanioContenido, 0);
 				free(buffer);
 				free(bufferDir);
@@ -340,6 +404,20 @@ void atenderConexion(void *numeroCliente){
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
+int osada_getattr(char *unaRuta){
+	int tipoArchivo;
+	int posicion = buscarArchivo(unaRuta);
+	if(miDisco.tablaDeArchivos[posicion].state == REGULAR){
+		tipoArchivo = 1;
+	}
+	else if(miDisco.tablaDeArchivos[posicion].state == DIRECTORY){
+		tipoArchivo = 2;
+	}
+
+	return tipoArchivo;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 char *osada_readdir(char *unaRuta){
 
 	char *contenido = string_new();
@@ -416,42 +494,26 @@ free(fname);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-void *osada_read(char *unArchivo){
-	void *buffer;
+void *osada_read(char *ruta){
+
+	int i = buscarArchivo(ruta);
+	int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
 	int tamanioBloque = 64;
-	int tamanioBitmap = miDisco.header->bitmap_blocks;
-	int inicioBloquesDeDatos = miDisco.header->fs_blocks - (miDisco.header->fs_blocks
-								- miDisco.header->data_blocks);
-	int tamanioTablaAsignaciones = ((miDisco.header->fs_blocks - 1 - tamanioBitmap) * 4)
-									/ tamanioBloque;
-	int i;
-	tabla_asignaciones *tablaDeAsignaciones = malloc(tamanioTablaAsignaciones);
-	// Me copio la tabla de asignaciones
-	memcpy(tablaDeAsignaciones, discoMapeado[mainHeader.allocations_table_offset * 64],
-			tamanioTablaAsignaciones);
+	void *buffer = malloc(miDisco.tablaDeArchivos[i].file_size);
+	int tamanioActualBuffer = 0;
+	int inicioDatos = (miDisco.cantBloques.bloques_header + miDisco.cantBloques.bloques_bitmap
+			+ miDisco.cantBloques.bloques_bitmap + miDisco.cantBloques.bloques_tablaDeAsignaciones)
+					* 64;
 
-	for(i = 0; i <= 2048; i++){
-		//Busco en la tabla de archivos el que tiene el mismo nombre
-		if(tablaDeArchivos[i].fname == unArchivo){
 
-			buffer = malloc(tablaDeArchivos[i].file_size);
-			int desplazamiento = 0;
-			int siguienteBloque = (int)tablaDeAsignaciones[tablaDeArchivos[i].first_block];
+	while(miDisco.tablaDeAsignaciones[siguienteBloque]){
+		memcpy(buffer + tamanioActualBuffer,
+				&miDisco.discoMapeado[inicioDatos + (siguienteBloque * 64)], tamanioBloque);
+		tamanioActualBuffer += 64;
 
-			// Voy agregando al buffer los bloques de datos correspondientes al archivo, uno a uno
-
-			while(tablaDeAsignaciones[siguienteBloque]){ //Valido así porque FFFFFFFF == -1
-				memcpy(buffer + desplazamiento, &discoMapeado[siguienteBloque * 64], tamanioBloque);
-				desplazamiento += 64;
-			}
-
-		}
 	}
 
-	free(tablaDeAsignaciones);
-
 	return(buffer);
-	free(buffer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////

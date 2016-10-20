@@ -14,6 +14,7 @@
 #include "osada.h"
 #include <commons/log.h>
 #include <commons/string.h>
+#include <commons/bitarray.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -122,6 +123,12 @@ disco_osada osada_iniciar() {
 	//BLOQUES DE DATOS ------> X bloques = F-1-N-1024-A
 	int X = bloques-1-N-1024-A;
 
+	unDisco.cantBloques.bloques_header = 1;
+	unDisco.cantBloques.bloques_bitmap = N;
+	unDisco.cantBloques.bloques_tablaDeArchivos = 1024;
+	unDisco.cantBloques.bloques_tablaDeAsignaciones = A;
+	unDisco.cantBloques.bloques_datos = X;
+
 
 	//leo el header
 	// fread(head,sizeof(osada_header),1,archivo);
@@ -148,13 +155,19 @@ disco_osada osada_iniciar() {
     log_info(logs,"Tamaño de Datos: %d\n",unDisco.header->data_blocks);
 
 
+    // Leo el bitmap
+    char *unBitarray = malloc(N * OSADA_BLOCK_SIZE);
+    fread(unBitarray, N * OSADA_BLOCK_SIZE, 1, archivo);
+    unDisco.bitmap = bitarray_create(unBitarray, (N * OSADA_BLOCK_SIZE));
+
+
     int h=0; // despues lo cambiamos, sino tira warning
 
     //multiplico N bytes del bitmap por el tamaño de un bloque para desplazarme esa cantidad y saltear el bitmap
     //h = fseek(archivo,(N*OSADA_BLOCK_SIZE),SEEK_CUR); seria la funcion equivalente al seekBloques
     //ahorra tiempo, que se yo
 
-    seekBloques(archivo,N);
+ //   seekBloques(archivo,N);
 
     if(h!=0){
     	perror("Error con el seek");
@@ -188,10 +201,18 @@ disco_osada osada_iniciar() {
     }
 
 
+    // Leo la tabla de asignaciones
+    unDisco.tablaDeAsignaciones = malloc(A * OSADA_BLOCK_SIZE);
+    fread(unDisco.tablaDeAsignaciones, (A * OSADA_BLOCK_SIZE), 1, archivo);
+
+
+
+
     fclose(archivo);
     free(logs);
-
+    free(unBitarray);
 	return unDisco;
-	free(unDisco.header);
+
+
 }
 
