@@ -280,7 +280,7 @@ int conectarServidor(char* IP, char* Port, int backlog) {
 }
 
 /* Funcion que serializa una estructura paquete */
-char *serializar(Paquete *unPaquete) {
+char *serializar(t_paquete *unPaquete) {
 	void *buffer = malloc(
 			sizeof(int)/*CodOp*/+ sizeof(int)/*ProgCounter*/+ sizeof(int)/*PidProceso*/
 			+ sizeof(int)/*quantum*/+ sizeof(int)/*Tamañopath*/
@@ -296,8 +296,8 @@ char *serializar(Paquete *unPaquete) {
 /* deserializar elheader del buffer a la estructura paquete
  *  devuelve la direccion a la estructura Paquete */
 
-Paquete *deserializar_header(char *buffer) {
-	Paquete *contexto_ejecucion = malloc(sizeof(Paquete));
+t_paquete *deserializar_header(char *buffer) {
+	t_paquete *contexto_ejecucion = malloc(sizeof(t_paquete));
 	memcpy(&contexto_ejecucion->codigoOperacion, buffer, sizeof(int));
 	memcpy(&contexto_ejecucion->programCounter, buffer + sizeof(int),
 			sizeof(int));
@@ -307,16 +307,16 @@ Paquete *deserializar_header(char *buffer) {
 	return contexto_ejecucion;
 }
 /* deserializa la data del buffer con los datos recibidos en el deserializar_header */
-void deserializar_data(Paquete *unPaquete, char *buffer) {
+void deserializar_data(t_paquete *unPaquete, char *buffer) {
 	unPaquete->path = malloc(unPaquete->tamanio);
 	memcpy(unPaquete->path, buffer, unPaquete->tamanio);
 }
 /* Funcion que genera un paquete. agarra los valores correspondientes y
  * los coloca dentro de la estructura Paquete */
 
-Paquete *generarPaquete(int codigoOperacion, int tamMessage, char *message,
+t_paquete *generarPaquete(int codigoOperacion, int tamMessage, char *message,
 		int programCounter, int quantum, int pid) {
-	Paquete * paquete = malloc(sizeof(Paquete));
+	t_paquete * paquete = malloc(sizeof(t_paquete));
 
 	paquete->codigoOperacion = codigoOperacion;
 	paquete->programCounter = programCounter;
@@ -328,7 +328,7 @@ Paquete *generarPaquete(int codigoOperacion, int tamMessage, char *message,
 	return paquete;
 }
 /* funcion para destruir paquete */
-void destruirPaquete(Paquete * unPaquete) {
+void destruirPaquete(t_paquete * unPaquete) {
 	free(unPaquete->path);
 	free(unPaquete);
 }

@@ -38,6 +38,17 @@ char* simbolo;
 
 
 typedef struct{
+	int hInicio;
+	int mInicio;
+	int sInicio;
+	int milInicio;
+	int hFin;
+	int mFin;
+	int sFin;
+	int milFin;
+}t_calculoTiempo;
+
+typedef struct{
 int horasBloqueado;
 int minutosBloqueado;
 int segundosBloqueado;
@@ -76,7 +87,25 @@ typedef struct Paquete {
 	int quantum;
 	int tamanio;
 	char *path;
-} Paquete;
+} t_paquete;
+
+int agarrarPokeConMasNivel(t_list*, t_pokemonDeserializado*);
+void terminarAventura(t_calculoTiempo*,t_tiempoBloqueado*,int,char*);
+char* empezarAventura();
+void copiarMedalla(char*,char*,t_entrenador*);
+void copiarArchivo(char*, char*, char*, t_entrenador*,char*);
+void* recibirDatos(int, int);
+void moverseEnUnaDireccion(int,int,int,int,char*,int);
+void* solicitarAtraparPokemon(t_calculoTiempo*,t_tiempoBloqueado*, t_dictionary*,t_pokemonDeserializado*,int, t_list*,char*, char*,t_entrenador*, int);
+void* sacarTiempo(t_calculoTiempo*,t_tiempoBloqueado*,char*,char*,char*);
+void borrarArchivosBill(t_entrenador*, char*);
+void borrarMedallas(t_entrenador*, char*);
+void  usoDeSeniales(t_entrenador*, char*);
+void morir(t_entrenador*, char*,char*);
+
+void resetear(t_entrenador*, char*);
+void reconectarse(t_entrenador*);
+void reiniciarHojaDeViaje(t_entrenador*);
 
 /* setup_listen(IP,PORT) *
  * Devuelve el socket que se consiguió para escuchar
@@ -127,12 +156,12 @@ int conectarCliente_con_log(char *IP, char* Port, t_log *);
  */
 int esperarConexionEntrante(int, int, t_log *);
 int conectarServidor(char* IP, char* Port, int backlog);
-Paquete *generarPaquete(int codigoOperacion, int tamMessage, char *message,
+t_paquete *generarPaquete(int codigoOperacion, int tamMessage, char *message,
 int programCounter, int quantum, int pid);
-char *serializar(Paquete *unPaquete);
-Paquete *deserializar_header(char *buffer);
-void deserializar_data(Paquete *unPaquete, char *buffer);
-void destruirPaquete(Paquete * unPaquete);
+char *serializar(t_paquete *unPaquete);
+t_paquete *deserializar_header(char *buffer);
+void deserializar_data(t_paquete *unPaquete, char *buffer);
+void destruirPaquete(t_paquete * unPaquete);
 int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje);
 void obtengoCadaUno(char* elemento);
 
