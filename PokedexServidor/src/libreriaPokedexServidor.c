@@ -196,7 +196,6 @@ int buscarArchivo(char *unaRuta){
 	t_infoDirectorio miDirectorio = getInfoDirectorio(unaRuta);
 	int posicion = 0;
 	char *fname = string_new();
-	char *nombreArchivo = string_new();
 	char *nombrePadre = string_new();
 	char *nombreAbuelo = string_new();
 	int parentBlock = 999999;
@@ -245,6 +244,19 @@ int buscarArchivo(char *unaRuta){
 	}
 
 	return posicion;
+
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+void copiarBloque(void *buffer, int bloque, int offset){
+	void *puente = malloc(64);
+	int inicioDatos = miDisco.cantBloques.bloques_header + miDisco.cantBloques.bloques_bitmap
+			+ miDisco.cantBloques.bloques_tablaDeArchivos
+			+ miDisco.cantBloques.bloques_tablaDeAsignaciones;
+	seekBloques(miDisco.disco, inicioDatos + bloque);
+	fread(puente, 64, 1, miDisco.disco);
+	memcpy(buffer + offset, puente, 64);
+	fseek(miDisco.disco, 0, SEEK_SET);
+	free(puente);
 
 }
 
@@ -423,48 +435,10 @@ char *osada_readdir(char *unaRuta){
 	char *contenido = string_new();
 	char *fname = string_new();
 	char *nombreArchivo = string_new();
-	char *nombrePadre = string_new();
-	char *nombreAbuelo = string_new();
 	char *separador = ";";
-	int parentBlock = 999999;
+	int parentBlock = buscarArchivo(unaRuta);
 	int i;
-	int iPadre;
-	int iAbuelo;
-	t_infoDirectorio miDirectorio = getInfoDirectorio(unaRuta);
 
-
-	for (i = 0; i <= 2048; i++){
-		// Recorro la tabla buscando la estructura asociada al directorio que nos pasaron
-		fname = getFileName(miDisco.tablaDeArchivos[i].fname);
-		if(strncmp(fname, miDirectorio.nombre, miDirectorio.largoNombre) == 0){
-			if(miDirectorio.padre == NULL && (int)miDisco.tablaDeArchivos[i].parent_directory == 65535){
-				parentBlock = i;}
-
-			// Me fijo si el directorio que me pasaron está alojado en otra carpeta padre, y valido
-			else if (miDirectorio.padre != NULL){
-				iPadre = miDisco.tablaDeArchivos[i].parent_directory;
-				if(iPadre == 65535){nombrePadre = "root";}
-				else {nombrePadre = getFileName(miDisco.tablaDeArchivos[iPadre].fname);}
-
-				if(strncmp(nombrePadre, miDirectorio.padre, miDirectorio.largoPadre) == 0){
-			// Me fijo si el directorio padre también está alojado a su vez en otro directorio
-					if(miDirectorio.abuelo != NULL){
-						iAbuelo = miDisco.tablaDeArchivos[iPadre].parent_directory;
-						if(iAbuelo == 65535){nombreAbuelo = "root";}
-						else{nombreAbuelo = getFileName(miDisco.tablaDeArchivos[iAbuelo].fname);}
-						removeChar(nombreAbuelo, ' ');
-						removeChar(miDirectorio.abuelo, ' ');
-						if(strncmp(nombreAbuelo, miDirectorio.abuelo, miDirectorio.largoAbuelo) == 0){
-							parentBlock = i;
-						}
-					}
-					else {
-						parentBlock = i;
-					}
-				}
-			}
-		}
-	}
 	if(parentBlock == 999999){
 		printf("no existe el directorio o subdirectorio especificado\n");
 		exit(0);
@@ -498,21 +472,18 @@ void *osada_read(char *ruta){
 
 	int i = buscarArchivo(ruta);
 	int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
-	int tamanioBloque = 64;
 	void *buffer = malloc(miDisco.tablaDeArchivos[i].file_size);
 	int tamanioActualBuffer = 0;
-	int inicioDatos = (miDisco.cantBloques.bloques_header + miDisco.cantBloques.bloques_bitmap
-			+ miDisco.cantBloques.bloques_bitmap + miDisco.cantBloques.bloques_tablaDeAsignaciones)
-					* 64;
 
-
-	while(miDisco.tablaDeAsignaciones[siguienteBloque]){
-		memcpy(buffer + tamanioActualBuffer,
-				&miDisco.discoMapeado[inicioDatos + (siguienteBloque * 64)], tamanioBloque);
+	while(miDisco.tablaDeAsignaciones[siguienteBloque] != 65535){
+		copiarBloque(buffer, siguienteBloque, tamanioActualBuffer);
 		tamanioActualBuffer += 64;
+		siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
 
 	}
 
+	char *imprimir = (char *)buffer;
+;	printf("%s\n", imprimir);
 	return(buffer);
 }
 

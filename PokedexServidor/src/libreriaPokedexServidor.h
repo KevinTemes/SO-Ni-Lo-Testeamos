@@ -82,8 +82,13 @@ void *serializarString(char *unString);
 /* Búsqueda de la posicion de un un archivo/directorio en la tabla de archivos */
 int buscarArchivo(char *unaRuta);
 
+/* copiado de un bloque de datos en un buffer */
+void copiarBloque(void *buffer, int bloque, int offset);
+
+int osada_getattr(char *unaRuta);
+
 char *osada_readdir(char *unDirectorio);
 
-void *osada_read(char *unArchivo);
+void *osada_read(char *unaRuta);
 
 #endif /* LIBRERIAPOKEDEXSERVIDOR_H_ */

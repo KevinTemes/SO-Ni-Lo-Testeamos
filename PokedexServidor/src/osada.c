@@ -86,7 +86,6 @@ disco_osada osada_iniciar() {
 	FILE* archivo;
 /*	if ((archivo = fopen("../basic.bin" , "r")) == NULL) {
 		log_error(logs,"No se pudo abrir archivo\n");
-
 		exit(0);
 			} */
 
@@ -144,7 +143,7 @@ disco_osada osada_iniciar() {
     }*/
 
     // Mapeo el archivo en un puntero, con mmap
-    unDisco.discoMapeado = mmap(0, sz, PROT_READ | PROT_WRITE, MAP_SHARED, archivo, 0);
+
 
 
     log_info(logs, "Identificador: %s\n", unDisco.header->magic_number);
@@ -205,7 +204,7 @@ disco_osada osada_iniciar() {
     unDisco.tablaDeAsignaciones = malloc(A * OSADA_BLOCK_SIZE);
     fread(unDisco.tablaDeAsignaciones, (A * OSADA_BLOCK_SIZE), 1, archivo);
 
-
+    unDisco.disco = fopen("../challenge.bin" , "r+");
 
 
     fclose(archivo);
@@ -215,4 +214,3 @@ disco_osada osada_iniciar() {
 
 
 }
-

@@ -48,8 +48,9 @@ remove("PokeServidor.log");
 		printf("ingrese la accion a testear, o escriba 'ayuda' para ver comandos disponibles:\n");
 		char *accion = malloc(sizeof(char) * 32);
 		scanf("%[^\n]%*c", accion);
-		while(strcmp(accion,"exit")!=0){
-		test_funcionalidad(accion);
+		char *algo = accion;
+		while(strcmp(algo,"exit")!=0){
+		test_funcionalidad(algo);
 		printf("ingrese la accion a testear, o escriba 'ayuda' para ver comandos disponibles:\n");
 		scanf("%[^\n]%*c", accion);
 		};
