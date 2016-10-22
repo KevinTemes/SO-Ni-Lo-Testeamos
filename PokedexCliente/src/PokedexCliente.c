@@ -25,213 +25,278 @@
 /*  acordarse de chequear si hay que poner -DFUSE_USE_VERSION=27 y -D_FILE_OFFSET_BITS=64
  * como parámetros de compilación */
 
-#define KNORMAL "\x1B[0m"
-#define KROJO "\x1B[31m"
-#define KVERDE "\x1B[32m"
-#define KAMARILLO "\x1B[33m"
-#define KAZUL "\x1B[34m"
-#define KVIOLETA "\x1B[35m"
-#define KCYAN "\x1B[36m"
-#define KBLANCO "\x1B[37m"
-
+//-----------------------------------------------------
+int pokedexServidor;
+int protocolo;
+int* pmap_arch;
+struct stat archivoStat;
+//-----------------------------------------------------
 
 /* defines para testear sockets */
 #define IP "127.0.0.1"
 #define PUERTO "7777"
 #define PACKAGESIZE 1024
 
-/* variables de prueba para probar la implementación de fuse*/
-int *pmap_red_metadata;
-int *pmap_pueblo_paleta_medalla;
-int *pmap_pueblo_paleta_metadata;
-int *pmap_pokenest_pikachu_metadata;
-int *pmap_pokenest_pikachu_pikachu001_dat;
+//--------------------------------------------------------------------------------
+void* recibirDatos(int conexion, int tamanio){
+	void* mensaje=(void*)malloc(tamanio);
+	int bytesRecibidos = recv(conexion, mensaje, tamanio, MSG_WAITALL);
+	if (bytesRecibidos != tamanio) {
+		perror("Error al recibir el mensaje\n");
+		free(mensaje);
+		char* adios=string_new();
+		string_append(&adios,"0\0");
+		return adios;}
+	return mensaje;
+}
 
-struct stat redMetadataStat;
-struct stat puebloPaletaMedallaStat;
-struct stat puebloPaletaMetadataStat;
-struct stat pokenestPikachuMetadataStat;
-struct stat pokenestPikachu001Stat;
+void solicitarServidor(const char* path, int protocolo){ // Este va para los casos que se envie un path y que el servidor tenga que diferenciar que hay que hacer por un protocolo
 
+	int sizePath = (sizeof (char) * strlen(path));
+	int sizeProtocolo = sizeof(int);
+
+	void *leBuffer = malloc(sizePath + sizeProtocolo);
+
+	// Aca tengo que pasar los sizes para poder saber donde termina al path y donde empieza el protocolo
+	memcpy(leBuffer,&sizePath, sizeof(int));
+	memcpy(leBuffer + sizeof(int), &sizeProtocolo, sizeof(int));
+
+	//Aca les paso el path y protocolo
+	memcpy(leBuffer + (2 * sizeof(int)), path, sizePath);
+	memcpy(leBuffer + (2 * sizeof(int)) + sizePath , &protocolo, sizeProtocolo);
+
+	send(pokedexServidor,leBuffer, sizePath + sizeProtocolo, 0);
+	free(leBuffer); // No se si esto va
+}
+
+void solicitarModificacionServidor(const char* path,const char* objetivo, int protocolo){
+	// Por medio del protocolo el servidor sabe que tiene que modificar
+
+	int sizePath = (sizeof (char) * strlen(path));
+	int sizeObjetivo = (sizeof (char) * strlen(objetivo));
+	int sizeProtocolo = sizeof (int);
+
+	void *leBuffer = malloc (sizePath + sizeObjetivo + sizeProtocolo);
+
+	memcpy(leBuffer, &sizePath, sizeof(int));
+	memcpy(leBuffer + sizeof(int), &sizeObjetivo, sizeof(int));
+	memcpy(leBuffer + (2 * sizeof(int)), &sizeProtocolo, sizeof(int));
+
+	memcpy(leBuffer + (3 * sizeof(int)),&path, sizePath);
+	memcpy(leBuffer + (3 * sizeof(int))+ sizePath, &objetivo, sizeObjetivo);
+	memcpy(leBuffer + (3 * sizeof(int))+ sizePath + sizeObjetivo, &protocolo, sizeProtocolo);
+
+	send(pokedexServidor, leBuffer, sizePath + sizeObjetivo + sizeProtocolo, 0);
+	free(leBuffer);
+}
+
+int recibirTipoFile(){
+	int tipoFile = 0;
+	int sizeTipoFile = sizeof(int);
+
+	recv(pokedexServidor, &sizeTipoFile, sizeof(int), MSG_WAITALL);
+	void*bufferTipoFile = malloc(sizeTipoFile);
+	recv(pokedexServidor, bufferTipoFile, sizeTipoFile, 0);
+	tipoFile = (int) bufferTipoFile;
+
+	free(bufferTipoFile);
+	return tipoFile;
+}
+
+char* recibirListado(){
+	char* listadoConcatenado = NULL;
+	int sizeListadoConcatenado = (sizeof(char)* strlen(listadoConcatenado));
+
+	recv(pokedexServidor, &sizeListadoConcatenado, sizeof(int),MSG_WAITALL );
+	void*bufferListado = malloc(sizeListadoConcatenado);
+	recv(pokedexServidor,bufferListado,sizeListadoConcatenado,0);
+	listadoConcatenado = (char*) bufferListado;
+
+	free(bufferListado);
+	return listadoConcatenado;
+}
+
+char* recibirContenidoArchivo(){ // recibe contenido de archivo en buffer void
+	void* contenido = NULL;
+	int sizeContenido = (sizeof(char)* strlen(contenido));
+
+	recv(pokedexServidor, &sizeContenido, sizeof(int), MSG_WAITALL);
+	void*bufferContenido = malloc(sizeContenido);
+	recv(pokedexServidor,bufferContenido,sizeContenido,0);
+	contenido = bufferContenido;
+
+	free(bufferContenido);
+	return contenido;
+}
+
+int recibirEstadoOperacion(){
+	int resultado = 1;
+	int sizeResultado = (sizeof(int));
+
+	recv(pokedexServidor, &sizeResultado, sizeof(int), MSG_WAITALL);
+	void*bufferResultado = malloc(sizeResultado);
+	recv(pokedexServidor,bufferResultado, sizeResultado,0);
+	resultado = (int) bufferResultado;
+
+	free(bufferResultado);
+	return resultado;
+}
+
+//--------------------------------------------------------------------------------
 
 /* Implementacion de GetAttributes para fuse*/
 int cliente_getattr(const char *path, struct stat *stbuf) {
-	int res = 0;
-	memset(stbuf, 0, sizeof(struct stat));
+	int res= 0;
+	protocolo = 0;
+	solicitarServidor(path,protocolo);
+	int tipoFile = recibirTipoFile();
+	memset(stbuf,0,sizeof(struct stat));
 
-	if (strcmp(path, "/") == 0) {
+	if (tipoFile == 2){ // Es un directorio
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
-	} else if(strcmp(path, "/Pokedex") == 0){
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-	} else if(strcmp(path, "/Pokedex/Entrenadores") == 0){
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-	} else if(strcmp(path, "/Pokedex/Entrenadores/Red") == 0){
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-	}else if(strcmp(path, "/Pokedex/Entrenadores/Red/Dir-de-Bill") == 0){
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-	}else if(strcmp(path, "/Pokedex/Entrenadores/Red/medallas") == 0){
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-	}else if(strcmp(path, "/Pokedex/Entrenadores/Red/metadata") == 0){
-		stbuf->st_mode = S_IFREG | 0444;
-		stbuf->st_nlink = 1;
-		stbuf->st_size = 176; // Modificar el tamaño del buffer de acuerdo al archivo
-	}else if(strcmp(path, "/Pokedex/Mapas") == 0){
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-	} else if(strcmp(path, "/Pokedex/Mapas/PuebloPaleta") == 0){
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-	}else if(strcmp(path, "/Pokedex/Mapas/PuebloPaleta/PokeNests") == 0){
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-	}else if(strcmp(path, "/Pokedex/Mapas/PuebloPaleta/PokeNests/Pikachu") == 0){
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-	}else if(strcmp(path, "/Pokedex/Mapas/PuebloPaleta/PokeNests/Pikachu/metadata") == 0){
-		stbuf->st_mode = S_IFREG | 0444;
-		stbuf->st_nlink = 1;
-		stbuf->st_size = 45; // Modificar el tamaño del buffer de acuerdo al archivo
-	}else if(strcmp(path, "/Pokedex/Mapas/PuebloPaleta/PokeNests/Pikachu/Pikachu001.dat") == 0){
-		stbuf->st_mode = S_IFREG | 0444;
-		stbuf->st_nlink = 1;
-		stbuf->st_size = 1870; // Modificar el tamaño del buffer de acuerdo al archivo
-	}else if(strcmp(path, "/Pokedex/Mapas/PuebloPaleta/medalla-PuebloPaleta.jpg") == 0){
-		stbuf->st_mode = S_IFREG | 0444;
-		stbuf->st_nlink = 1;
-		stbuf->st_size = 31620;
-	}else if(strcmp(path, "/Pokedex/Mapas/PuebloPaleta/metadata") == 0){
-		stbuf->st_mode = S_IFREG | 0444;
-		stbuf->st_nlink = 1;
-		stbuf->st_size = 97;
-	}else {
-		res = -ENOENT;
 	}
-
+	else if (tipoFile == 1){ // Es un archivo regular
+		stbuf->st_mode = S_IFREG | 0644;
+		stbuf->st_nlink = 1;
+	}
+	else{
+		res= -ENOENT;
+	}
 	return res;
 }
 
 /* Implementacion del comando "ls" para fuse*/
-static int cliente_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
-		off_t offset, struct fuse_file_info *fi) {
+static int cliente_readdir(const char *path, void *buf, fuse_fill_dir_t filler,off_t offset, struct fuse_file_info *fi) {
+	int res= 0, i=0;
+	protocolo = 1;
+	solicitarServidor(path,protocolo);
+	char* listadoConcatenado = recibirListado(); // Listado de archivos en forma de string
+	char** archivos = string_split(listadoConcatenado,";");
 
-	int res = 0;
-
-	if (strcmp(path, "/") == 0) {
-		filler(buf, "Pokedex", NULL, 0);
-	} else if (strcmp(path, "/Pokedex") == 0) {
-		filler(buf, "Entrenadores", NULL, 0);
-		filler(buf, "Mapas", NULL, 0);
-	} else if (strcmp(path, "/Pokedex/Entrenadores") == 0) {
-		filler(buf, "Red", NULL, 0);
-	} else if (strcmp(path, "/Pokedex/Mapas") == 0) {
-		filler(buf, "PuebloPaleta", NULL, 0);
-	} else if (strcmp(path, "/Pokedex/Entrenadores/Red") == 0) {
-		filler(buf, "Dir-de-Bill", NULL, 0);
-		filler(buf, "medallas", NULL, 0);
-		filler(buf, "metadata", NULL, 0);
-	}else if (strcmp(path, "/Pokedex/Mapas/PuebloPaleta") == 0) {
-		filler(buf, "PokeNests", NULL, 0);
-		filler(buf, "medalla-PuebloPaleta.jpg", NULL, 0);
-		filler(buf, "metadata", NULL, 0);
-	}else if (strcmp(path, "/Pokedex/Mapas/PuebloPaleta/PokeNests") == 0) {
-		filler(buf, "Pikachu", NULL, 0);
-	}else if (strcmp(path, "/Pokedex/Mapas/PuebloPaleta/PokeNests/Pikachu") == 0) {
-		filler(buf, "metadata", NULL, 0);
-		filler(buf, "Pikachu001.dat", NULL, 0);
-	}else {
+	while (archivos[i] != NULL){
+		filler(buf, archivos[i], NULL, 0);
+		i++;
+	}
+	if (archivos[i] == NULL){
 		res = -ENOENT;
 	}
-
 	return res;
 }
 
-/* Implementacion de lectura de archivo*/
-static int cliente_read(const char *path, char *buf, size_t size, off_t offset,
-		struct fuse_file_info *fi) {
-
-	if (strcmp(path, "/Pokedex/Entrenadores/Red/metadata") == 0) {
-		memcpy(buf,((char*)pmap_red_metadata + offset),size);
-	} else if (strcmp(path, "/Pokedex/Mapas/PuebloPaleta/medalla-PuebloPaleta.jpg") == 0) {
-		memcpy(buf,((char*)pmap_pueblo_paleta_medalla + offset),size);
-	} else if (strcmp(path, "/Pokedex/Mapas/PuebloPaleta/metadata") == 0) {
-		memcpy(buf,((char*)pmap_pueblo_paleta_metadata + offset),size);
-	} else if (strcmp(path, "/Pokedex/Mapas/PuebloPaleta/PokeNests/Pikachu/metadata") == 0) {
-		memcpy(buf,((char*)pmap_pokenest_pikachu_metadata + offset),size);
-	} else if (strcmp(path, "/Pokedex/Mapas/PuebloPaleta/PokeNests/Pikachu/Pikachu001.dat") == 0) {
-		memcpy(buf,((char*)pmap_pokenest_pikachu_pikachu001_dat + offset),size);
-	}
+static int cliente_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) { // Fijarse bien esta
+	protocolo = 2;
+	char* contenido = NULL;
+	solicitarServidor(path,protocolo);
+	contenido =(char*) recibirContenidoArchivo();
+	memcpy(buf,(contenido + offset),size);
 	return size;
 }
 
-/* Esta función se usa para indicarle a fuse con qué función de las nuestras "sobreeescribir" cada solicitud
- * que haga el filesystem */
+/* Crea un archivo vacio*/
+static int cliente_crearArchivo(const char* path, mode_t modo, struct fuse_file_info * fi){ //Por ahora asumimos que el nombre del archivo esta en el path
+	int res = 1; // 0 para exito y 1 para error
+	protocolo = 3;
+	solicitarServidor(path,protocolo);
+	res = recibirEstadoOperacion();
+	if (res==0){
+		printf("Archivo creado exitosamente\n");
+	}
+	else{
+		printf("No se pudo crear el archivo\n");
+	}
+	return res;
+}
+
+/* Implementacion de la operacion write sobre un archivo*/
+static int cliente_modificarArchivo(const char* path,const char *buf, size_t size, off_t offset, struct fuse_file_info* fi){
+	int res = 1;
+	protocolo = 4;
+	solicitarModificacionServidor(path,buf,protocolo);
+	res = recibirEstadoOperacion();
+	if (res==0){
+		printf("Archivo escrito exitosamente\n");
+	}
+	else{
+		printf("No se pudo escribir el archivo\n");
+	}
+	return res;
+}
+
+static int cliente_borrarArchivo(const char* path){
+	int res = 1;
+	protocolo = 5;
+	solicitarServidor(path,protocolo);
+	res = recibirEstadoOperacion();
+	if (res==0){
+		printf("Archivo borrado exitosamente\n");
+	}
+	else{
+		printf("No se pudo borrar el archivo\n");
+	}
+	return res;
+}
+
+static int cliente_renombrar(const char* path, const char* nuevoNombre){
+	int res=1;
+	protocolo = 8;
+	solicitarModificacionServidor(path,nuevoNombre,protocolo);
+	res = recibirEstadoOperacion();
+	if (res==0){
+		printf("El archivo fue renombrado exitosamente\n");
+	}
+	else{
+		printf("No se pudo renombrar el archivo\n");
+	}
+	return res;
+}
+
+static int cliente_crearDirectorio(){
+	protocolo = 6;
+}
+
+static int cliente_borrarDirectorio(){
+	protocolo = 7;
+}
+
+static int cliente_duplicarArchivo(const char* pathOrigen, const char* pathDestino){
+	protocolo = 9;
+}
+//--------------------------------------------------------------------------------
+
+
 static struct fuse_operations cliente_oper = {
 		.getattr = cliente_getattr,
 		.readdir = cliente_readdir,
 		.read = cliente_read,
+		.create = cliente_crearArchivo,
+		.write = cliente_modificarArchivo,
+		.unlink = cliente_borrarArchivo,
+		.mkdir = cliente_crearDirectorio,
+		.rmdir = cliente_borrarDirectorio,
+		.rename = cliente_renombrar,
 };
+
 
 int main(int argc, char *argv[]) {
 
-/* Campos de prueba para testear el filesystem con fuse. Claramente están hardcodeados, después hay
- * que implementar la solución dinámica...*/
+ return fuse_main(argc, argv, &cliente_oper, NULL );
 
-// metadata de Red
-int fd_red_metadata;
-fd_red_metadata= open("/home/utnso/workspace/pokedex/Entrenadores/Red/metadata",O_RDWR);
-fstat(fd_red_metadata,&redMetadataStat);
-pmap_red_metadata= mmap(0, redMetadataStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_red_metadata, 0);
-
-// metadata de Pueblo Paleta
-int fd_puebloPaleta_metadata;
-fd_puebloPaleta_metadata= open("/home/utnso/workspace/pokedex/Mapas/PuebloPaleta/metadata",O_RDWR);
-fstat(fd_puebloPaleta_metadata,&puebloPaletaMetadataStat);
-pmap_pueblo_paleta_metadata= mmap(0, puebloPaletaMetadataStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_puebloPaleta_metadata, 0);
-
-// medalla de Pueblo Paleta
-int fd_medallaPuebloPaleta;
-fd_medallaPuebloPaleta= open("/home/utnso/workspace/pokedex/Mapas/PuebloPaleta/medalla-PuebloPaleta.jpg",O_RDWR);
-fstat(fd_medallaPuebloPaleta,&puebloPaletaMedallaStat);
-pmap_pueblo_paleta_medalla= mmap(0, puebloPaletaMedallaStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_medallaPuebloPaleta, 0);
-
-// metadata de la PokeNest Pikachu
-int fd_PikachuMetadata;
-fd_PikachuMetadata = open("/home/utnso/workspace/pokedex/Mapas/PuebloPaleta/PokeNests/Pikachu/metadata",O_RDWR);
-fstat(fd_PikachuMetadata, &pokenestPikachuMetadataStat);
-pmap_pokenest_pikachu_metadata = mmap(0, pokenestPikachuMetadataStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_PikachuMetadata, 0);
-
-// instancia Pikachu001.dat de la PokeNest Pikachu
-int fd_Pikachu001Dat;
-fd_Pikachu001Dat = open("/home/utnso/workspace/pokedex/Mapas/PuebloPaleta/PokeNests/Pikachu/Pikachu001.dat",O_RDWR);
-fstat(fd_Pikachu001Dat, &pokenestPikachu001Stat);
-pmap_pokenest_pikachu_metadata = mmap(0, pokenestPikachu001Stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_Pikachu001Dat, 0);
-
-
-/* Para testear la parte de FUSE, descomentar la próxima linea, y comentar  lo que viene después.*/
-
-// return fuse_main(argc, argv, &cliente_oper, NULL );
-
-int servidor;
-servidor = conectarCliente(IP, PUERTO);
+pokedexServidor = conectarCliente(IP, PUERTO);
 
 /* gilada para el primer checkpoint */
+
 int enviar = 1;
 char message[PACKAGESIZE];
 char *resultado = malloc(sizeof(int));
 int resultadoEnvio = 0;
-printf("Conectado al servidor. Bienvenido a la enciclopedia global Pokemon! ingrese el mensaje que desee enviar, o cerrar para salir\n");
+printf("Conectado al servidor. Bienvenido a la enciclopedia global Pokemon! cerrar para salir\n");
 
 while(enviar != 0){
 	fgets(message, PACKAGESIZE, stdin);
 	if (!strcmp(message,"cerrar\n")) enviar = 0;
-	send(servidor, message, strlen(message) + 1, 0);
-	recv(servidor, (void *)resultado, sizeof(int), 0);
+	send(pokedexServidor, message, strlen(message) + 1, 0);
+	recv(pokedexServidor, (void *)resultado, sizeof(int), 0);
 	resultadoEnvio = *((int *)resultado);
 
 	if(resultadoEnvio == 1) {
@@ -248,7 +313,7 @@ while(enviar != 0){
 
 /* fin gilada para el primer checkpoint */
 
-close(servidor);
+close(pokedexServidor);
 
 return 0;
 
