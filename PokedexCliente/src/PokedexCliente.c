@@ -182,6 +182,9 @@ int main(int argc, char *argv[]) {
 /* Campos de prueba para testear el filesystem con fuse. Claramente están hardcodeados, después hay
  * que implementar la solución dinámica...*/
 
+
+// char *ipServidor = getenv("IP_SERVIDOR");
+
 // metadata de Red
 int fd_red_metadata;
 fd_red_metadata= open("/home/utnso/workspace/pokedex/Entrenadores/Red/metadata",O_RDWR);
