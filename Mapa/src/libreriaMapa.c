@@ -11,6 +11,20 @@
 
 pthread_mutex_t mutexPaqueton=PTHREAD_MUTEX_INITIALIZER;
 
+/////////////////////////////////////////////////////////////////////////////
+void* recibirDatos(int conexion, int tamanio){
+	void* mensaje=(void*)malloc(tamanio);
+	int bytesRecibidos = recv(conexion, mensaje, tamanio, MSG_WAITALL);
+	if (bytesRecibidos != tamanio) {
+		perror("Error al recibir el mensaje\n");
+		free(mensaje);
+		char* adios=string_new();
+		string_append(&adios,"0\0");
+		return adios;}
+	return mensaje;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void imprimirGiladas(void *unCliente){
 
@@ -88,23 +102,28 @@ void notificarCaida(){
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void atenderConexion(void *numeroCliente){
 	int unCliente = *((int *) numeroCliente);
-	char paquete[10];
+	char* paquete;
 	int status = 1;
 
-	printf("Entrenador #%d conectado! esperando mensajes... \n",
-				clientesActivos[unCliente].cliente);
+	//printf("Entrenador #%d conectado! esperando mensajes... \n",
+				//clientesActivos[unCliente].cliente);
 
 	while(status !=0){
-		status = recv(clientesActivos[unCliente].socket, (void*) paquete, 10, 0);
+		 char* recibido;
+		 char* cambio;
+
+		 recibido = recibirDatos(clientesActivos[unCliente].socket,2);
+		//status = recv(clientesActivos[unCliente].socket, (void*) paquete, 10, 0);
 		if (status != 0) {
 			//printf("el Entrenador #%d dijo: \n %s", clientesActivos[unCliente].cliente, paquete);
+			cambio = strdup(recibido);
 			pthread_mutex_lock(&mutexPaqueton);
-			paqueton[0] = paquete[0];
-			paqueton[1] = paquete[1];
+			paqueton[0] = cambio[0];
+			paqueton[1] = cambio[1];
 			numEntrenador = unCliente;
 			pthread_mutex_unlock(&mutexPaqueton);
 
-			enviarHeader(clientesActivos[unCliente].socket, 1);
+			//enviarHeader(clientesActivos[unCliente].socket, 1);
 			}
 
 	}

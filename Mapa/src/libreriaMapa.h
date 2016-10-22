@@ -28,9 +28,31 @@ typedef struct{
 	int socket;
 } t_infoCliente;
 
+t_log* logs;
+
+t_list* pokenests;
+t_list* items;
+//t_list* finalizaAnormal = list_create();
+t_list* listaDeColasAccion;
+
+t_queue* colaListos;
+t_queue* colaBloqueados;
+
+
+typedef struct pa {
+	char simbolo;
+	char accion;
+	int numeroLlegada;
+	int numeroCliente;
+	int flagEstaEnLista;
+	int posx;
+	int posy;
+} entrenador;
+
+
 t_infoCliente clientesActivos[1024];
 
-char paqueton[10];
+char paqueton[4];
 
 int numEntrenador;
 
@@ -52,5 +74,7 @@ void notificarCaida();
 
 /* Función para atender una conexión en particular */
 void atenderConexion(void *numeroCliente);
+
+void* atencionNuevos();
 
 #endif /* LIBRERIAPOKEDEXSERVIDOR_H_ */

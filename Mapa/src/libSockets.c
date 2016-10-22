@@ -77,6 +77,7 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 				char* ruta = string_new();
 				string_append(&ruta,string_from_format("%s/%s/metadata", name,dir->d_name));
 				t_config* archivoConfigPokenest = config_create(ruta);
+
 				printf("%s\n", dir->d_name);
 
 				if (archivoConfigPokenest == NULL) {
