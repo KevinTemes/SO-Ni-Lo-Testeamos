@@ -23,16 +23,20 @@
 
 #include "libSockets.h"
 
+
 t_log* logs;
+char* puntoMontaje;
+t_entrenador* ent;
 
 #define ATRAPA 1
 #define DEADLOCK 3
 #define MORI 7
+#define SOBREVIVI 0
 #define PACKAGESIZE 10
 
 int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso/workspace/pokedex
 	char* nombreEnt = argv[1];
-	char* puntoMontaje = argv[2];
+	puntoMontaje = argv[2];
 
 	// LOGS
 	 remove("Entrenador.log");
@@ -41,7 +45,6 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 puts("Log Entrenador creado exitosamente \n");
 
 	 //STRUCTS
-	 t_entrenador* ent;
 	 ent = malloc(sizeof(t_entrenador));
 
 	 //si rompe, meterlo adentro del for de cada pokemon
@@ -53,6 +56,9 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 t_calculoTiempo* calculoTiempo;
 	 calculoTiempo = malloc(sizeof(t_calculoTiempo));
+
+	 t_cantidadDeadlocks* deadlocks;
+	 deadlocks = malloc(sizeof(t_calculoTiempo));
 
 	 //CONFIG
 	 char* configEntrenador = string_from_format("%s/Entrenadores/%s/metadata",puntoMontaje,nombreEnt);
@@ -67,7 +73,12 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 log_info(logs,"Archivo de config Entrenador creado exitosamente!\n");
 
-	 usoDeSeniales(ent,puntoMontaje);
+	 if(signal(SIGUSR1, handler)==SIG_ERR){
+		 perror ("No se puede cambiar la señal SIGUSR1");
+	 }
+	 if(signal(SIGTERM, handler)==SIG_ERR){
+		 perror("No se puede cambiar la señal SIGTERM");
+	 }
 
 	 //VARIABLES USADAS Y CONEXION
 	 int pos;
@@ -85,91 +96,93 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 char* miIP;
 	 char* miPuerto;
 	 t_list* listaNivAtrapados= list_create();
-	 int cantDeadlocks = 0;
 	 t_dictionary* masFuertePokeYNivel = dictionary_create();
+	 deadlocks->cantDeadlocks=0;
+
+	 //void reiniciarHojaDeViaje() {
+		 horaInicio = empezarAventura();
+
+		 do{
+			 for(pos = 0;pos<cantMapas;pos++){
+			// reconectar el mismo mapa entra aca directo asi no le suma una posicion
+				//void reconectarseAlMismoMapa(){
+
+					miIP= list_get(ips,pos);
+					miPuerto = list_get(puertos,pos);
+
+					//printf("ip %s \n", miIP);
+					//printf("puerto %s \n",miPuerto);
 
 
-	 horaInicio = empezarAventura();
+					servidor = conectarCliente(miIP, miPuerto);
 
-	 do{
-		 for(pos = 0;pos<cantMapas;pos++){
-		// reconectar el mismo mapa entra aca directo asi no le suma una posicion
-		//reconectarMapa:
+					int resultadoEnvio = 0;
 
-			miIP= list_get(ips,pos);
-			miPuerto = list_get(puertos,pos);
-
-			//printf("ip %s \n", miIP);
-			//printf("puerto %s \n",miPuerto);
+					char* mapa = list_get((ent)->hojaDeViaje,pos);
+					printf("Conectado al Mapa %s. Ingrese el mensaje que desee enviar, o cerrar para salir\n",mapa);
 
 
-			servidor = conectarCliente(miIP, miPuerto);
+					//////////////// recibo y mando datos al Mapa /////////////////////
 
-			int resultadoEnvio = 0;
-
-			char* mapa = list_get((ent)->hojaDeViaje,pos);
-			printf("Conectado al Mapa %s. Ingrese el mensaje que desee enviar, o cerrar para salir\n",mapa);
-
-
-			//////////////// recibo y mando datos al Mapa /////////////////////
-
-			// cuando pase a otro mapa, vuelve a arrancar en (0;0)
-			int posXInicial =0;
-			int posYInicial =0;
+					// cuando pase a otro mapa, vuelve a arrancar en (0;0)
+					int posXInicial =0;
+					int posYInicial =0;
 
 
-			for(posObjetivo=0;dictionary_get(pokesDeCadaMapa,mapa)!=NULL;posObjetivo++){
+					for(posObjetivo=0;dictionary_get(pokesDeCadaMapa,mapa)!=NULL;posObjetivo++){
 
-				// MANDO: CARACTER + POKENEST
+						// MANDO: CARACTER + POKENEST
 
-				char* caracterPoke = dictionary_get(pokesDeCadaMapa,mapa);
-				string_append(&protocolo,caracterPoke);
+						char* caracterPoke = dictionary_get(pokesDeCadaMapa,mapa);
+						string_append(&protocolo,caracterPoke);
 
-				printf("Voy a buscar este pokemon: %s \n", caracterPoke);
+						printf("Voy a buscar este pokemon: %s \n", caracterPoke);
 
-				char carPoke = caracterPoke[0];
-				protocAManejar[1]=carPoke;
+						char carPoke = caracterPoke[0];
+						protocAManejar[1]=carPoke;
 
-				send(servidor, protocAManejar, 2, 0);
-				//recibo 5 chars, ej: "34;12"
-				//coordPokenest = (char*)recibirDatos(servidor,5);
+						send(servidor, protocAManejar, 2, 0);
+						//recibo 5 chars, ej: "34;12"
+						//coordPokenest = (char*)recibirDatos(servidor,5);
 
-				coordPokenest= "02;03";
+						coordPokenest= "02;03";
 
-				posPokenest = string_split(coordPokenest,";");
-				int x = atoi (posPokenest[0]);
-				printf("Coordenada X pokenest: %d\n", x);
-				int y = atoi (posPokenest[1]);
-				printf("Coordenada Y pokenest: %d\n", y);
-
-
-				moverseEnUnaDireccion(posXInicial, posYInicial, x, y, protocAManejar, servidor);
+						posPokenest = string_split(coordPokenest,";");
+						int x = atoi (posPokenest[0]);
+						printf("Coordenada X pokenest: %d\n", x);
+						int y = atoi (posPokenest[1]);
+						printf("Coordenada Y pokenest: %d\n", y);
 
 
-				protocAManejar[1]='9'; // Solicitud Atrapar Pokemon
-				send(servidor,protocAManejar,2,0);
-				solicitarAtraparPokemon(calculoTiempo,tiempo,masFuertePokeYNivel,pokePiola, cantDeadlocks,listaNivAtrapados,puntoMontaje,mapa, ent,servidor);
+						moverseEnUnaDireccion(posXInicial, posYInicial, x, y, protocAManejar);
 
-				// por si se cae
-				recv(servidor, (void *)resultado, sizeof(int), 0);
-				resultadoEnvio = *((int *)resultado);
 
-				if(resultadoEnvio == 9){
-					printf("Servidor caído! imposible reconectar. Cerrando...\n");
-					exit(0);
+						protocAManejar[1]='9'; // Solicitud Atrapar Pokemon
+						send(servidor,protocAManejar,2,0);
+						solicitarAtraparPokemon(calculoTiempo,tiempo,masFuertePokeYNivel,pokePiola, deadlocks,listaNivAtrapados,mapa);
+
+						// por si se cae
+						recv(servidor, (void *)resultado, sizeof(int), 0);
+						resultadoEnvio = *((int *)resultado);
+
+						if(resultadoEnvio == 9){
+							printf("Servidor caído! imposible reconectar. Cerrando...\n");
+							exit(0);
+						}
+
+						dictionary_remove(pokesDeCadaMapa,mapa);
+					} // cierro el for de los objetivos
+
+
+					copiarMedalla(mapa);
+
+					close(servidor); // se desconecta el entrenador
 				}
+			 //}
+		 } while((ent->cantidadInicialVidas!=0) && (list_get(ent->hojaDeViaje,pos)!=NULL));
 
-				dictionary_remove(pokesDeCadaMapa,mapa);
-			} // cierro el for de los objetivos
-
-
-			copiarMedalla(puntoMontaje, mapa, ent);
-
-			close(servidor); // se desconecta el entrenador
-		 }
-	} while((ent->cantidadInicialVidas!=0) && (list_get(ent->hojaDeViaje,pos)!=NULL));
-
-terminarAventura(calculoTiempo,tiempo,cantDeadlocks,horaInicio);
+	 //}
+terminarAventura(calculoTiempo,tiempo,deadlocks,horaInicio);
 
 list_destroy_and_destroy_elements(ips,free);
 list_destroy_and_destroy_elements(puertos,free);
@@ -194,47 +207,56 @@ free(ent);
 free(pokePiola);
 free(tiempo);
 free(calculoTiempo);
+free(deadlocks);
 
 return EXIT_SUCCESS;
 }
 
 ///////////////////// FUNCIONES DEL ENTRENADOR ///////////////////////////
-void  usoDeSeniales(t_entrenador* ent, char* puntoMontaje){
+void handler(int n){
+	switch (n) {
+		case SIGUSR1:
+		reciboUnaVida();
+		break;
+
+		case SIGTERM:
+		pierdoUnaVida();
+		break;
+	}
+}
 
 void reciboUnaVida(){
+	sleep(1);
 	ent->cantidadInicialVidas++;
+	char* ganeVida = string_from_format("Me dieron una vida, ahora tengo %d vidas \n",ent->cantidadInicialVidas);
+	log_info(logs,ganeVida);
+	free(ganeVida);
+	sleep(1);
 }
 
 void pierdoUnaVida(){
-	morir(ent,puntoMontaje,"senial");
+	sleep(1);
+	char* perdiVida = string_from_format("Me sacaron una vida, ahora tengo %d vidas\n",ent->cantidadInicialVidas);
+	log_info(logs,perdiVida);
+	free(perdiVida);
+	morir("senial");
+	sleep(1);
 }
 
-signal(SIGUSR1, reciboUnaVida);
-signal(SIGTERM, pierdoUnaVida);
-}
+void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo, t_dictionary* masFuertePokeYNivel,t_pokemonDeserializado* pokePiola,t_cantidadDeadlocks* deadlocks,t_list* listaNivAtrapados, char* mapa){
 
-void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo, t_dictionary* masFuertePokeYNivel,t_pokemonDeserializado* pokePiola,int cantDeadlocks,t_list* listaNivAtrapados,char* puntoMontaje, char* mapa, t_entrenador* ent, int servidor){
-	//pongo el tiempo para despues restarlo y saber cuando estuve bloqueado
 	char* inicioBloq = temporal_get_string_time();
 	char* finBloq;
 
 	//char* operacion = recibirDatos(servidor,21);
 	/* podria recibir serializado:
-	caracter nro especie nombreMetadata nivel sin los ; porque usamos un offset*/
+	nroProtocolo especie nombreMetadata nivel sin los ; porque usamos un offset*/
 
-
-	char* operacion =  "@1;Pikachu/Pikachu001;33";
+	char* operacion =  "3;Pikachu/Pikachu001;33";
 	char** cosasRecibidas = string_n_split(operacion,3,";");
 
-	//manejo el caracter y el nro por un lado aca
-	char* caracYNro = strdup(cosasRecibidas[0]);
-
-	char caracterRec = caracYNro[0];
-	char* caracterRecString = string_from_format("%c", caracterRec);
-	pokePiola->caracter=caracterRecString;
-
-	char nroRecChar = caracYNro[1];
-	char* nroRecString = string_from_format("%c",nroRecChar);
+	//el nro del protocolo
+	char* nroRecString = cosasRecibidas[0];
 	int nroRec = atoi (nroRecString);
 	pokePiola->protocolo=nroRec;
 
@@ -252,43 +274,42 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 	int nivelInt = atoi(nivelPoke);
 	pokePiola->nivelPokemon=nivelInt;
 
-	if(!strcmp(ent->caracter,pokePiola->caracter)){
 		switch(pokePiola->protocolo){
 			case ATRAPA:
 				//simulo un tiempo de bloqueado de pokenest por el momento
 				usleep(1000);
 				list_add(listaNivAtrapados,pokePiola->nivelPokemon);
 				finBloq = temporal_get_string_time();
-				copiarArchivo(especifico, puntoMontaje,mapa,ent,pokePiola->nombreMetadata);
+				copiarArchivo(especifico,mapa,pokePiola->nombreMetadata);
 				tiempo = sacarTiempo(calculoTiempo,tiempo,"bloqueado",inicioBloq,finBloq);
 				//revisar si lo puedo manejar casteandolo o con el char* y fue
 				dictionary_put(masFuertePokeYNivel,nivelPoke,especifico);
 				return tiempo;
 
-
 			case DEADLOCK:
-				cantDeadlocks = cantDeadlocks + 1;
-				int nivelPokeAtrapado = agarrarPokeConMasNivel(listaNivAtrapados, pokePiola);
-				char* nivelString = string_itoa(nivelPokeAtrapado);
+				deadlocks->cantDeadlocks++;
+				//int nivelPokeAtrapado = agarrarPokeConMasNivel(listaNivAtrapados, pokePiola);
+				/*char* nivelString = string_itoa(nivelPokeAtrapado);
 				char* especificoMasFuerte = dictionary_get(masFuertePokeYNivel,nivelString);
 				char* pokeMFuerte = string_from_format("%s5;%s;%d",ent->caracter,especificoMasFuerte,nivelPokeAtrapado);
-
 				//revisar ese sizeof
 				send(servidor,pokeMFuerte,sizeof(pokeMFuerte),0);
 				free(pokeMFuerte);
-				return cantDeadlocks;
 
-
-			case MORI:
-				morir(ent,puntoMontaje,"deadlock");
-			break;
+				char* resolucionDeadlock = recibirDatos(servidor,1);*/
+				char* resolucionDeadlock = "0";
+				int respDeadlock = atoi(resolucionDeadlock);
+				if(respDeadlock==MORI){
+					morir("deadlock");
+				} else if(respDeadlock==SOBREVIVI){
+					log_info(logs,"Sobrevivi al deadlock \n");
+				}
+				return deadlocks;
+				free(resolucionDeadlock);
 		}
-	}
 
 	free(nivelPoke);
 	free(nroRecString);
-	free(caracterRecString);
-	free(caracYNro);
 	return NULL;
 }
 
@@ -305,7 +326,7 @@ int agarrarPokeConMasNivel(t_list* listaNivAtrapados, t_pokemonDeserializado* po
 }
 
 
-void terminarAventura(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,int cantDeadlocks,char* horaInicio){
+void terminarAventura(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,t_cantidadDeadlocks* cantDeadlocks,char* horaInicio){
 	char* horaFin = temporal_get_string_time();
 	sacarTiempo(calculoTiempo,tiempo,"aventura",horaInicio,horaFin);
 
@@ -313,7 +334,7 @@ void terminarAventura(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,i
 	log_info(logs,tiempoTotalBloqueado);
 	free(tiempoTotalBloqueado);
 
-	char* deadlocks = string_from_format("la cantidad de deadlocks es: %d \n", cantDeadlocks);
+	char* deadlocks = string_from_format("la cantidad de deadlocks es: %d \n", cantDeadlocks->cantDeadlocks);
 	log_info(logs,deadlocks);
 	free(deadlocks);
 
@@ -376,7 +397,7 @@ char* empezarAventura(){
 	return horaInicio;
 }
 
-void copiarMedalla(char* puntoMontaje, char* mapa, t_entrenador* ent){
+void copiarMedalla(char* mapa){
 
 	char* medalla=string_from_format("cp %s/Mapas/%s/medalla-%s.jpg %s/Entrenadores/%s/medallas/medalla-%s.jpg", puntoMontaje, mapa, mapa, puntoMontaje, (ent)->nombreEntrenador,mapa);
 	system(medalla);
@@ -390,7 +411,7 @@ void copiarMedalla(char* puntoMontaje, char* mapa, t_entrenador* ent){
 return;
 }
 
-void copiarArchivo(char* especifico, char* puntoMontaje,char* mapa,t_entrenador* ent,char* rutaPokeAtrapado){
+void copiarArchivo(char* especifico,char* mapa,char* rutaPokeAtrapado){
 
 	char* poke = string_from_format("cp %s/Mapas/%s/PokeNests/%s.dat %s/Entrenadores/%s/Dir\\ de\\ Bill/%s.dat", puntoMontaje, mapa, rutaPokeAtrapado, puntoMontaje, (ent)->nombreEntrenador,especifico);
 	system(poke);
@@ -416,7 +437,7 @@ void* recibirDatos(int conexion, int tamanio){
 }
 
 
-void moverseEnUnaDireccion(int posXInicial, int posYInicial,int x, int y, char* protocAManejar, int servidor){
+void moverseEnUnaDireccion(int posXInicial, int posYInicial,int x, int y, char* protocAManejar){
 	int cantMovX = x - posXInicial; // cant total mov de x
 	int cantMovY = y - posYInicial; // cant total mov de y
 	char ultMov;
@@ -461,61 +482,54 @@ void moverseEnUnaDireccion(int posXInicial, int posYInicial,int x, int y, char* 
 	return;
 }
 
-//ENGANCHAR ESTAS FUNCIONES
 
-void morir(t_entrenador* ent, char* puntoMontaje, char* motivo){
-		ent->cantidadInicialVidas = ent->cantidadInicialVidas-1;
-		if (ent->cantidadInicialVidas>0){
-			if(!strcmp(motivo,"deadlock")){
-				log_info(logs,"Moriste por deadlock\n");
-				borrarArchivosBill(ent, puntoMontaje);
-				close(servidor);
-				reconectarse(ent); // Ver bien como llevar a cabo esto, no esta
-				} else if (!strcmp(motivo,"senial")){
-						log_info(logs,"Moriste por la senial SIGTERM\n");
-				}
-		} else {
-			char respuesta[3];
-			char* reintentos = string_from_format("Numero de reintentos realizados hasta el momento: %d\n", ent->reintentos);
-			log_info(logs,reintentos);
-			free(reintentos);
-			log_info(logs,"Desea reiniciar juego?\n");
-			fgets(respuesta, 3, stdin);
-			if (!strcmp(respuesta,"si")){
-				printf("Reseteando...\n");
-				ent->reintentos = ent->reintentos+1;
-				resetear(ent, puntoMontaje);
-			}else if(!strcmp(respuesta,"no")) {
-				log_info(logs,"Cerrando programa\n");
-				exit(0);
+void morir(char* motivo){
+	ent->cantidadInicialVidas = ent->cantidadInicialVidas-1;
+	if (ent->cantidadInicialVidas>0){
+		if(!strcmp(motivo,"deadlock")){
+			log_info(logs,"Moriste por deadlock\n");
+			borrarArchivosBill();
+			close(servidor);
+			/* referencia a funcion sin definir tira
+			reconectarseAlMismoMapa(); // hago la funcion en el main */
+			} else if (!strcmp(motivo,"senial")){
+					log_info(logs,"Moriste por la senial SIGTERM\n");
 			}
+	} else if(ent->cantidadInicialVidas==0){
+		char respuesta[3];
+		char* reintentos = string_from_format("Numero de reintentos realizados hasta el momento: %d\n", ent->reintentos);
+		log_info(logs,reintentos);
+		free(reintentos);
+		log_info(logs,"Desea reiniciar juego?\n");
+		fgets(respuesta, 3, stdin);
+		if (!strcmp(respuesta,"si")){
+			printf("Reseteando...\n");
+			ent->reintentos = ent->reintentos+1;
+			resetear();
+		}else if(!strcmp(respuesta,"no")) {
+			log_info(logs,"Cerrando programa\n");
+			exit(0);
 		}
+	}
 }
 
 
-void borrarArchivosBill(t_entrenador* ent, char* puntoMontaje){ // Al momento de testear va a decir que no encontro nada si la carpeta estaba vacia
+void borrarArchivosBill(){ // Al momento de testear va a decir que no encontro nada si la carpeta estaba vacia
 		char* borrarBill = string_from_format("rm -r %s/Entrenadores/%s/Dir\\ De\\ Bill/*",puntoMontaje,ent->nombreEntrenador);
 		system(borrarBill);
 		free(borrarBill);
 }
 
-void borrarMedallas(t_entrenador* ent, char* puntoMontaje){
+void borrarMedallas(){
 		char* borrarMedallas = string_from_format("rm -r %s/Entrenadores/%s/medallas/*",puntoMontaje,ent->nombreEntrenador);
 		system(borrarMedallas);
 		free(borrarMedallas);
 }
 
 
-void resetear(t_entrenador* ent, char* puntoMontaje){
-	//reiniciarHojaDeViaje(ent); //Falta implementar, como seria esto?
-	borrarMedallas(ent, puntoMontaje);
-	borrarArchivosBill(ent, puntoMontaje);
+void resetear(){
+	borrarMedallas();
+	borrarArchivosBill();
+	//reiniciarHojaDeViaje();
 }
 
-void reiniciarHojaDeViaje(t_entrenador *entrenador){
-
-}
-
-void reconectarse(t_entrenador* ent){
-	return;
-}

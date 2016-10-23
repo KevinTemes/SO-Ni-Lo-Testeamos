@@ -36,6 +36,9 @@ t_dictionary* pokesDeCadaMapa; // lo uso en el main
 char* nombre;
 char* simbolo;
 
+typedef struct{
+	int cantDeadlocks;
+}t_cantidadDeadlocks;
 
 typedef struct{
 	int hInicio;
@@ -48,6 +51,7 @@ typedef struct{
 	int milFin;
 }t_calculoTiempo;
 
+
 typedef struct{
 int horasBloqueado;
 int minutosBloqueado;
@@ -56,7 +60,6 @@ int milesimasBloqueado;
 }t_tiempoBloqueado;
 
 typedef struct{
-	char* caracter;
 	int protocolo;
 	char* especie;
 	char* nombreMetadata;
@@ -90,22 +93,23 @@ typedef struct Paquete {
 } t_paquete;
 
 int agarrarPokeConMasNivel(t_list*, t_pokemonDeserializado*);
-void terminarAventura(t_calculoTiempo*,t_tiempoBloqueado*,int,char*);
+void terminarAventura(t_calculoTiempo*,t_tiempoBloqueado*,t_cantidadDeadlocks*,char*);
 char* empezarAventura();
-void copiarMedalla(char*,char*,t_entrenador*);
-void copiarArchivo(char*, char*, char*, t_entrenador*,char*);
+void copiarMedalla(char*);
+void copiarArchivo(char*, char*, char*);
 void* recibirDatos(int, int);
-void moverseEnUnaDireccion(int,int,int,int,char*,int);
-void* solicitarAtraparPokemon(t_calculoTiempo*,t_tiempoBloqueado*, t_dictionary*,t_pokemonDeserializado*,int, t_list*,char*, char*,t_entrenador*, int);
+void moverseEnUnaDireccion(int,int,int,int,char*);
+void* solicitarAtraparPokemon(t_calculoTiempo*,t_tiempoBloqueado*, t_dictionary*,t_pokemonDeserializado*,t_cantidadDeadlocks*, t_list*,char*);
 void* sacarTiempo(t_calculoTiempo*,t_tiempoBloqueado*,char*,char*,char*);
-void borrarArchivosBill(t_entrenador*, char*);
-void borrarMedallas(t_entrenador*, char*);
-void  usoDeSeniales(t_entrenador*, char*);
-void morir(t_entrenador*, char*,char*);
-
-void resetear(t_entrenador*, char*);
-void reconectarse(t_entrenador*);
-void reiniciarHojaDeViaje(t_entrenador*);
+void borrarArchivosBill();
+void borrarMedallas();
+void morir(char*);
+void reconectarseAlMismoMapa();
+void resetear();
+void reiniciarHojaDeViaje();
+void reciboUnaVida();
+void pierdoUnaVida();
+void handler(int n);
 
 /* setup_listen(IP,PORT) *
  * Devuelve el socket que se consiguió para escuchar
