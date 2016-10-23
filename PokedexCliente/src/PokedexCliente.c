@@ -237,7 +237,7 @@ static int cliente_borrarArchivo(const char* path){
 	return res;
 }
 
-static int cliente_renombrar(const char* path, const char* nuevoNombre){
+static int cliente_rename(const char* path, const char* nuevoNombre){
 	int res=1;
 	protocolo = 8;
 	solicitarModificacionServidor(path,nuevoNombre,protocolo);
@@ -254,12 +254,33 @@ static int cliente_renombrar(const char* path, const char* nuevoNombre){
 
 // char *ipServidor = getenv("IP_SERVIDOR");
 
-static int cliente_crearDirectorio(){
+static int cliente_crearDirectorio(const char* path){
+	int res= 1;
 	protocolo = 6;
+	solicitarServidor(path,protocolo);
+	res = recibirEstadoOperacion();
+	if (res==0){
+		printf("El archivo fue creado exitosamente\n");
+	}
+	else{
+		printf("No se pudo crear el archivo\n");
+	}
+	return res;
+
 }
 
-static int cliente_borrarDirectorio(){
+static int cliente_borrarDirectorio(const char* path){
+	int res = 1;
 	protocolo = 7;
+	solicitarServidor(path,protocolo);
+		res = recibirEstadoOperacion();
+		if (res==0){
+			printf("Directorio borrado exitosamente\n");
+		}
+		else{
+			printf("No se pudo borrar el directorio\n");
+		}
+		return res;
 }
 
 static int cliente_duplicarArchivo(const char* pathOrigen, const char* pathDestino){
@@ -277,7 +298,7 @@ static struct fuse_operations cliente_oper = {
 		.unlink = cliente_borrarArchivo,
 		.mkdir = cliente_crearDirectorio,
 		.rmdir = cliente_borrarDirectorio,
-		.rename = cliente_renombrar,
+		.rename = cliente_rename,
 };
 
 
