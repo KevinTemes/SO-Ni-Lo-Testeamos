@@ -341,7 +341,6 @@ void atenderConexion(void *numeroCliente){
 				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				recv(clientesActivos[unCliente].socket, &tamanioNuevoContenido, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
-				ruta = (char *)buffer;
 				void *bufferContenido = malloc(tamanioNuevoContenido);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = (char *) buffer;
@@ -486,5 +485,60 @@ void *osada_read(char *ruta){
 ;	printf("%s\n", imprimir);
 	return(buffer);
 }
-
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+int osada_crearArchivo(char *ruta){
+	int exito;
+	return exito;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+int osada_editaArchivo(char *ruta, void *nuevoContenido){
+	int exito;
+	exito = 0;
+	return exito;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+int osada_unlink(char *ruta){
+	int exito;
+	int i = buscarArchivo(ruta);
+	miDisco.tablaDeArchivos[i].state = '\0';
+	//actualizarTablaDeArchivos(miDisco);
+	int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
+	while(siguienteBloque != 65535){
+		bitarray_set_bit(miDisco.bitmap, siguienteBloque);
+		//actualizarBitmap(miDisco);
+		siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
+	}
+	exito = 0; // hay chances de error? validar
+	return exito;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+int osada_mkdir(char *ruta, char nombreDir){
+	int exito;
+	exito = 0;
+	return exito;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+int osada_rmdir(char *ruta){
+	int exito;
+	int i = buscarArchivo(ruta);
+		miDisco.tablaDeArchivos[i].state = '\0';
+		//actualizarTablaDeArchivos(miDisco);
+		int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
+		while(siguienteBloque != 65535){
+			bitarray_set_bit(miDisco.bitmap, siguienteBloque);
+			//actualizarBitmap(miDisco);
+			siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
+		}
+		exito = 0; // hay chances de error? validar
+	return exito;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+int osada_rename(char *ruta, char *nuevoNombre){
+	int exito;
+	int i = buscarArchivo(ruta);
+	strcpy(miDisco.tablaDeArchivos[i].fname, nuevoNombre);
+	//actualizarTablaDeArchivos(miDisco);
+	exito = 0;
+	return exito;
+}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////

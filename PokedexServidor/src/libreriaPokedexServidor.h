@@ -85,10 +85,24 @@ int buscarArchivo(char *unaRuta);
 /* copiado de un bloque de datos en un buffer */
 void copiarBloque(void *buffer, int bloque, int offset);
 
+
+/* implementaciones de operaciones del filesystema osada */
 int osada_getattr(char *unaRuta);
 
 char *osada_readdir(char *unDirectorio);
 
 void *osada_read(char *unaRuta);
+
+int osada_crearArchivo(char *ruta);
+
+int osada_editaArchivo(char *ruta, void *nuevoContenido);
+
+int osada_unlink(char *ruta);
+
+int osada_mkdir(char *ruta, char nombreDir);
+
+int osada_rmdir(char *ruta);
+
+int osada_rename(char *ruta, char *nuevoNombre);
 
 #endif /* LIBRERIAPOKEDEXSERVIDOR_H_ */
