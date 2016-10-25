@@ -82,6 +82,7 @@ disco_osada osada_iniciar() {
 
 	disco_osada unDisco;
 	unDisco.header = malloc(sizeof(osada_header));
+	int fd_disco;
 
 	FILE* archivo;
 /*	if ((archivo = fopen("../basic.bin" , "r")) == NULL) {
@@ -95,10 +96,6 @@ disco_osada osada_iniciar() {
 
 		exit(0);
 			}
-
-	int disco;
-	disco= open("../challenge.bin",O_RDWR);
-
 
 	//datos del archivo, no lo pongo en funcion auxiliar porque despues necesito los int
 	int sz;
@@ -205,7 +202,10 @@ disco_osada osada_iniciar() {
     fread(unDisco.tablaDeAsignaciones, (A * OSADA_BLOCK_SIZE), 1, archivo);
 
     unDisco.disco = fopen("../challenge.bin" , "r+");
-
+    fd_disco = open("../challenge.bin", O_RDWR);
+    struct stat discoStat;
+    fstat(fd_disco, &discoStat);
+    unDisco.discoMapeado = mmap(0, discoStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_disco, 0);
 
     fclose(archivo);
     free(logs);

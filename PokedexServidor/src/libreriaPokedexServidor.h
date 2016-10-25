@@ -85,6 +85,12 @@ int buscarArchivo(char *unaRuta);
 /* copiado de un bloque de datos en un buffer */
 void copiarBloque(void *buffer, int bloque, int offset);
 
+/* Funciones de modificación del disco OSADA*/
+void actualizarBitmap();
+
+void actualizarTablaDeArchivos();
+
+void actualizarTablaDeAsignaciones();
 
 /* implementaciones de operaciones del filesystema osada */
 int osada_getattr(char *unaRuta);

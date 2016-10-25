@@ -71,6 +71,7 @@ typedef struct{
 	osada_file tablaDeArchivos[2048];
 	int *tablaDeAsignaciones;
 	FILE *disco;
+	int *discoMapeado;
 	tamanio_osada cantBloques;
 }disco_osada;
 

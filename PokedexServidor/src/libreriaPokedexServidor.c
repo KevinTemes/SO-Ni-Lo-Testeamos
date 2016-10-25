@@ -18,7 +18,7 @@
 #define KCYAN "\x1B[36m"
 #define KBLANCO "\x1B[37m"
 
-
+pthread_mutex_t mutexOsada=PTHREAD_MUTEX_INITIALIZER;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void imprimirGiladas(void *unCliente){
@@ -323,7 +323,7 @@ void atenderConexion(void *numeroCliente){
 
 			break;
 
-			case 3: // crear archivo (por ahora supungo que el nombre ya viene en la ruta)
+			case 3: // .create (por ahora supungo que el nombre ya viene en la ruta)
 
 				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
@@ -335,7 +335,7 @@ void atenderConexion(void *numeroCliente){
 
 			break;
 
-			case 4: // modificar archivo
+			case 4: // .write
 
 
 				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
@@ -353,7 +353,7 @@ void atenderConexion(void *numeroCliente){
 
 			break;
 
-			case 5: // borrar archivo (unlink)
+			case 5: // .unlink
 
 				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
@@ -365,7 +365,7 @@ void atenderConexion(void *numeroCliente){
 
 			break;
 
-			case 6: // Crear directorio/subdirectorio (mkdir)
+			case 6: // .mkdir
 
 				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
@@ -377,7 +377,7 @@ void atenderConexion(void *numeroCliente){
 
 			break;
 
-			case 7: // Borrar directorio (rmdir)
+			case 7: // .rmdir
 
 				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
@@ -389,7 +389,7 @@ void atenderConexion(void *numeroCliente){
 
 			break;
 
-			case 8: // Renombrar archivo (rename)
+			case 8: // .rename
 
 
 				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
@@ -413,6 +413,25 @@ void atenderConexion(void *numeroCliente){
 
 	}
 
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+void actualizarBitmap(){
+	int desplazamiento = 64;
+	int tamanioBitmap = miDisco.cantBloques.bloques_bitmap * 64;
+	memcpy(miDisco.discoMapeado + desplazamiento, miDisco.bitmap, tamanioBitmap);
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+void actualizarTablaDeArchivos(){
+	int desplazamiento = miDisco.cantBloques.bloques_header + miDisco.cantBloques.bloques_bitmap;
+	memcpy(miDisco.discoMapeado + desplazamiento, miDisco.tablaDeArchivos, sizeof(osada_file) * 2048);
+
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+void actualizarTablaDeAsignaciones(){
+	int desplazamiento = miDisco.cantBloques.bloques_header +miDisco.cantBloques.bloques_bitmap +
+			miDisco.cantBloques.bloques_tablaDeArchivos;
+	int tamanioTabla = miDisco.cantBloques.bloques_tablaDeAsignaciones;
+	memcpy(miDisco.discoMapeado + desplazamiento, miDisco.tablaDeAsignaciones, tamanioTabla);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int osada_getattr(char *unaRuta){
@@ -482,63 +501,76 @@ void *osada_read(char *ruta){
 	}
 
 	char *imprimir = (char *)buffer;
-;	printf("%s\n", imprimir);
+	printf("%s\n", imprimir);
+
 	return(buffer);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int osada_crearArchivo(char *ruta){
 	int exito;
+
 	return exito;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int osada_editaArchivo(char *ruta, void *nuevoContenido){
 	int exito;
 	exito = 0;
+
 	return exito;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int osada_unlink(char *ruta){
 	int exito;
 	int i = buscarArchivo(ruta);
+	pthread_mutex_lock(&mutexOsada);
 	miDisco.tablaDeArchivos[i].state = '\0';
-	//actualizarTablaDeArchivos(miDisco);
+	actualizarTablaDeArchivos();
 	int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
 	while(siguienteBloque != 65535){
-		bitarray_set_bit(miDisco.bitmap, siguienteBloque);
-		//actualizarBitmap(miDisco);
+		bitarray_clean_bit(miDisco.bitmap, siguienteBloque);
 		siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
 	}
+	actualizarBitmap();
+	pthread_mutex_unlock(&mutexOsada);
 	exito = 0; // hay chances de error? validar
+
 	return exito;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int osada_mkdir(char *ruta, char nombreDir){
 	int exito;
 	exito = 0;
+
 	return exito;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int osada_rmdir(char *ruta){
 	int exito;
 	int i = buscarArchivo(ruta);
-		miDisco.tablaDeArchivos[i].state = '\0';
-		//actualizarTablaDeArchivos(miDisco);
-		int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
-		while(siguienteBloque != 65535){
-			bitarray_set_bit(miDisco.bitmap, siguienteBloque);
-			//actualizarBitmap(miDisco);
-			siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
-		}
-		exito = 0; // hay chances de error? validar
+	pthread_mutex_lock(&mutexOsada);
+	miDisco.tablaDeArchivos[i].state = '\0';
+	actualizarTablaDeArchivos();
+	int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
+	while(siguienteBloque != 65535){
+		bitarray_clean_bit(miDisco.bitmap, siguienteBloque);
+		actualizarBitmap();
+		siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
+	}
+	pthread_mutex_unlock(&mutexOsada);
+	exito = 0; // hay chances de error? validar
+
 	return exito;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int osada_rename(char *ruta, char *nuevoNombre){
 	int exito;
 	int i = buscarArchivo(ruta);
+	pthread_mutex_lock(&mutexOsada);
 	strcpy(miDisco.tablaDeArchivos[i].fname, nuevoNombre);
-	//actualizarTablaDeArchivos(miDisco);
+	actualizarTablaDeArchivos();
+	pthread_mutex_unlock(&mutexOsada);
 	exito = 0;
+
 	return exito;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
