@@ -283,8 +283,15 @@ static int cliente_borrarDirectorio(const char* path){
 		return res;
 }
 
+int cliente_truncate(const char * path, off_t offset) {
+	int res = 0;
+	// "falsa" implementación de truncate para que .write no rompa los quinotos
+	return res;
+}
+
 static int cliente_duplicarArchivo(const char* pathOrigen, const char* pathDestino){
 	protocolo = 9;
+	return 0;
 }
 //--------------------------------------------------------------------------------
 
@@ -299,6 +306,7 @@ static struct fuse_operations cliente_oper = {
 		.mkdir = cliente_crearDirectorio,
 		.rmdir = cliente_borrarDirectorio,
 		.rename = cliente_rename,
+		.truncate = cliente_truncate,
 };
 
 

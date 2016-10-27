@@ -248,15 +248,10 @@ int buscarArchivo(char *unaRuta){
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void copiarBloque(void *buffer, int bloque, int offset){
-	void *puente = malloc(64);
-	int inicioDatos = miDisco.cantBloques.bloques_header + miDisco.cantBloques.bloques_bitmap
+	int inicioDatos = (miDisco.cantBloques.bloques_header + miDisco.cantBloques.bloques_bitmap
 			+ miDisco.cantBloques.bloques_tablaDeArchivos
-			+ miDisco.cantBloques.bloques_tablaDeAsignaciones;
-	seekBloques(miDisco.disco, inicioDatos + bloque);
-	fread(puente, 64, 1, miDisco.disco);
-	memcpy(buffer + offset, puente, 64);
-	fseek(miDisco.disco, 0, SEEK_SET);
-	free(puente);
+			+ miDisco.cantBloques.bloques_tablaDeAsignaciones) * 64;
+	memcpy(buffer + offset, &miDisco.discoMapeado[inicioDatos + bloque], 64);
 
 }
 
