@@ -9,6 +9,8 @@
 #include "libSockets.h"
 #define HEADER_PAQUETE (sizeof(int)*3)
 
+metaDataPokeNest *datos; // Variable global
+
 int leerConfiguracion(char *ruta, metaDataComun **datos) {
 	t_config* archivoConfiguracion = config_create(ruta); //Crea struct de configuracion
 	if (archivoConfiguracion == NULL) {

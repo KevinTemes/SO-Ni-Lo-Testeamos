@@ -11,6 +11,15 @@
 
 pthread_mutex_t mutexPaqueton=PTHREAD_MUTEX_INITIALIZER;
 
+extern char paqueton[10];
+
+int numEntrenador;
+
+t_infoCliente clientesActivos[1024];
+
+extern sem_t sem_Nuevos;
+
+
 /////////////////////////////////////////////////////////////////////////////
 void* recibirDatos(int conexion, int tamanio){
 	void* mensaje=(void*)malloc(tamanio);
@@ -102,30 +111,40 @@ void notificarCaida(){
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void atenderConexion(void *numeroCliente){
 	int unCliente = *((int *) numeroCliente);
-	char* paquete;
+	char* paquete = malloc(sizeof(char) * 2);
 	int status = 1;
+
+
+	t_log* logs;
+	remove("Mapi.log");
+
+		logs = log_create("Mapi.log", "Mapa", false, log_level_from_string("INFO"));
+
+
+
 
 	//printf("Entrenador #%d conectado! esperando mensajes... \n",
 				//clientesActivos[unCliente].cliente);
-
 	while(status !=0){
-		 char* recibido;
-		 char* cambio;
 
-		 recibido = recibirDatos(clientesActivos[unCliente].socket,2);
-		//status = recv(clientesActivos[unCliente].socket, (void*) paquete, 10, 0);
+		// paquete = recibirDatos(clientesActivos[unCliente].socket,2);
+		status = recv(clientesActivos[unCliente].socket, (void*) paquete, 2, 0);
 		if (status != 0) {
 			//printf("el Entrenador #%d dijo: \n %s", clientesActivos[unCliente].cliente, paquete);
-			cambio = strdup(recibido);
+			//status = recv(clientesActivos[unCliente].socket, paquete, 2, 0);
+			//log_info(logs,"paquete: %c%c",paquete[0],paquete[1]);
+			char* cambio = strdup(paquete);
 			pthread_mutex_lock(&mutexPaqueton);
 			paqueton[0] = cambio[0];
 			paqueton[1] = cambio[1];
 			numEntrenador = unCliente;
+			log_info(logs,"paquete global:%c%c",paqueton[0],paqueton[1]);
+			//printf("%c",paqueton[0]);
 			pthread_mutex_unlock(&mutexPaqueton);
+            sem_post(&sem_Nuevos);
 
 			//enviarHeader(clientesActivos[unCliente].socket, 1);
 			}
-
 	}
-
+	free (paquete);
 }
