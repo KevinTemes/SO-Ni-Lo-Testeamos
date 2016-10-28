@@ -70,10 +70,11 @@ pthread_t hiloAtenderConexiones[1024];
 //arranque de planificacion
 void planificador(void* argu) {
 
+	sem_wait(&sem_Listos); //semaforo de nuevos bloqueando que se saque un ent si la cola esta vacia
+
 	char* argument = (char*) argu;
 	while (1) {
 
-		sem_wait(&sem_Listos); //semaforo de nuevos bloqueando que se saque un ent si la cola esta vacia
 
 		log_info(logs, "se metio a planificacion");
 
@@ -110,10 +111,10 @@ void planificador(void* argu) {
 									datosPokenest->posicion);
 							int pedo;
 							pedo =send((clientesActivos[ent1->numeroCliente]).socket,
-									datosPokenest->posicion, sizeof(datosPokenest->posicion), 0);
+									datosPokenest->posicion, 5, 0);
 							log_info(logs, "%d",pedo);
 
-							ka = list_size(pokenests);
+							ka = list_size(pokenests)+1;
 						}
 					}
 					q--;
@@ -197,7 +198,7 @@ void atencionNuevos(void* argu) {
 	log_info(logs, "Este seria un caracter del entrenador: %c", paqueton[0]);
 
 	//mientras no haya recibido nada
-	while (aux != '\0') {
+	while (1) {
 		entrenador* ent1 = malloc(sizeof(entrenador));
 
 		//paso variable global al entrenador
@@ -227,11 +228,10 @@ void atencionNuevos(void* argu) {
 
 			queue_push(colaListos,(void*) ent1); //llego un entrenador entonces lo meto en la cola de listos
 
-			sem_post(&sem_Listos); //produce un ent en colaListos
-
 			log_info(logs, "entrenador %c a listos", ent1->simbolo); //informo por archivo de log la llegada del entrenador
 
-			aux = '\0';
+			sem_post(&sem_Listos); //produce un ent en colaListos
+
 		}
 
 		//si el entrenador se encontraba registrado
@@ -241,11 +241,10 @@ void atencionNuevos(void* argu) {
 			queue_push(cola,(void*) ent1->accion); //pusheo nuevo accionar a la cola auxiliar
 			list_replace(listaDeColasAccion,(void*) ent1->numeroLlegada, cola); //reemplaza la cola de la lista por la auxiliar
 
-			aux = '/0';
 		}
 		free(ent1);
 	}
-	aux = '\0';
+
 }
 
 
