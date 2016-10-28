@@ -108,8 +108,10 @@ void planificador(void* argu) {
 
 							log_info(logs, "antes del send %s",
 									datosPokenest->posicion);
-							send((clientesActivos[ent1->numeroCliente]).socket,
-									datosPokenest->posicion, 5, 0);
+							int pedo;
+							pedo =send((clientesActivos[ent1->numeroCliente]).socket,
+									datosPokenest->posicion, sizeof(datosPokenest->posicion), 0);
+							log_info(logs, "%d",pedo);
 
 							ka = list_size(pokenests);
 						}
@@ -217,7 +219,7 @@ void atencionNuevos(void* argu) {
 
 			list_replace(listaDeColasAccion, ent1->numeroLlegada,(void*) colaAccion); // agrego en la lista que contiene su cola de accion
 
-			log_info(logs, "llego aca");
+			log_info(logs, "llego aca y metio en la cola");
 
 			CrearPersonaje(items, ent1->simbolo, ent1->posx, ent1->posy); //mete al pj en el mapa
 
