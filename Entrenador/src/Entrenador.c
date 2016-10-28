@@ -130,7 +130,6 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 					posicionesYDeadlocks->valor = 1;
 
 						for(posicionesYDeadlocks->posObjetivo=0;(dictionary_get(pokesDeCadaMapa,mapa)!=NULL) && (posicionesYDeadlocks->valor!=0);posicionesYDeadlocks->posObjetivo++){
-							printf("Posicion del objetivo inicial: %d\n",posicionesYDeadlocks->posObjetivo);
 							// MANDO: CARACTER + POKENEST
 
 							char* caracterPoke = dictionary_get(pokesDeCadaMapa,mapa);
