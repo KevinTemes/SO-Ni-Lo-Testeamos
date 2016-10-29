@@ -33,13 +33,19 @@ int main(int argc, char **argv) {
 
 
 	//LOGS
-remove("PokeServidor.log");
+	remove("PokeServidor.log");
 	puts("Creando archivo de logueo PokeServidor...\n");
 	logs = log_create("PokeServidor.log", "PokedexServidor", true, log_level_from_string("INFO"));
 	puts("Log Pokedex Servidor creado exitosamente \n");
 
 	//Levanto el disco Osada
 	 miDisco = osada_iniciar();
+	 int fd_disco;
+	 struct stat discoStat;
+	 fd_disco = open("/home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/challenge.bin", O_RDWR);
+	 fstat(fd_disco, &discoStat);
+	 miDisco.discoMapeado = mmap(0, discoStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_disco, 0);
+
 //	osada_iniciar(&mainHeader, &tablaDeArchivos, discoMapeado);
 
 

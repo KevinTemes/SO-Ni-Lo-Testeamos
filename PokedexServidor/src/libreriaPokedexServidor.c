@@ -100,11 +100,14 @@ void removeChar(char *string, char basura) {
 	char *src, *dst;
 	for (src = dst = string; *src != '\0'; src++) {
 		*dst = *src;
-		if (*dst != basura)
+		if (*dst != basura){
 			dst++;
+		}
 	}
 	*dst = '\0';
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void *serializarString(char *unString){
@@ -128,133 +131,56 @@ char *getFileName(unsigned char *nombreArchivo){
 	return nombre;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-char *getNombreDirectorio(char *ruta){
-	char *nombre;
-	int i = 0;
-	char **separador = string_split(ruta, "/");
-	while(separador[i] != NULL){
-		nombre = separador[i];
-		i++;
-	}
 
-	return nombre;
-}
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-char *getDirectorioPadre(char *ruta){
-	char *nombrePadre = string_new();
-	int i = 0;
-	char **separador = string_split(ruta, "/");
-	int encontreNull = 0;
-	while(encontreNull == 0){
-		if(separador[i] == NULL){encontreNull = 1;}
-		i++;
-	}
-	if(i >= 3){
-		nombrePadre = separador[i - 3];
-	}
-	else{if(strlen(nombrePadre) <= 1){
-		nombrePadre = NULL;}
-	}
-	return nombrePadre;
-}
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-char *getDirectorioAbuelo(char *ruta){
-	char *nombreAbuelo = string_new();
-	int i = 0;
-	char **separador = string_split(ruta, "/");
-	int encontreNull = 0;
-	while(encontreNull == 0){
-		if(separador[i] == NULL){encontreNull = 1;}
-		i++;
-	}
-	if(i >= 4){
-		nombreAbuelo = separador[i - 4];
-	}
-	else{if (strlen(nombreAbuelo) <= 1){
-		nombreAbuelo = NULL;}
-	}
-	return nombreAbuelo;
-}
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-t_infoDirectorio getInfoDirectorio(char *ruta){
-	t_infoDirectorio directorio;
-	directorio.nombre = getNombreDirectorio(ruta);
-	directorio.padre = getDirectorioPadre(ruta);
-	directorio.abuelo = getDirectorioAbuelo(ruta);
-	directorio.largoNombre = strlen(directorio.nombre);
-	if(directorio.padre != NULL){
-	directorio.largoPadre = strlen(directorio.padre);
-	}
-	if(directorio.abuelo != NULL){
-	directorio.largoAbuelo = strlen(directorio.abuelo);
-	}
-	return directorio;
-}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int buscarArchivo(char *unaRuta){
-	t_infoDirectorio miDirectorio = getInfoDirectorio(unaRuta);
-	int posicion = 0;
-	char *fname = string_new();
-	char *nombrePadre = string_new();
-	char *nombreAbuelo = string_new();
-	int parentBlock = 999999;
-	int i;
-	int iPadre;
-	int iAbuelo;
-
-	for (i = 0; i <= 2048; i++){
-		// Recorro la tabla buscando la estructura asociada al directorio que nos pasaron
-		fname = getFileName(miDisco.tablaDeArchivos[i].fname);
-		if(strncmp(fname, miDirectorio.nombre, miDirectorio.largoNombre) == 0){
-			if(miDirectorio.padre == NULL && (int)miDisco.tablaDeArchivos[i].parent_directory == 65535){
-				parentBlock = i;}
-
-			// Me fijo si el directorio que me pasaron está alojado en otra carpeta padre, y valido
-			else if (miDirectorio.padre != NULL){
-				iPadre = miDisco.tablaDeArchivos[i].parent_directory;
-				if(iPadre == 65535){nombrePadre = "root";}
-				else {nombrePadre = getFileName(miDisco.tablaDeArchivos[iPadre].fname);}
-
-				if(strncmp(nombrePadre, miDirectorio.padre, miDirectorio.largoPadre) == 0){
-			// Me fijo si el directorio padre también está alojado a su vez en otro directorio
-					if(miDirectorio.abuelo != NULL){
-						iAbuelo = miDisco.tablaDeArchivos[iPadre].parent_directory;
-						if(iAbuelo == 65535){nombreAbuelo = "root";}
-						else{nombreAbuelo = getFileName(miDisco.tablaDeArchivos[iAbuelo].fname);}
-						removeChar(nombreAbuelo, ' ');
-						removeChar(miDirectorio.abuelo, ' ');
-						if(strncmp(nombreAbuelo, miDirectorio.abuelo, miDirectorio.largoAbuelo) == 0){
-							parentBlock = i;
-						}
-					}
-					else {
-						parentBlock = i;
-					}
-				}
-			}
-		}
+	char **separadas = string_split(unaRuta, "/");
+	int a = 0;
+	int parentDir = 65535;
+	while(separadas[a] != NULL){
+		parentDir = recorrerDirectorio(separadas[a], parentDir);
+		a++;
 	}
-
-	if (parentBlock != 999999){
-		posicion = parentBlock;
-	}
-	else {
-		posicion = -1;
-	}
-
-	return posicion;
+return parentDir;
 
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
+int recorrerDirectorio(char *nombre, int parentDir){
+	int posicion, i;
+	char *archivo = nombre;
+	int nameLength = strlen(archivo);
+	char *fname = string_new();
+	for(i = 0; i <= 2048; i++){
+		fname = getFileName(miDisco.tablaDeArchivos[i].fname);
+		if((strncmp(archivo, fname, nameLength) == 0) &&
+				((int)miDisco.tablaDeArchivos[i].parent_directory == parentDir)){
+			posicion = i;
+		}
+	}
+
+
+	return posicion;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 void copiarBloque(void *buffer, int bloque, int offset){
+
 	int inicioDatos = (miDisco.cantBloques.bloques_header + miDisco.cantBloques.bloques_bitmap
 			+ miDisco.cantBloques.bloques_tablaDeArchivos
 			+ miDisco.cantBloques.bloques_tablaDeAsignaciones) * 64;
-	memcpy(buffer + offset, &miDisco.discoMapeado[inicioDatos + bloque], 64);
+	memcpy(buffer + offset, &miDisco.discoMapeado[inicioDatos + (bloque * 64)], 64);
 
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+void copiarBloqueIncompleto(void *buffer, int bloque, int offset, int tamanio){
 
+	int inicioDatos = (miDisco.cantBloques.bloques_header + miDisco.cantBloques.bloques_bitmap
+				+ miDisco.cantBloques.bloques_tablaDeArchivos
+				+ miDisco.cantBloques.bloques_tablaDeAsignaciones) * 64;
+	memcpy(buffer + offset, &miDisco.discoMapeado[inicioDatos + (bloque * 64)], tamanio);
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void atenderConexion(void *numeroCliente){
 	int unCliente = *((int *) numeroCliente);
@@ -411,22 +337,23 @@ void atenderConexion(void *numeroCliente){
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void actualizarBitmap(){
-	int desplazamiento = 64;
+	int inicioBitmap = (miDisco.cantBloques.bloques_header * 64) / 4;
 	int tamanioBitmap = miDisco.cantBloques.bloques_bitmap * 64;
-	memcpy(miDisco.discoMapeado + desplazamiento, miDisco.bitmap, tamanioBitmap);
+	memcpy(miDisco.discoMapeado + inicioBitmap, miDisco.bitmap, tamanioBitmap);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void actualizarTablaDeArchivos(){
-	int desplazamiento = miDisco.cantBloques.bloques_header + miDisco.cantBloques.bloques_bitmap;
-	memcpy(miDisco.discoMapeado + desplazamiento, miDisco.tablaDeArchivos, sizeof(osada_file) * 2048);
+	int inicioTabla = ((miDisco.cantBloques.bloques_header + miDisco.cantBloques.bloques_bitmap) * 64)
+			/ 4;
+	memcpy(miDisco.discoMapeado + inicioTabla, &miDisco.tablaDeArchivos, sizeof(osada_file) * 2048);
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void actualizarTablaDeAsignaciones(){
-	int desplazamiento = miDisco.cantBloques.bloques_header +miDisco.cantBloques.bloques_bitmap +
-			miDisco.cantBloques.bloques_tablaDeArchivos;
-	int tamanioTabla = miDisco.cantBloques.bloques_tablaDeAsignaciones;
-	memcpy(miDisco.discoMapeado + desplazamiento, miDisco.tablaDeAsignaciones, tamanioTabla);
+	int inicioTabla = ((miDisco.cantBloques.bloques_header +miDisco.cantBloques.bloques_bitmap +
+			miDisco.cantBloques.bloques_tablaDeArchivos) * 64) / 4;
+	int tamanioTabla = miDisco.cantBloques.bloques_tablaDeAsignaciones * 64;
+	memcpy(miDisco.discoMapeado + inicioTabla, miDisco.tablaDeAsignaciones, tamanioTabla);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int osada_getattr(char *unaRuta){
@@ -486,17 +413,45 @@ void *osada_read(char *ruta){
 	int i = buscarArchivo(ruta);
 	int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
 	void *buffer = malloc(miDisco.tablaDeArchivos[i].file_size);
+	div_t bloquesOcupados = div(miDisco.tablaDeArchivos[i].file_size, 64);
 	int tamanioActualBuffer = 0;
+	int inicioDatos = (miDisco.cantBloques.bloques_header + miDisco.cantBloques.bloques_bitmap
+				+ miDisco.cantBloques.bloques_tablaDeArchivos
+				+ miDisco.cantBloques.bloques_tablaDeAsignaciones) * 64;
+	void *desplazamiento;
 
-	while(miDisco.tablaDeAsignaciones[siguienteBloque] != 65535){
-		copiarBloque(buffer, siguienteBloque, tamanioActualBuffer);
-		tamanioActualBuffer += 64;
-		siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
+	if(bloquesOcupados.rem == 0){
+		while(miDisco.tablaDeAsignaciones[siguienteBloque] != -1){
+			desplazamiento = &miDisco.discoMapeado[(inicioDatos / 4) + ((siguienteBloque * 64) / 4)];
+			memcpy(buffer + tamanioActualBuffer, desplazamiento, 64);
+			tamanioActualBuffer += 64;
+			siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
 
+		}
+	}
+	else{
+		int bloquesCopiados = 0;
+		while(miDisco.tablaDeAsignaciones[siguienteBloque] != -1){
+			if(bloquesCopiados <= bloquesOcupados.quot){
+				desplazamiento = &miDisco.discoMapeado[(inicioDatos / 4) +
+													   ((siguienteBloque * 64) / 4)];
+				memcpy(buffer + tamanioActualBuffer,desplazamiento, 64);
+				tamanioActualBuffer += 64;
+				siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
+				bloquesCopiados++;
+			}
+			else{
+				desplazamiento = &miDisco.discoMapeado[(inicioDatos / 4) +
+																	   ((siguienteBloque * 64) / 4)];
+				memcpy(buffer + tamanioActualBuffer, desplazamiento, bloquesOcupados.rem);
+				siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
+				bloquesCopiados++;
+			}
+		}
 	}
 
-	char *imprimir = (char *)buffer;
-	printf("%s\n", imprimir);
+	char *epifania = buffer;
+	printf("%s\n", epifania);
 
 	return(buffer);
 }
@@ -521,7 +476,7 @@ int osada_unlink(char *ruta){
 	miDisco.tablaDeArchivos[i].state = '\0';
 	actualizarTablaDeArchivos();
 	int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
-	while(siguienteBloque != 65535){
+	while(siguienteBloque != -1){
 		bitarray_clean_bit(miDisco.bitmap, siguienteBloque);
 		siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
 	}
@@ -545,12 +500,6 @@ int osada_rmdir(char *ruta){
 	pthread_mutex_lock(&mutexOsada);
 	miDisco.tablaDeArchivos[i].state = '\0';
 	actualizarTablaDeArchivos();
-	int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
-	while(siguienteBloque != 65535){
-		bitarray_clean_bit(miDisco.bitmap, siguienteBloque);
-		actualizarBitmap();
-		siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
-	}
 	pthread_mutex_unlock(&mutexOsada);
 	exito = 0; // hay chances de error? validar
 

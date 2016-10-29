@@ -26,20 +26,13 @@
 #include <signal.h>
 #include "osada.h"
 #include "TestServidor.h"
+#include <fcntl.h>
+#include <sys/stat.h>
 
 typedef struct{
 	int cliente;
 	int socket;
 } t_infoCliente;
-
-typedef struct{
-	char *nombre;
-	char *padre;
-	char *abuelo;
-	int largoNombre;
-	int largoPadre;
-	int largoAbuelo;
-}t_infoDirectorio;
 
 typedef char bloque[64];
 
@@ -80,10 +73,14 @@ void atenderConexion(void *numeroCliente);
 void *serializarString(char *unString);
 
 /* Búsqueda de la posicion de un un archivo/directorio en la tabla de archivos */
+int recorrerDirectorio(char *nombre, int parentDir);
+
 int buscarArchivo(char *unaRuta);
 
 /* copiado de un bloque de datos en un buffer */
 void copiarBloque(void *buffer, int bloque, int offset);
+
+void copiarBloqueIncompleto(void *buffer, int bloque, int offset, int tamanio);
 
 /* Funciones de modificación del disco OSADA*/
 void actualizarBitmap();
