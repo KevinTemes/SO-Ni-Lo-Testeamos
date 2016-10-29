@@ -36,6 +36,7 @@ char paqueton[10] =
 extern metaDataPokeNest *datos;
 extern int numEntrenador;
 extern t_infoCliente clientesActivos[1024];
+char* nombreMapa;
 
 //variables del mapa
 int nE = 0; //numero entrenador
@@ -59,29 +60,32 @@ t_queue* colaBloqueados;
 t_queue* colaAccion;
 
 //semaforos
-sem_t sem_Nuevos, sem_Listos, sem_Bloqueados;
+sem_t sem_Nuevos;
+sem_t sem_Listos;
+sem_t sem_Bloqueados;
+sem_t sem_ListaColas;
 
 //declara hilos
-pthread_t socketServMapa;
-pthread_t atentiNuevos;
 pthread_t hiloDePlanificador;
 pthread_t hiloAtenderConexiones[1024];
 
 //arranque de planificacion
 void planificador(void* argu) {
 
-	sem_wait(&sem_Listos); //semaforo de nuevos bloqueando que se saque un ent si la cola esta vacia
-
 	char* argument = (char*) argu;
+
+	int q = datosMapa->quantum;
+
 	while (1) {
 
+		sem_wait(&sem_Listos); //semaforo de nuevos bloqueando que se saque un ent si la cola esta vacia
 
-		log_info(logs, "se metio a planificacion");
+		log_info(logs,"volvio a empezar el while, sigo re loco, seguro ya se camnio el paqueton: %d",paqueton[1]);
 
 		//caso roun robin
 		if (!strcmp(datosMapa->algoritmo, "RR")) {
 
-			int q = datosMapa->quantum;
+
 			int acto;
 			t_queue *colaAction;
 			entrenador* ent1;
@@ -91,15 +95,19 @@ void planificador(void* argu) {
 
 			ent1 = (entrenador*) queue_pop(colaListos);
 			log_info(logs,"funca");
-			colaAction = (t_queue*) list_get(listaDeColasAccion, ent1->numeroLlegada); //saco cola de accion de la lista de entrenadores
-			log_info(logs,"funca2");
-			acto = (int) queue_pop(colaAccion);
-			log_info(logs,"funca3");
+
 
 			log_info(logs,"hasta aca no rompe parte 2");
 
 
 			while (q) {
+
+
+				colaAction = list_get(listaDeColasAccion, ent1->numeroLlegada); //saco cola de accion de la lista de entrenadores
+				log_info(logs,"funca2");
+				acto = (int) queue_pop(colaAction);
+				log_info(logs,"funca3");
+
 				if (isalpha(acto)) {
 					int ka;
 					for (ka = 0; ka < list_size(pokenests); ka++) {
@@ -110,45 +118,53 @@ void planificador(void* argu) {
 							log_info(logs, "antes del send %s",
 									datosPokenest->posicion);
 							int pedo;
-							pedo =send((clientesActivos[ent1->numeroCliente]).socket,
+							pedo = send((clientesActivos[ent1->numeroCliente]).socket,
 									datosPokenest->posicion, 5, 0);
-							log_info(logs, "%d",pedo);
 
-							ka = list_size(pokenests)+1;
+							log_info(logs, "pedo: %d",pedo);
+							ka = list_size(pokenests);
 						}
 					}
 					q--;
 				}
+				log_info(logs,"paso el isalpha");
+
+				//8 es 56, 2 es 50, 4 es 52, 6 es 54
 
 				if (isdigit(acto)) {
-					if (acto == 2 || acto == 4 || acto == 6 || acto == 8) {
+					if (acto == 50 || acto == 52 || acto == 54 || acto == 56) {
 						switch (acto) {
 
-						case 8:
+						sleep(1);
+						case 56:
 							if (ent1->posy > 1) {
+                               log_info(logs,"mueva arriba");
 
 								ent1->posy--;
 								q--;
 							}
 							break;
 
-						case 2:
+						case 50:
 							if (ent1->posy < rows) {
+                               log_info(logs,"mueva abajo");
 
 								ent1->posy++;
 								q--;
 							}
 							break;
 
-						case 4:
+						case 52:
 							if (ent1->posx > 1) {
+                               log_info(logs,"mueva izquierda");
 
 								ent1->posx--;
 								q--;
 							}
 							break;
-						case 6:
+						case 54:
 							if (ent1->posx < cols) {
+                               log_info(logs,"mueva derecha");
 
 								ent1->posx++;
 								q--;
@@ -157,23 +173,28 @@ void planificador(void* argu) {
 
 							MoverPersonaje(items, ent1->simbolo, ent1->posx, ent1->posy);
 
+
+
 						}
 					}
 
 					if (acto == 9) {
 						queue_push(colaBloqueados, ent1);
+						q = datosMapa->quantum;
 					}
+
+					nivel_gui_dibujar(items, argument);
 				}
 			}
 
+
+			log_info(logs,"ahora pase por aca papurri, sigo andando");
 			/* if (   ((p == 26) && (q == 10)) || ((x == 26) && (y == 10)) ) {
 			 restarRecurso(items, 'H');
 			 }
-
 			 if (   ((p == 19) && (q == 9)) || ((x == 19) && (y == 9)) ) {
 			 restarRecurso(items, 'F');
 			 }
-
 			 if (   ((p == 8) && (q == 15)) || ((x == 8) && (y == 15)) ) {
 			 restarRecurso(items, 'M');
 			 } */
@@ -184,74 +205,14 @@ void planificador(void* argu) {
 	}
 }
 
-///////////////////////////gestion de llegada entrenador (simbolo y accion) ej: @2 $8 etc
-void atencionNuevos(void* argu) {
-
-	char* argument = (char*) argu;
-
-	sem_wait(&sem_Nuevos);
-
-	log_info(logs, "entro a la gestion de nuevos");
-
-	//guardo paqueton [0] en variable auxiliar para mayor comprension
-	char aux = paqueton[0];
-	log_info(logs, "Este seria un caracter del entrenador: %c", paqueton[0]);
-
-	//mientras no haya recibido nada
-	while (1) {
-		entrenador* ent1 = malloc(sizeof(entrenador));
-
-		//paso variable global al entrenador
-		ent1->simbolo = paqueton[0]; //almaceno simbolo en entrenador (paqueton [0] es variable global
-		ent1->accion = paqueton[1]; //almaceno que hacer en entrenador paqueton global
-		ent1->flagEstaEnLista = 0; //al ser nuevo no esta registrado en la lista
-		ent1->numeroCliente = numEntrenador; //numero de cliente para envio de informacion
-
-		//si el entrenador no esta registrado
-		if (!ent1->flagEstaEnLista) {
-			ent1->numeroLlegada = nE; //numero del entrenador
-			nE++; //lo aumento para asignarselo al siguiente
-			ent1->flagEstaEnLista = 1; //ahora este entrenador nuevo esta en la lista
-			ent1->posx = 0; //posicion en x inicializada en 0
-			ent1->posy = 0; // idem en y
-
-
-			queue_push(colaAccion, ent1->accion); // meto la accion del entrenador en la cola
-
-			list_replace(listaDeColasAccion, ent1->numeroLlegada,(void*) colaAccion); // agrego en la lista que contiene su cola de accion
-
-			log_info(logs, "llego aca y metio en la cola");
-
-			CrearPersonaje(items, ent1->simbolo, ent1->posx, ent1->posy); //mete al pj en el mapa
-
-			nivel_gui_dibujar(items, argument);
-
-			queue_push(colaListos,(void*) ent1); //llego un entrenador entonces lo meto en la cola de listos
-
-			log_info(logs, "entrenador %c a listos", ent1->simbolo); //informo por archivo de log la llegada del entrenador
-
-			sem_post(&sem_Listos); //produce un ent en colaListos
-
-		}
-
-		//si el entrenador se encontraba registrado
-		else {
-			t_queue *cola = queue_create(); //cola auxiliar para meter la mierda
-			cola = (t_queue*) list_get(listaDeColasAccion, ent1->numeroLlegada); //saco la cola y se la meto a la auxiliar
-			queue_push(cola,(void*) ent1->accion); //pusheo nuevo accionar a la cola auxiliar
-			list_replace(listaDeColasAccion,(void*) ent1->numeroLlegada, cola); //reemplaza la cola de la lista por la auxiliar
-
-		}
-		free(ent1);
-	}
-
-}
 
 
 ///////////////////////////////////////////Main//////////////////////////////////////////////////////////
 
 int main(int argc, char* argv[]) {
 
+	//nombre de mapa
+	nombreMapa = argv[1];
 	//inicializo listas
 	pokenests = list_create();
 	items = list_create();
@@ -264,6 +225,7 @@ int main(int argc, char* argv[]) {
 	sem_init(&sem_Nuevos, 0, 0);
 	sem_init(&sem_Listos, 0, 0);
 	sem_init(&sem_Bloqueados, 0, 0);
+	sem_init(&sem_ListaColas, 0, 0);
 
 	remove("Mapa.log");
 	logs = log_create("Mapa.log", "Mapa", false, log_level_from_string("INFO"));
@@ -323,10 +285,6 @@ int main(int argc, char* argv[]) {
 
 
 	nivel_gui_dibujar(items, argv[1]);
-
-	//hilo de atencion nuevos entrenadores
-
-	pthread_create(&atentiNuevos, NULL, (void*) atencionNuevos, (void*)argv[1]);
 
 	//hilo de planificacion
 
@@ -442,4 +400,3 @@ int main(int argc, char* argv[]) {
 	return EXIT_SUCCESS;
 
 }
-
