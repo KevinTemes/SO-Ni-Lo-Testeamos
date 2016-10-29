@@ -37,8 +37,12 @@ char* nombre;
 char* simbolo;
 
 typedef struct{
+	int pos;
+	int posObjetivo;
 	int cantDeadlocks;
-}t_cantidadDeadlocks;
+	int valor;
+}t_posMapaposObjetivoYDeadlocks;
+
 
 typedef struct{
 	int hInicio;
@@ -93,20 +97,18 @@ typedef struct Paquete {
 } t_paquete;
 
 int agarrarPokeConMasNivel(t_list*, t_pokemonDeserializado*);
-void terminarAventura(t_calculoTiempo*,t_tiempoBloqueado*,t_cantidadDeadlocks*,char*);
+void terminarAventura(t_calculoTiempo*,t_tiempoBloqueado*,char*);
 char* empezarAventura();
 void copiarMedalla(char*);
 void copiarArchivo(char*, char*, char*);
 void* recibirDatos(int, int);
-void moverseEnUnaDireccion(int,int,int,int,char*);
-void* solicitarAtraparPokemon(t_calculoTiempo*,t_tiempoBloqueado*, t_dictionary*,t_pokemonDeserializado*,t_cantidadDeadlocks*, t_list*,char*);
+void moverseEnUnaDireccion(int,int,int,int);
+void* solicitarAtraparPokemon(t_calculoTiempo*,t_tiempoBloqueado*, t_dictionary*,t_pokemonDeserializado*,t_list*,char*);
 void* sacarTiempo(t_calculoTiempo*,t_tiempoBloqueado*,char*,char*,char*);
 void borrarArchivosBill();
 void borrarMedallas();
-void morir(char*);
-void reconectarseAlMismoMapa();
+void* morir(char*);
 void resetear();
-void reiniciarHojaDeViaje();
 void reciboUnaVida();
 void pierdoUnaVida();
 void handler(int n);

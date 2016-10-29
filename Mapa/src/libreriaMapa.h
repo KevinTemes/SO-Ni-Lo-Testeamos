@@ -1,5 +1,5 @@
 /*
- * libreriaPokedexServidor.h
+ * libreriaMapa.h
  *
  *  Created on: 7/9/2016
  *      Author: utnso
