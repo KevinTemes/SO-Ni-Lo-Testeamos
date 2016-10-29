@@ -38,6 +38,10 @@ typedef char bloque[64];
 
 t_infoCliente clientesActivos[1024];
 
+typedef struct{
+
+}t_infoDirectorio;
+
 osada_header mainHeader;
 osada_file tablaDeArchivos[2048];
 int *discoMapeado;
@@ -96,9 +100,9 @@ char *osada_readdir(char *unDirectorio);
 
 void *osada_read(char *unaRuta);
 
-int osada_crearArchivo(char *ruta);
+int osada_create(char *ruta);
 
-int osada_editaArchivo(char *ruta, void *nuevoContenido);
+int osada_write(char *ruta, void *nuevoContenido, off_t offset);
 
 int osada_unlink(char *ruta);
 

@@ -194,7 +194,7 @@ static int cliente_read(const char *path, char *buf, size_t size, off_t offset, 
 }
 
 /* Crea un archivo vacio*/
-static int cliente_crearArchivo(const char* path, mode_t modo, struct fuse_file_info * fi){ //Por ahora asumimos que el nombre del archivo esta en el path
+static int cliente_create(const char* path, mode_t modo, struct fuse_file_info * fi){ //Por ahora asumimos que el nombre del archivo esta en el path
 	int res = 1; // 0 para exito y 1 para error
 	protocolo = 3;
 	solicitarServidor(path,protocolo);
@@ -209,7 +209,7 @@ static int cliente_crearArchivo(const char* path, mode_t modo, struct fuse_file_
 }
 
 /* Implementacion de la operacion write sobre un archivo*/
-static int cliente_modificarArchivo(const char* path,const char *buf, size_t size, off_t offset, struct fuse_file_info* fi){
+static int cliente_write(const char* path,const char *buf, size_t size, off_t offset, struct fuse_file_info* fi){
 	int res = 1;
 	protocolo = 4;
 	solicitarModificacionServidor(path,buf,protocolo);
@@ -223,7 +223,7 @@ static int cliente_modificarArchivo(const char* path,const char *buf, size_t siz
 	return res;
 }
 
-static int cliente_borrarArchivo(const char* path){
+static int cliente_unlink(const char* path){
 	int res = 1;
 	protocolo = 5;
 	solicitarServidor(path,protocolo);
@@ -254,7 +254,7 @@ static int cliente_rename(const char* path, const char* nuevoNombre){
 
 // char *ipServidor = getenv("IP_SERVIDOR");
 
-static int cliente_crearDirectorio(const char* path){
+static int cliente_mkdir(const char* path){
 	int res= 1;
 	protocolo = 6;
 	solicitarServidor(path,protocolo);
@@ -269,7 +269,7 @@ static int cliente_crearDirectorio(const char* path){
 
 }
 
-static int cliente_borrarDirectorio(const char* path){
+static int cliente_rmdir(const char* path){
 	int res = 1;
 	protocolo = 7;
 	solicitarServidor(path,protocolo);
@@ -290,7 +290,7 @@ int cliente_truncate(const char * path, off_t offset) {
 }
 
 static int cliente_duplicarArchivo(const char* pathOrigen, const char* pathDestino){
-	protocolo = 9;
+	protocolo = 9; // Vendria a ser una combinacion de las operaciones anteriores
 	return 0;
 }
 //--------------------------------------------------------------------------------
@@ -300,11 +300,11 @@ static struct fuse_operations cliente_oper = {
 		.getattr = cliente_getattr,
 		.readdir = cliente_readdir,
 		.read = cliente_read,
-		.create = cliente_crearArchivo,
-		.write = cliente_modificarArchivo,
-		.unlink = cliente_borrarArchivo,
-		.mkdir = cliente_crearDirectorio,
-		.rmdir = cliente_borrarDirectorio,
+		.create = cliente_create,
+		.write = cliente_write,
+		.unlink = cliente_unlink,
+		.mkdir = cliente_mkdir,
+		.rmdir = cliente_rmdir,
 		.rename = cliente_rename,
 		.truncate = cliente_truncate,
 };
