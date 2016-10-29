@@ -97,8 +97,6 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 char* miPuerto;
 	 t_list* listaNivAtrapados= list_create();
 	 t_dictionary* masFuertePokeYNivel = dictionary_create();
-	 posicionesYDeadlocks->pos=0;
-	 posicionesYDeadlocks->posObjetivo=0;
 	 posicionesYDeadlocks->cantDeadlocks=0;
 
 	 //reiniciarHojaDeViaje:
@@ -130,7 +128,6 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 					posicionesYDeadlocks->valor = 1;
 
 						for(posicionesYDeadlocks->posObjetivo=0;(dictionary_get(pokesDeCadaMapa,mapa)!=NULL) && (posicionesYDeadlocks->valor!=0);posicionesYDeadlocks->posObjetivo++){
-							// MANDO: CARACTER + POKENEST
 
 							char* caracterPoke = dictionary_get(pokesDeCadaMapa,mapa);
 							string_append(&protocolo,caracterPoke);
@@ -138,6 +135,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 							printf("Voy a buscar este pokemon: %s \n", caracterPoke);
 
+							// MANDO: CARACTER + POKENEST
 							char carPoke = caracterPoke[0];
 							protocAManejar[1]=carPoke;
 
@@ -173,11 +171,10 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 							dictionary_remove(pokesDeCadaMapa,mapa);
 						} // cierro el for de los objetivos
 
-					if(!close(servidor)){
+					if(posicionesYDeadlocks->valor==1){
 						copiarMedalla(mapa);
-						close(servidor);
 					}
-					close(servidor);
+
 			} // cierro el for de los mapas
 
 		 } while((ent->cantidadInicialVidas!=0) && (list_get(ent->hojaDeViaje,posicionesYDeadlocks->pos)!=NULL));
@@ -295,7 +292,7 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 				free(pokeMFuerte);
 
 				char* resolucionDeadlock = recibirDatos(servidor,1);*/
-				char* resolucionDeadlock = "7";
+				char* resolucionDeadlock = "0";
 				int respDeadlock = atoi(resolucionDeadlock);
 				if(respDeadlock==MORI){
 					morir("deadlock");
@@ -496,7 +493,6 @@ void* morir(char* motivo){
 			// no dejo que siga iterando los objetivos
 			posicionesYDeadlocks->valor = 0;
 			printf("Posicion antes de iterar el for de mapas: %d\n",posicionesYDeadlocks->pos);
-			close(servidor);
 			return posicionesYDeadlocks;
 			} else if (!strcmp(motivo,"senial")){
 				char* infoSenial = string_from_format("Moriste por la senial SIGTERM, vidas restantes: %d\n", ent->cantidadInicialVidas);
@@ -529,7 +525,6 @@ void* morir(char* motivo){
 				//aviso al mapa que reinicio desde cero
 				protocAManejar[1]='1';
 				send(servidor, protocAManejar, 2, 0); // para que sepa que reseteo desde 0 toda mi hoja
-				close(servidor);
 				return posicionesYDeadlocks;
 			}else if(string_equals_ignore_case(respuesta,"no")) {
 					log_info(logs,"Cerrando programa\n");
