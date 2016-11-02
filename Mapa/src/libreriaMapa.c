@@ -19,7 +19,7 @@ int numEntrenador;
 t_infoCliente clientesActivos[1024];
 
 extern sem_t sem_Listos;
-extern sem_t sem_ListaColas;
+extern sem_t sem_quantum;
 
 extern char* nombreMapa;
 
@@ -150,30 +150,30 @@ void atenderConexion(void *numeroCliente) {
 			//log_info(logs,"paquete: %c%c",paquete[0],paquete[1]);
 			char* cambio = strdup(paquete);
 			pthread_mutex_lock(&mutexPaqueton);
-			paqueton[0] = cambio[0];
-			paqueton[1] = cambio[1];
+
 			numEntrenador = unCliente;
-			log_info(logs, "paquete global:%c %c", paqueton[0], paqueton[1]);
+			log_info(logs, "paquete global:%c %c", cambio[0], cambio[1]);
+			log_info(logs, "unCliente:%d clientesactivos[uncliente].cliente:%d",unCliente,clientesActivos[unCliente].cliente);
 			//printf("%c",paqueton[0]);
 			pthread_mutex_unlock(&mutexPaqueton);
 
 			//enviarHeader(clientesActivos[unCliente].socket, 1);
 
-			log_info(logs, "Este seria un caracter del entrenador: %c",paqueton[0]);
-			log_info(logs, "Este seria su accionar: %d", paqueton[1]);
+			log_info(logs, "Este seria un caracter del entrenador: %c",cambio[0]);
+			log_info(logs, "Este seria su accionar: %d", cambio[1]);
 
 			//mientras no haya recibido nada
 
 
 
 				//paso variable global al entrenador
-				ent1->simbolo = paqueton[0]; //almaceno simbolo en entrenador (paqueton [0] es variable global
-				ent1->accion = paqueton[1]; //almaceno que hacer en entrenador paqueton global
+				ent1->simbolo = cambio[0]; //almaceno simbolo en entrenador (paqueton [0] es variable global
+				ent1->accion = cambio[1]; //almaceno que hacer en entrenador paqueton global
 				ent1->numeroCliente = numEntrenador; //numero de cliente para envio de informacion
 
 				//si el entrenador no esta registrado
 				if (!ent1->flagEstaEnLista) {
-					 ent1->numeroLlegada = unCliente; //numero del entrenador
+					 ent1->numeroLlegada = (clientesActivos[unCliente].cliente-1); //numero del entrenador
 					 ent1->flagEstaEnLista = 1; //ahora este entrenador nuevo esta en la lista
 					 ent1->posx = 0; //posicion en x inicializada en 0
 					 ent1->posy = 0; // idem en y
@@ -210,14 +210,13 @@ void atenderConexion(void *numeroCliente) {
 					queue_push(cola, ent1->accion); //pusheo nuevo accionar a la cola auxiliar
 					/*int ac;
 					ac = queue_pop(cola);
-
 					log_info(logs,"acto es %d", ac); */
 
 					list_replace(listaDeColasAccion, ent1->numeroLlegada, cola); //reemplaza la cola de la lista por la auxiliar
 
 					log_info(logs,"paso el replace");
 
-					sem_post(&sem_Listos);
+					sem_post(&sem_quantum);
 					//aux = '\0';
 				}
 
@@ -229,4 +228,5 @@ void atenderConexion(void *numeroCliente) {
 	free(ent1);
 
 free( paquete);
+
 }

@@ -36,6 +36,7 @@ typedef struct pa {
 	int flagEstaEnLista;
 	int posx;
 	int posy;
+	int estadoConexion;
 } entrenador;
 
 /* Función loca para testear rececpción de mensajes a través de un socket. */

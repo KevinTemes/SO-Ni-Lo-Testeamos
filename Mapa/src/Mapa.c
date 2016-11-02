@@ -64,6 +64,7 @@ sem_t sem_Nuevos;
 sem_t sem_Listos;
 sem_t sem_Bloqueados;
 sem_t sem_ListaColas;
+sem_t sem_quantum;
 
 //declara hilos
 pthread_t hiloDePlanificador;
@@ -77,8 +78,8 @@ void planificador(void* argu) {
 	int q = datosMapa->quantum;
 
 	while (1) {
-
 		sem_wait(&sem_Listos); //semaforo de nuevos bloqueando que se saque un ent si la cola esta vacia
+
 
 		log_info(logs,"volvio a empezar el while, sigo re loco, seguro ya se camnio el paqueton: %d",paqueton[1]);
 
@@ -97,16 +98,21 @@ void planificador(void* argu) {
 			log_info(logs,"funca");
 
 
+
+			colaAction = list_get(listaDeColasAccion, ent1->numeroLlegada); //saco cola de accion de la lista de entrenadores
+			log_info(logs,"funca2");
+
+
 			log_info(logs,"hasta aca no rompe parte 2");
 
 
 			while (q) {
 
 
-				colaAction = list_get(listaDeColasAccion, ent1->numeroLlegada); //saco cola de accion de la lista de entrenadores
-				log_info(logs,"funca2");
+
 				acto = (int) queue_pop(colaAction);
 				log_info(logs,"funca3");
+
 
 				if (isalpha(acto)) {
 					int ka;
@@ -121,26 +127,36 @@ void planificador(void* argu) {
 							pedo = send((clientesActivos[ent1->numeroCliente]).socket,
 									datosPokenest->posicion, 5, 0);
 
-							log_info(logs, "pedo: %d",pedo);
+							log_info(logs, "Se envio coordenadas: %d",pedo);
 							ka = list_size(pokenests);
+
 						}
 					}
+
 					q--;
+
 				}
+
+
 				log_info(logs,"paso el isalpha");
 
+				sem_wait(&sem_quantum);
 				//8 es 56, 2 es 50, 4 es 52, 6 es 54
 
 				if (isdigit(acto)) {
+					log_info(logs,"se metio al isdigit");
 					if (acto == 50 || acto == 52 || acto == 54 || acto == 56) {
-						switch (acto) {
 
 						sleep(1);
+						switch (acto) {
+
 						case 56:
 							if (ent1->posy > 1) {
                                log_info(logs,"mueva arriba");
 
 								ent1->posy--;
+								MoverPersonaje(items, ent1->simbolo, ent1->posx, ent1->posy);
+																nivel_gui_dibujar(items, argument);
 								q--;
 							}
 							break;
@@ -150,6 +166,8 @@ void planificador(void* argu) {
                                log_info(logs,"mueva abajo");
 
 								ent1->posy++;
+								MoverPersonaje(items, ent1->simbolo, ent1->posx, ent1->posy);
+																nivel_gui_dibujar(items, argument);
 								q--;
 							}
 							break;
@@ -159,6 +177,8 @@ void planificador(void* argu) {
                                log_info(logs,"mueva izquierda");
 
 								ent1->posx--;
+								MoverPersonaje(items, ent1->simbolo, ent1->posx, ent1->posy);
+																nivel_gui_dibujar(items, argument);
 								q--;
 							}
 							break;
@@ -167,11 +187,14 @@ void planificador(void* argu) {
                                log_info(logs,"mueva derecha");
 
 								ent1->posx++;
+								MoverPersonaje(items, ent1->simbolo, ent1->posx, ent1->posy);
+								nivel_gui_dibujar(items, argument);
+
 								q--;
 							}
 							break;
 
-							MoverPersonaje(items, ent1->simbolo, ent1->posx, ent1->posy);
+
 
 
 
@@ -183,7 +206,6 @@ void planificador(void* argu) {
 						q = datosMapa->quantum;
 					}
 
-					nivel_gui_dibujar(items, argument);
 				}
 			}
 
@@ -199,7 +221,12 @@ void planificador(void* argu) {
 			 restarRecurso(items, 'M');
 			 } */
 
-			nivel_gui_dibujar(items, argument);
+	        if (q == 0){
+	        	queue_push(colaListos,ent1);
+	        	q = datosMapa->quantum;
+	        	sem_post(&sem_Listos);
+	        }
+
 
 		}
 	}
@@ -226,6 +253,7 @@ int main(int argc, char* argv[]) {
 	sem_init(&sem_Listos, 0, 0);
 	sem_init(&sem_Bloqueados, 0, 0);
 	sem_init(&sem_ListaColas, 0, 0);
+	sem_init(&sem_quantum, 0, 0);
 
 	remove("Mapa.log");
 	logs = log_create("Mapa.log", "Mapa", false, log_level_from_string("INFO"));
