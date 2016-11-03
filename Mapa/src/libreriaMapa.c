@@ -12,8 +12,6 @@
 
 pthread_mutex_t mutexPaqueton = PTHREAD_MUTEX_INITIALIZER;
 
-extern char paqueton[10];
-
 int numEntrenador;
 
 t_infoCliente clientesActivos[1024];
@@ -170,6 +168,7 @@ void atenderConexion(void *numeroCliente) {
 				ent1->simbolo = cambio[0]; //almaceno simbolo en entrenador (paqueton [0] es variable global
 				ent1->accion = cambio[1]; //almaceno que hacer en entrenador paqueton global
 				ent1->numeroCliente = numEntrenador; //numero de cliente para envio de informacion
+				ent1->flagLeAsignaronPokenest = 0;
 
 				//si el entrenador no esta registrado
 				if (!ent1->flagEstaEnLista) {
@@ -194,6 +193,8 @@ void atenderConexion(void *numeroCliente) {
 					queue_push(colaListos, (void*) ent1); //llego un entrenador entonces lo meto en la cola de listos
 
 					log_info(logs, "entrenador %c a listos", ent1->simbolo); //informo por archivo de log la llegada del entrenador
+
+
 
 					//	aux = '\0';
 

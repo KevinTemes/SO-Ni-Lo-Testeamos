@@ -63,7 +63,6 @@ t_queue* colaAccion;
 sem_t sem_Nuevos;
 sem_t sem_Listos;
 sem_t sem_Bloqueados;
-sem_t sem_ListaColas;
 sem_t sem_quantum;
 
 //declara hilos
@@ -128,6 +127,16 @@ void planificador(void* argu) {
 									datosPokenest->posicion, 5, 0);
 
 							log_info(logs, "Se envio coordenadas: %d",pedo);
+
+
+							char** posicionPoke;
+						    posicionPoke = string_split(datosPokenest->posicion, ";");
+
+							ent1->posPokex = atoi(posicionPoke[0]);
+							ent1->posPokey = atoi(posicionPoke[1]);
+							ent1->flagLeAsignaronPokenest = 1;
+
+
 							ka = list_size(pokenests);
 
 						}
@@ -202,6 +211,7 @@ void planificador(void* argu) {
 					}
 
 					if (acto == 9) {
+						usleep(datosMapa->retardoQ);
 						queue_push(colaBloqueados, ent1);
 						q = datosMapa->quantum;
 					}
@@ -229,6 +239,29 @@ void planificador(void* argu) {
 
 
 		}
+		if (!strcmp(datosMapa->algoritmo, "SDRF")) {
+
+			sem_wait(&sem_Listos);
+			t_list* listaAux=list_create();
+			t_queue* colaAction;
+			  while(!queue_is_empty(colaListos)){
+			    	entrenador* ent;
+			    	ent=queue_pop(colaListos);
+			    	list_add(listaAux,ent);
+			    }
+			  bool esMasCerca(entrenador *cerca, entrenador *lejos) {
+				  if(cerca->flagLeAsignaronPokenest && lejos->flagLeAsignaronPokenest){
+			      return ((cerca->posx - cerca->posPokex)+(cerca->posy - cerca->posPokey)) < ((lejos->posx - lejos->posPokex)+(lejos->posy - lejos->posPokey));
+				  }
+				  else{
+					  return -1;
+				  }
+			  }
+            list_sort(listaAux,(void*)esMasCerca);
+
+
+		}
+
 	}
 }
 
@@ -252,7 +285,6 @@ int main(int argc, char* argv[]) {
 	sem_init(&sem_Nuevos, 0, 0);
 	sem_init(&sem_Listos, 0, 0);
 	sem_init(&sem_Bloqueados, 0, 0);
-	sem_init(&sem_ListaColas, 0, 0);
 	sem_init(&sem_quantum, 0, 0);
 
 	remove("Mapa.log");
@@ -297,7 +329,7 @@ int main(int argc, char* argv[]) {
 	nivel_gui_get_area_nivel(&rows, &cols);
 
 
-	//POKENEST
+	//POKENESTchar** posPoke;
 		int ka;
 
 		for (ka = 0; ka < list_size(pokenests); ka++) {

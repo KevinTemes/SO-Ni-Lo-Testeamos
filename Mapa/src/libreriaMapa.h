@@ -37,6 +37,9 @@ typedef struct pa {
 	int posx;
 	int posy;
 	int estadoConexion;
+	int posPokex;
+	int posPokey;
+	int flagLeAsignaronPokenest;
 } entrenador;
 
 /* Función loca para testear rececpción de mensajes a través de un socket. */
