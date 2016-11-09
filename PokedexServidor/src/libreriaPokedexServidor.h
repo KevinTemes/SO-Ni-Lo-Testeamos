@@ -106,7 +106,7 @@ int osada_write(char *ruta, void *nuevoContenido, off_t offset);
 
 int osada_unlink(char *ruta);
 
-int osada_mkdir(char *ruta, char nombreDir);
+int osada_mkdir(char *ruta, char *nombreDir);
 
 int osada_rmdir(char *ruta);
 

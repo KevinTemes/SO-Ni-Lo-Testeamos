@@ -55,17 +55,14 @@ void solicitarServidor(const char* path, int protocolo){ // Este va para los cas
 	int sizePath = (sizeof (char) * strlen(path));
 	int sizeProtocolo = sizeof(int);
 
-	void *leBuffer = malloc(sizePath + sizeProtocolo);
+	void *leBuffer = malloc(sizePath + (2 * sizeof(int)));
 
 	// Aca tengo que pasar los sizes para poder saber donde termina al path y donde empieza el protocolo
-	memcpy(leBuffer,&sizePath, sizeof(int));
-	memcpy(leBuffer + sizeof(int), &sizeProtocolo, sizeof(int));
-
-	//Aca les paso el path y protocolo
+	memcpy(leBuffer, &protocolo, sizeof(int));
+	memcpy(leBuffer + sizeof(int), &sizePath, sizeof(int));
 	memcpy(leBuffer + (2 * sizeof(int)), path, sizePath);
-	memcpy(leBuffer + (2 * sizeof(int)) + sizePath , &protocolo, sizeProtocolo);
 
-	send(pokedexServidor,leBuffer, sizePath + sizeProtocolo, 0);
+	send(pokedexServidor,leBuffer, sizePath + (2 * sizeof(int)), MSG_WAITALL);
 	free(leBuffer); // No se si esto va
 }
 
@@ -312,12 +309,15 @@ static struct fuse_operations cliente_oper = {
 
 int main(int argc, char *argv[]) {
 
- return fuse_main(argc, argv, &cliente_oper, NULL );
+	pokedexServidor = conectarCliente(IP, PUERTO);
 
-pokedexServidor = conectarCliente(IP, PUERTO);
+	return fuse_main(argc, argv, &cliente_oper, NULL );
+
+
 
 /* gilada para el primer checkpoint */
 
+/*
 int enviar = 1;
 char message[PACKAGESIZE];
 char *resultado = malloc(sizeof(int));
@@ -340,12 +340,7 @@ while(enviar != 0){
 		}
 	}
 
-
-
-
-/* fin gilada para el primer checkpoint */
-
-close(pokedexServidor);
+close(pokedexServidor); */
 
 return 0;
 

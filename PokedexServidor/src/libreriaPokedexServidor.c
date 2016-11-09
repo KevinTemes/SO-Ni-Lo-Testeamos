@@ -228,12 +228,12 @@ void iterarNombre(char* origen, unsigned char respuesta[17]){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void llenarEstructuraNuevo(osada_file archivo, char* ruta, int bloqueTablaAsignacionesLibre){ // revisar lo del char[17]
 
-	t_infoDirectorio directorio = getInfoDirectorio(ruta); // Ver que onda con esta estructura
+//	t_infoDirectorio directorio = getInfoDirectorio(ruta); // Ver que onda con esta estructura
 	uint32_t tiempo = consultarTiempo();
 
 	archivo.state = '\1'; // Regular
-	iterarNombre(directorio.nombre,archivo.fname); // Hay que buscar una solucion mas copada a esto
-	archivo.parent_directory = directorio.padre;
+//	iterarNombre(directorio.nombre,archivo.fname); // Hay que buscar una solucion mas copada a esto
+//	archivo.parent_directory = directorio.padre;
 	archivo.file_size = 0 ; // Se crean vacios
 	archivo.lastmod = tiempo;
 	archivo.first_block = bloqueTablaAsignacionesLibre;
@@ -266,9 +266,9 @@ void atenderConexion(void *numeroCliente){
 				buffer = malloc(tamanioRuta);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = (char *) buffer; // chequear este casteo y los proximos que sean iguales
-				// int tipoArchivo = osada_getAttr(ruta);
-				// send(clientesActivos[unCliente].socket, tipoArchivo, sizeof(int) + tamanioContenido, 0);
-				// free(buffer);
+				int tipoArchivo = osada_getAttr(ruta);
+				send(clientesActivos[unCliente].socket, tipoArchivo, sizeof(int), 0);
+				free(buffer);
 
 			break;
 
@@ -617,13 +617,15 @@ int osada_write(char *ruta, void *nuevoContenido, off_t offset){
 		int quedaEspacioEnAsignaciones =
 		exito = !(quedaEspacioEnBitmap && quedaEspacioEnAsignaciones);
 
-		char* contenidoSobreescrito = string_append(contenidoOriginal,nuevoContenido);
+		char* contenidoSobreescrito = string_new();
+		string_append(contenidoSobreescrito, contenidoOriginal);
+		string_append(contenidoSobreescrito, nuevoContenido);
 
-		memcpy(void* contenidoOriginal, char* contenidoSobreescrito, sizeFinal);
+		memcpy(contenidoOriginal, contenidoSobreescrito, sizeFinal);
 		miDisco.tablaDeArchivos[posicion].lastmod = consultarTiempo();
 		miDisco.tablaDeArchivos[posicion].file_size = sizeFinal;
 		actualizarBitmap();
-		actualizarAsignaciones();
+	//	actualizarAsignaciones();
 	}
 
 
@@ -663,7 +665,7 @@ int osada_unlink(char *ruta){
 	return exito;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-int osada_mkdir(char *ruta){
+int osada_mkdir(char *ruta, char *nombreDir){
 	int exito = 1;
 	unsigned int bloqueAsignacionesLibre = primerBloqueTablaAsignacionesLibre();
 	osada_file directorioNuevo;

@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
 
 
 		// ZONA DE TESTEO
-		printf("ingrese la accion a testear, o escriba 'ayuda' para ver comandos disponibles:\n");
+/*		printf("ingrese la accion a testear, o escriba 'ayuda' para ver comandos disponibles:\n");
 		char *accion = malloc(sizeof(char) * 32);
 		scanf("%[^\n]%*c", accion);
 		char *algo = accion;
@@ -61,9 +61,9 @@ int main(int argc, char **argv) {
 		scanf("%[^\n]%*c", accion);
 		};
 		// FIN ZONA DE TESTEO
+*/
 
 
-		/*
 
 
 
@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
 
 close(socketEscucha);
 
- */
+
 return 0;
 
 }
