@@ -42,6 +42,11 @@ typedef struct{
 
 }t_infoDirectorio;
 
+typedef struct{
+	int tipo_archivo;
+	int size;
+}t_getattr;
+
 osada_header mainHeader;
 osada_file tablaDeArchivos[2048];
 int *discoMapeado;
@@ -94,7 +99,7 @@ void actualizarTablaDeArchivos();
 void actualizarTablaDeAsignaciones();
 
 /* implementaciones de operaciones del filesystema osada */
-int osada_getattr(char *unaRuta);
+t_getattr osada_getattr(char *unaRuta);
 
 char *osada_readdir(char *unDirectorio);
 

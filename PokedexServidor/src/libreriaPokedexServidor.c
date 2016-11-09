@@ -245,9 +245,10 @@ void atenderConexion(void *numeroCliente){
 	char paquete[1024];
 	int status = 1;
 	int codOp;
-	int tamanioRuta, tamanioNuevoContenido, tamanioNombre;;
+	int tamanioRuta, tamanioNuevoContenido, tamanioNombre;
 	char *ruta;
 	void *buffer;
+	void *respuesta;
 
 	printf("%sPokeCliente #%d conectado! esperando mensajes... \n", KAMARILLO,
 				clientesActivos[unCliente].cliente);
@@ -266,8 +267,11 @@ void atenderConexion(void *numeroCliente){
 				buffer = malloc(tamanioRuta);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = (char *) buffer; // chequear este casteo y los proximos que sean iguales
-				int tipoArchivo = osada_getAttr(ruta);
-				send(clientesActivos[unCliente].socket, tipoArchivo, sizeof(int), 0);
+				t_getattr archivo = osada_getattr(ruta);
+				respuesta = malloc(2 * sizeof(int));
+				memcpy(respuesta, &archivo.tipo_archivo, sizeof(int));
+				memcpy(respuesta + sizeof(int), &archivo.size, sizeof(int));
+				send(clientesActivos[unCliente].socket, respuesta, 2 * sizeof(int), MSG_WAITALL);
 				free(buffer);
 
 			break;
@@ -280,7 +284,9 @@ void atenderConexion(void *numeroCliente){
 				ruta = (char *) buffer;
 				char *contenido = osada_readdir(ruta);
 				int tamanioContenido = sizeof(char) * strlen(contenido);
-				void *bufferDir = serializarString(contenido);
+				void *bufferDir = malloc(tamanioContenido);
+				memcpy(bufferDir, &tamanioContenido, sizeof(int));
+				memcpy(bufferDir + sizeof(int), contenido, tamanioContenido);
 				send(clientesActivos[unCliente].socket, bufferDir, sizeof(int) + tamanioContenido, 0);
 				free(buffer);
 				free(bufferDir);
@@ -294,15 +300,17 @@ void atenderConexion(void *numeroCliente){
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = (char *) buffer;
 				void *contenidoArchivo = osada_read(ruta);
-				int tamanioArchivo; // ver después cómo obtener este valor;
+				int i = buscarArchivo(ruta);
+				int tamanioArchivo = (int)miDisco.tablaDeArchivos[i].file_size;
 				buffer = malloc(tamanioArchivo + sizeof(int));
-				// serializarArchivo(buffer, contenidoArchivo, tamanioArchivo);
+				memcpy(buffer, &tamanioArchivo, sizeof(int));
+				memcpy(buffer + sizeof(int), contenidoArchivo, tamanioArchivo);
 				send(clientesActivos[unCliente].socket, buffer, sizeof(int) + tamanioContenido, 0);
 				free(buffer);
 
 			break;
 
-			case 3: // .create (por ahora supungo que el nombre ya viene en la ruta)
+			case 3: // .create (por ahora supongo que el nombre ya viene en la ruta)
 
 				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
@@ -466,17 +474,20 @@ int  asignarPosicionTablaArchivos(osada_file archivo){
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int osada_getattr(char *unaRuta){
+t_getattr osada_getattr(char *unaRuta){
+	t_getattr atributos;
 	int tipoArchivo;
 	int posicion = buscarArchivo(unaRuta);
 	if(miDisco.tablaDeArchivos[posicion].state == REGULAR){
-		tipoArchivo = 1;
+		atributos.tipo_archivo = 1;
+		atributos.size = miDisco.tablaDeArchivos[posicion].file_size;
 	}
 	else if(miDisco.tablaDeArchivos[posicion].state == DIRECTORY){
-		tipoArchivo = 2;
+		atributos.tipo_archivo = 2;
+		atributos.size = 0;
 	}
 
-	return tipoArchivo;
+	return atributos;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////

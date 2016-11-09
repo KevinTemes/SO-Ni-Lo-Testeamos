@@ -22,6 +22,11 @@
 #include <unistd.h>
 #include "libSockets.h"
 
+typedef struct{
+	int tipo_archivo;
+	int size;
+}t_getattr;
+
 /*  acordarse de chequear si hay que poner -DFUSE_USE_VERSION=27 y -D_FILE_OFFSET_BITS=64
  * como parámetros de compilación */
 
@@ -145,21 +150,40 @@ int recibirEstadoOperacion(){
 int cliente_getattr(const char *path, struct stat *stbuf) {
 	int res= 0;
 	protocolo = 0;
-	solicitarServidor(path,protocolo);
+	int sizePath = (sizeof (char) * strlen(path));
+	t_getattr *respuesta;
+
+	void *leBuffer = malloc(sizePath + (2 * sizeof(int)));
+	void *leAnswer = malloc(2 * sizeof(int));
+
+	// Aca tengo que pasar los sizes para poder saber donde termina al path y donde empieza el protocolo
+	memcpy(leBuffer, &protocolo, sizeof(int));
+	memcpy(leBuffer + sizeof(int), &sizePath, sizeof(int));
+	memcpy(leBuffer + (2 * sizeof(int)), path, sizePath);
+
+	send(pokedexServidor,leBuffer, sizePath + (2 * sizeof(int)), MSG_WAITALL);
+
+	recv(pokedexServidor, leAnswer, 2 * sizeof(int), MSG_WAITALL);
+
+	respuesta = (t_getattr *) leAnswer;
+
 	int tipoFile = recibirTipoFile();
 	memset(stbuf,0,sizeof(struct stat));
 
-	if (tipoFile == 2){ // Es un directorio
+	if (respuesta->tipo_archivo == 2){ // Es un directorio
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
 	}
-	else if (tipoFile == 1){ // Es un archivo regular
-		stbuf->st_mode = S_IFREG | 0644;
+	else if (respuesta->tipo_archivo == 1){ // Es un archivo regular
+		stbuf->st_mode = S_IFREG | 0444;
 		stbuf->st_nlink = 1;
+		stbuf->st_size = respuesta->size;
 	}
 	else{
 		res= -ENOENT;
 	}
+	free(leBuffer);
+	free(leAnswer);
 	return res;
 }
 
@@ -167,8 +191,23 @@ int cliente_getattr(const char *path, struct stat *stbuf) {
 static int cliente_readdir(const char *path, void *buf, fuse_fill_dir_t filler,off_t offset, struct fuse_file_info *fi) {
 	int res= 0, i=0;
 	protocolo = 1;
-	solicitarServidor(path,protocolo);
-	char* listadoConcatenado = recibirListado(); // Listado de archivos en forma de string
+	int sizePath = (sizeof (char) * strlen(path));
+
+	void *leBuffer = malloc(sizePath + (2 * sizeof(int)));
+	int leTamanio;
+
+	// Aca tengo que pasar los sizes para poder saber donde termina al path y donde empieza el protocolo
+	memcpy(leBuffer, &protocolo, sizeof(int));
+	memcpy(leBuffer + sizeof(int), &sizePath, sizeof(int));
+	memcpy(leBuffer + (2 * sizeof(int)), path, sizePath);
+
+	send(pokedexServidor,leBuffer, sizePath + (2 * sizeof(int)), MSG_WAITALL);
+
+	recv(pokedexServidor, &leTamanio, sizeof(int), MSG_WAITALL);
+	void *leAnswer = malloc(leTamanio);
+	recv(pokedexServidor, leAnswer, leTamanio, MSG_WAITALL);
+
+	char* listadoConcatenado = (char *) leAnswer;
 	char** archivos = string_split(listadoConcatenado,";");
 
 	while (archivos[i] != NULL){
@@ -178,15 +217,34 @@ static int cliente_readdir(const char *path, void *buf, fuse_fill_dir_t filler,o
 	if (archivos[i] == NULL){
 		res = -ENOENT;
 	}
+
+	free(leBuffer);
+	free(leAnswer);
 	return res;
 }
 
 static int cliente_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) { // Fijarse bien esta
 	protocolo = 2;
-	char* contenido = NULL;
-	solicitarServidor(path,protocolo);
-	contenido =(char*) recibirContenidoArchivo();
-	memcpy(buf,(contenido + offset),size);
+	char* ruta = string_new();
+	ruta =(char*) path;
+	int tamanioRuta = sizeof(char) * strlen(ruta);
+	int tamanioRespuesta;
+
+	void *leBuffer = malloc((2 * sizeof(int)) + tamanioRuta);
+	memcpy(leBuffer, &protocolo, sizeof(int));
+	memcpy(leBuffer + sizeof(int), &tamanioRuta, sizeof(int));
+	memcpy(leBuffer + (2 * sizeof(int)), ruta, tamanioRuta);
+	send(pokedexServidor, leBuffer, tamanioRuta + (2 * sizeof(int)), MSG_WAITALL);
+
+	recv(pokedexServidor, &tamanioRespuesta, sizeof(int), MSG_WAITALL);
+	void *contenido = malloc(tamanioRespuesta);
+	recv(pokedexServidor, contenido, tamanioRespuesta, MSG_WAITALL);
+	memcpy(buf, ((char *)contenido + offset), size);
+
+
+	free(leBuffer);
+	free(tamanioRespuesta);
+	free(contenido);
 	return size;
 }
 
