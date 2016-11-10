@@ -9,6 +9,8 @@
 #include "libSockets.h"
 #define HEADER_PAQUETE (sizeof(int)*3)
 
+
+extern pokimons pic;
 metaDataPokeNest *datos; // Variable global
 
 int leerConfiguracion(char *ruta, metaDataComun **datos) {
@@ -155,22 +157,68 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 	return 1;
 }
 
-int leerConfigPokemon(char* ruta, metaDataPokemon **datos) {
-	t_config* archivoConfigPokemon = config_create(ruta); //Crea struct de configuracion
-	if (archivoConfigPokemon == NULL) {
-		return 0;
-	} else {
-		int cantidadKeys = config_keys_amount(archivoConfigPokemon);
-		if (cantidadKeys < 1) {
+int leerPokemons(char *name, t_list *pokemons) {
+	{
+		DIR *d;
+		struct dirent *dir;
+		d = opendir(name);
+		if (!d) {
 			return 0;
-		} else {
-			(*datos)->nivel = config_get_int_value(archivoConfigPokemon,
-					"Nivel");
-
-			config_destroy(archivoConfigPokemon);
-			return 1;
 		}
+		pokimons* po;
+		while ((dir = readdir(d)) != NULL ) {
+
+			if (dir->d_type == DT_DIR && (strcmp(dir->d_name, ".") != 0) && (strcmp(dir->d_name, "..") != 0)) {
+                po=malloc(sizeof(pokimons));
+                po->listaPokemons=list_create();
+                char simbol = dir->d_name[0];
+                po->pokinest=simbol;
+				//printf("%s\n", dir->d_name);
+						{
+							DIR * dirp;
+							struct dirent * entry;
+
+							dirp = opendir(string_from_format("%s/%s", name,dir->d_name));
+
+							while ((entry = readdir(dirp)) != NULL) {
+								metaDataPokemon* poke;
+								if (entry->d_type == DT_REG && (strcmp(entry->d_name, "metadata") != 0)) {
+
+									printf("%s\n",entry->d_name);
+									poke = malloc(sizeof(metaDataPokemon));
+								    char* ruta = string_new();
+								    string_append(&ruta,string_from_format("%s/%s/%s", name,dir->d_name,entry->d_name));
+									t_config* archivoConfigPokenest = config_create(ruta);
+
+									poke->nivel = config_get_int_value(archivoConfigPokenest,"Nivel");
+									//printf("nivel: %d\n",poke->nivel);
+
+									char* speci = string_new();
+								    string_append(&speci, dir->d_name);
+									poke ->especie = speci;
+									//printf("especie: %s\n", poke->especie);
+
+									char* arc = string_new();
+									string_append(&arc, entry->d_name);
+									poke ->nombreArch = arc;
+									//printf("nombreArchivo: %s\n", poke->nombreArch);
+
+									poke->estaOcupado = 0;
+
+									list_add(po->listaPokemons,poke);
+
+								}
+							}
+
+							closedir(dirp);
+						}
+						list_add(pokemons,po);
+			}
+		}
+		//free(po);
+		closedir(d);
 	}
+	return 1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -316,4 +364,47 @@ int conectarServidor(char* IP, char* Port, int backlog) {
 	}
 	return socketCliente;
 }
+
+/*void enviarTresCosasSerializadas(int cosaUno, int CosaDos, char *cosaTres){
+    int tamanioCosaUno = sizeof(cosaUno);
+    int tamanioCosaDos = sizeof(int);
+    int tamanioCosaTres = sizeof(char) * strlen(cosaTres);
+
+    void *miBuffer = malloc((3 * sizeof(int)) + tamanioCosaUno + tamanioCosaDos + tamanioCosaTres);
+
+    memcpy(miBuffer, &tamanioCosaUno, sizeof(int));
+    memcpy(miBuffer + sizeof(int), &tamanioCosaDos, sizeof(int));
+    memcpy(miBuffer + (2 * sizeof(int)), &tamanioCosaTres, sizeof(int));
+
+    memcpy(miBuffer + (3 * sizeof(int)), &cosaUno, tamanioCosaUno);
+    memcpy(miBuffer + (3 * sizeof(int)) + tamanioCosaUno, &CosaDos, tamanioCosaDos);
+    memcpy(miBuffer + (3 * sizeof(int)) + tamanioCosaUno + tamanioCosaDos, &cosaTres, tamanioCosaTres);
+    send(pokedexServidor, miBuffer, tamanioCosaUno + tamanioCosaDos + tamanioCosaTres, 0);
+
+    free(miBuffer);
+}
+
+void recibirTresCosasSerializadas(){
+    int tamanioCosaUno, tamanioCosaDos, tamanioCosaTres;
+    int cosaUno, CosaDos;
+    char *cosaTres;
+
+    recv(pokedexServidor, &tamanioCosaUno, sizeof(int), MSG_WAITALL);
+    recv(pokedexServidor, &tamanioCosaDos, sizeof(int), MSG_WAITALL);
+    recv(pokedexServidor, &tamanioCosaTres, sizeof(int), MSG_WAITALL);
+
+    void *bufferCosaUno = malloc(tamanioCosaUno);
+    void *bufferCosaDos = malloc(tamanioCosaDos);
+    void *bufferCosaTres = malloc(tamanioCosaTres);
+
+    recv(pokedexServidor, bufferCosaUno, tamanioCosaUno);
+    recv(pokedexServidor, bufferCosaDos, tamanioCosaDos);
+    recv(pokedexServidor, bufferCosaTres, tamanioCosaTres);
+
+    cosaUno = (int) bufferCosaUno;
+    CosaDos = (int) bufferCosaDos;
+    cosaTres = (char *) bufferCosaTres;
+
+
+}*/
 
