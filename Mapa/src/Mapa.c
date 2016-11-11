@@ -73,6 +73,7 @@ sem_t sem_quantum;
 
 //declara hilos
 pthread_t hiloDePlanificador;
+pthread_t hiloDeBloqueados;
 pthread_t hiloAtenderConexiones[1024];
 
 //arranque de planificacion
@@ -86,8 +87,6 @@ void planificador(void* argu) {
 		sem_wait(&sem_Listos); //semaforo de nuevos bloqueando que se saque un ent si la cola esta vacia
 
 
-		log_info(logs,"volvio a empezar el while, sigo re loco, seguro ya se camnio el paqueton: %d",paqueton[1]);
-
 		//caso roun robin
 		if (!strcmp(datosMapa->algoritmo, "RR")) {
 
@@ -96,27 +95,19 @@ void planificador(void* argu) {
 			t_queue *colaAction;
 			entrenador* ent1;
 
-			log_info(logs,"hasta aca no rompe");
-
 
 			ent1 = (entrenador*) queue_pop(colaListos);
-			log_info(logs,"funca");
 
 
 
 			colaAction = list_get(listaDeColasAccion, ent1->numeroLlegada); //saco cola de accion de la lista de entrenadores
-			log_info(logs,"funca2");
-
-
-			log_info(logs,"hasta aca no rompe parte 2");
-
 
 			while (q) {
 
 				sem_wait(&sem_quantum);
 
 				acto = (int) queue_pop(colaAction);
-				log_info(logs,"funca3");
+				//log_info(logs,"funca3");
 
 
 				if (isalpha(acto)) {
@@ -153,17 +144,12 @@ void planificador(void* argu) {
 
 				}
 
-
-				log_info(logs,"paso el isalpha");
-
-
 				//8 es 56, 2 es 50, 4 es 52, 6 es 54
 
 				if (isdigit(acto)) {
-					log_info(logs,"se metio al isdigit");
 					if (acto == 50 || acto == 52 || acto == 54 || acto == 56) {
 
-						sleep(1);
+						usleep(datosMapa->retardoQ);
 						switch (acto) {
 
 						case 56:
@@ -217,7 +203,7 @@ void planificador(void* argu) {
 						}
 					}
 
-					if (acto == 9) {
+					if (acto == '9') {
 						usleep(datosMapa->retardoQ);
 						queue_push(colaBloqueados, ent1);
 						q = datosMapa->quantum;
@@ -229,7 +215,7 @@ void planificador(void* argu) {
 			}
 
 
-			log_info(logs,"ahora pase por aca papurri, sigo andando");
+			//log_info(logs,"ahora pase por aca papurri, sigo andando");
 			/* if (   ((p == 26) && (q == 10)) || ((x == 26) && (y == 10)) ) {
 			 restarRecurso(items, 'H');
 			 }
@@ -275,32 +261,50 @@ void planificador(void* argu) {
 
 void bloqueados(){
 	while(1){
+		log_info(logs,"Se mete a bloqueados");
         sem_wait(&sem_Bloqueados);
         entrenador *ent1;
         pokimons* poki;
-        ent1 = queue_pop(colaBloqueados);
+        log_info(logs,"Va a extraer un bloqueado");
+        ent1 = (entrenador*) queue_pop(colaBloqueados);
+        log_info(logs,"Extrajo un bloqueado");
         bool esLaPokenest(pokimons *parametro1){
         	return ent1->pokenestAsignado == parametro1->pokinest;
         }
+        log_info(logs,"Ahora busca un poki");
         poki = list_find(pokemons,(void*)esLaPokenest);
+        log_info(logs,"Saca un poki");
         int auxi67;
         int flagito = 0;
         for(auxi67=0;auxi67<list_size(poki->listaPokemons) && flagito == 0;auxi67++){
         	metaDataPokemon* pokem;
             pokem = list_get(poki->listaPokemons,auxi67);
+            log_info(logs,"Saca un pokemon de la lista poki");
             if(!pokem->estaOcupado){
-            	int tamanioCosaUno = sizeof(char) * strlen(pokem->nombreArch);
-            	int tamanioCosaDos = sizeof(int);
-            	void* miBuffer = malloc ((2 * sizeof(int)) + tamanioCosaUno + tamanioCosaDos);
+            	char* nombreAux = pokem->nombreArch;
+            	char** nombreSinDatAux = string_split(nombreAux,".");
+                char* nombreSinDAT = nombreSinDatAux[0];
+
+            	int tamanioCosaUno = sizeof(char) * strlen(pokem->especie);
+            	int tamanioCosaDos = sizeof(char) * strlen(nombreSinDAT);
+            	int tamanioCosaTres = sizeof(int);
+            	void* miBuffer = malloc ((3 * sizeof(int)) + tamanioCosaUno + tamanioCosaDos + tamanioCosaTres);
             	memcpy(miBuffer, &tamanioCosaUno, sizeof(int));
             	memcpy(miBuffer + sizeof(int), &tamanioCosaDos, sizeof(int));
+            	memcpy(miBuffer + (2*sizeof(int)), &tamanioCosaTres, sizeof(int));
 
-            	memcpy(miBuffer + (3 * sizeof(int)), pokem->nombreArch, tamanioCosaUno); //VERIFICA DESPUES
-            	memcpy(miBuffer + (3 * sizeof(int)) + tamanioCosaUno, pokem->nivel, tamanioCosaDos); //VERIFICAR DESPUES
 
-            	send((clientesActivos[ent1->numeroCliente]).socket, miBuffer, tamanioCosaUno + tamanioCosaDos, 0);
+            	memcpy(miBuffer + (3 * sizeof(int)), pokem->especie, tamanioCosaUno); //VERIFICA DESPUES
+            	memcpy(miBuffer + (3 * sizeof(int)) + tamanioCosaUno, nombreSinDAT, tamanioCosaDos); //VERIFICAR DESPUES
+             	memcpy(miBuffer + (3 * sizeof(int)) + tamanioCosaUno + tamanioCosaDos, pokem->nivel, tamanioCosaTres); //VERIFICAR DESPUES
+
+            	send((clientesActivos[ent1->numeroCliente]).socket, miBuffer, tamanioCosaUno + tamanioCosaTres, 0);
             	flagito = 1;
             	pokem->estaOcupado = 1;
+
+            	log_info(logs,"llego a bloqueados");
+
+            	restarRecurso(items,poki->pokinest);
 
             	queue_push(ent1,colaListos);
             	sem_post(&sem_Listos);
@@ -422,6 +426,9 @@ int main(int argc, char* argv[]) {
 
 	pthread_create(&hiloDePlanificador, NULL, (void*)planificador, (void*)argv[1]);
 
+	//hilo atencion a bloqueados
+
+	pthread_create(&hiloDeBloqueados, NULL, (void*)bloqueados, NULL);
 
 //SOCKETS
 	log_info(logs,
