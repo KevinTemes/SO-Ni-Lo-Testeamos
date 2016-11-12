@@ -90,7 +90,7 @@ void notificarCaida(){
 		enviarHeader(clientesActivos[i].socket, 9);
 	}
 	printf("\n");
-	printf("%sAVISO: cierre inesperando del sistema. Notificando a los clientes y finalizando...\n", KROJO);
+	printf("AVISO: cierre inesperando del sistema. Notificando a los clientes y finalizando...\n");
 	exit(0);
 }
 
@@ -122,44 +122,80 @@ void *serializarString(char *unString){
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 char *getFileName(unsigned char *nombreArchivo){
 	int i = 0;
-	while(nombreArchivo[i] != "\0" && i <= 17){
-		i++;
-	}
-	char *nombre = malloc(i);
-	memcpy(nombre, nombreArchivo, i);
+		while(nombreArchivo[i] != '\0' && i <= 17){
+			i++;
+		}
+		char *nombre = malloc(i);
+		memcpy(nombre, nombreArchivo, i + 1);
 
-	return nombre;
+		return nombre;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+char* concat(const char *s1, const char *s2)
+{
+    const size_t len1 = strlen(s1);
+    const size_t len2 = strlen(s2);
+    char *result = malloc(len1+len2+1);//+1 for the zero-terminator
+
+    memcpy(result, s1, len1);
+    memcpy(result+len1, s2, len2+1);//+1 to copy the null-terminator
+    return result;
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int buscarArchivo(char *unaRuta){
-	char **separadas = string_split(unaRuta, "/");
-	int a = 0;
 	int parentDir = 65535;
-	while(separadas[a] != NULL){
-		parentDir = recorrerDirectorio(separadas[a], parentDir);
-		a++;
+	int existeArchivo = 0;
+	if(strlen(unaRuta) == 1){
+		goto terminar;
 	}
+
+	else{
+		char **separadas = string_split(unaRuta, "/");
+		int a = 0;
+		existeArchivo = recorrerDirectorio(separadas[0], parentDir);
+
+		while(separadas[a] != NULL){
+			parentDir = recorrerDirectorio(separadas[a], parentDir);
+			if(parentDir == -1){
+				goto terminar;
+			}
+			a++;
+		}
+	}
+terminar:
 return parentDir;
 
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 int recorrerDirectorio(char *nombre, int parentDir){
 	int posicion, i;
+	posicion = -1;
 	char *archivo = nombre;
+//	char *fname = string_new();
+	if(strcmp(archivo, "")== 0){
+			goto finalizar;
+		}
 	int nameLength = strlen(archivo);
-	char *fname = string_new();
-	for(i = 0; i <= 2048; i++){
-		fname = getFileName(miDisco.tablaDeArchivos[i].fname);
-		if((strncmp(archivo, fname, nameLength) == 0) &&
+
+	for(i = 0; i <= 2047; i++){
+		if(miDisco.tablaDeArchivos[i].state != DELETED){
+
+			char *fname = getFileName(miDisco.tablaDeArchivos[i].fname);
+
+			if((strncmp(archivo, fname, nameLength) == 0) &&
 				((int)miDisco.tablaDeArchivos[i].parent_directory == parentDir)){
-			posicion = i;
+					posicion = i;
+
+			}
+
 		}
 	}
 
-
+	finalizar:
+//	free(fname);
 	return posicion;
 }
 
@@ -238,24 +274,34 @@ void llenarEstructuraNuevo(osada_file archivo, char* ruta, int bloqueTablaAsigna
 	archivo.lastmod = tiempo;
 	archivo.first_block = bloqueTablaAsignacionesLibre;
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+char *convertirRuta(void *buffer, int tamanioRuta){
+	char *nuevaRuta = string_new();
+	char *puente = string_new();
+	puente = (char *)buffer;
+	nuevaRuta = string_substring_until(puente, tamanioRuta);
+	nuevaRuta[tamanioRuta] = '\0';
+	return nuevaRuta;
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void atenderConexion(void *numeroCliente){
 	int unCliente = *((int *) numeroCliente);
-	char paquete[1024];
 	int status = 1;
 	int codOp;
 	int tamanioRuta, tamanioNuevoContenido, tamanioNombre;
-	char *ruta;
-	void *buffer;
+	char *ruta = string_new();
+	void *contenido;
+	char *rutaRecibida;
+	void *buffer, *bufferDir;
 	void *respuesta;
+	t_infoDirectorio contDir;
 
-	printf("%sPokeCliente #%d conectado! esperando mensajes... \n", KAMARILLO,
+	printf("%sPokeCliente #%d conectado! esperando solicitudes... \n", KAMARILLO,
 				clientesActivos[unCliente].cliente);
 
 	while(status !=0){
 
-		//status = recv(clientesActivos[unCliente].socket, (void*) paquete, 1024, 0);
 		if (status != 0) {
 			recv(clientesActivos[unCliente].socket, &codOp, sizeof(int), MSG_WAITALL);
 
@@ -266,12 +312,14 @@ void atenderConexion(void *numeroCliente){
 				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
-				ruta = (char *) buffer; // chequear este casteo y los proximos que sean iguales
+				ruta = convertirRuta(buffer, tamanioRuta);
 				t_getattr archivo = osada_getattr(ruta);
 				respuesta = malloc(2 * sizeof(int));
 				memcpy(respuesta, &archivo.tipo_archivo, sizeof(int));
 				memcpy(respuesta + sizeof(int), &archivo.size, sizeof(int));
 				send(clientesActivos[unCliente].socket, respuesta, 2 * sizeof(int), MSG_WAITALL);
+				//pthread_mutex_unlock(&mutexGetattr);
+				*ruta = '\0';
 				free(buffer);
 
 			break;
@@ -281,15 +329,15 @@ void atenderConexion(void *numeroCliente){
 				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
-				ruta = (char *) buffer;
-				char *contenido = osada_readdir(ruta);
-				int tamanioContenido = sizeof(char) * strlen(contenido);
-				void *bufferDir = malloc(tamanioContenido);
-				memcpy(bufferDir, &tamanioContenido, sizeof(int));
-				memcpy(bufferDir + sizeof(int), contenido, tamanioContenido);
-				send(clientesActivos[unCliente].socket, bufferDir, sizeof(int) + tamanioContenido, 0);
+				ruta = convertirRuta(buffer, tamanioRuta);
+				contDir = osada_readdirV2(ruta);
+				bufferDir = malloc(contDir.buffer_size);
+				memcpy(bufferDir, &contDir.buffer_size, sizeof(int));
+				memcpy(bufferDir + sizeof(int), contDir.buffer, contDir.buffer_size);
+				send(clientesActivos[unCliente].socket, bufferDir, sizeof(int) + contDir.buffer_size, 0);
+				*ruta = '\0';
 				free(buffer);
-				free(bufferDir);
+
 
 			break;
 
@@ -298,14 +346,14 @@ void atenderConexion(void *numeroCliente){
 				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				void *buffer = malloc(tamanioRuta);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
-				ruta = (char *) buffer;
+				ruta = convertirRuta(buffer, tamanioRuta);
 				void *contenidoArchivo = osada_read(ruta);
 				int i = buscarArchivo(ruta);
 				int tamanioArchivo = (int)miDisco.tablaDeArchivos[i].file_size;
 				buffer = malloc(tamanioArchivo + sizeof(int));
 				memcpy(buffer, &tamanioArchivo, sizeof(int));
 				memcpy(buffer + sizeof(int), contenidoArchivo, tamanioArchivo);
-				send(clientesActivos[unCliente].socket, buffer, sizeof(int) + tamanioContenido, 0);
+				send(clientesActivos[unCliente].socket, buffer, sizeof(int) + tamanioArchivo, 0);
 				free(buffer);
 
 			break;
@@ -315,7 +363,7 @@ void atenderConexion(void *numeroCliente){
 				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
-				ruta = (char *) buffer;
+				ruta = convertirRuta(buffer, tamanioRuta);
 				// int exito = osada_crearArchivo(ruta);
 				// send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
 				free(buffer);
@@ -330,12 +378,12 @@ void atenderConexion(void *numeroCliente){
 				buffer = malloc(tamanioRuta);
 				void *bufferContenido = malloc(tamanioNuevoContenido);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
-				ruta = (char *) buffer;
+				ruta = convertirRuta(buffer, tamanioRuta);
 				recv(clientesActivos[unCliente].socket, bufferContenido,
 						tamanioNuevoContenido, MSG_WAITALL);
 				//int exito = osada_write(ruta, bufferContenido);
 				//send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
-				free(buffer);
+				//free(buffer);
 				free(bufferContenido);
 
 			break;
@@ -345,7 +393,7 @@ void atenderConexion(void *numeroCliente){
 				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
-				ruta = (char *) buffer;
+				ruta = convertirRuta(buffer, tamanioRuta);
 				// int exito = osada_unlink(ruta);
 				//send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
 				free(buffer);
@@ -357,7 +405,7 @@ void atenderConexion(void *numeroCliente){
 				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
-				ruta = (char *) buffer;
+				ruta = convertirRuta(buffer, tamanioRuta);
 				// int exito = osada_mkdir(ruta);
 				//send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
 				free(buffer);
@@ -369,7 +417,7 @@ void atenderConexion(void *numeroCliente){
 				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
-				ruta = (char *) buffer;
+				ruta = convertirRuta(buffer, tamanioRuta);
 				// int exito = osada_rmdir(ruta);
 				//send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
 				free(buffer);
@@ -385,7 +433,7 @@ void atenderConexion(void *numeroCliente){
 				void *bufferNombre = malloc(tamanioNombre);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				recv(clientesActivos[unCliente].socket, bufferNombre, tamanioNombre, MSG_WAITALL);
-				ruta = (char *) buffer;
+				ruta = convertirRuta(buffer, tamanioRuta);
 				char *nombre = (char *) bufferNombre;
 				// int exito = osada_rename(ruta, nombre);
 				//send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
@@ -399,6 +447,9 @@ void atenderConexion(void *numeroCliente){
 		}
 
 	}
+	free(contenido);
+	free(buffer);
+	free(bufferDir);
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -476,15 +527,24 @@ int  asignarPosicionTablaArchivos(osada_file archivo){
 
 t_getattr osada_getattr(char *unaRuta){
 	t_getattr atributos;
-	int tipoArchivo;
 	int posicion = buscarArchivo(unaRuta);
-	if(miDisco.tablaDeArchivos[posicion].state == REGULAR){
-		atributos.tipo_archivo = 1;
-		atributos.size = miDisco.tablaDeArchivos[posicion].file_size;
-	}
-	else if(miDisco.tablaDeArchivos[posicion].state == DIRECTORY){
+	if (posicion == 65535){
 		atributos.tipo_archivo = 2;
 		atributos.size = 0;
+	}
+	else if(posicion == -1){
+		atributos.tipo_archivo = 0;
+		atributos.size = 0;
+	}
+	else{
+		if(miDisco.tablaDeArchivos[posicion].state == REGULAR){
+			atributos.tipo_archivo = 1;
+			atributos.size = (int) miDisco.tablaDeArchivos[posicion].file_size;
+		}
+		else if(miDisco.tablaDeArchivos[posicion].state == DIRECTORY){
+			atributos.tipo_archivo = 2;
+			atributos.size = 0;
+		}
 	}
 
 	return atributos;
@@ -493,9 +553,7 @@ t_getattr osada_getattr(char *unaRuta){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 char *osada_readdir(char *unaRuta){
 
-	char *contenido = string_new();
-	char *fname = string_new();
-	char *nombreArchivo = string_new();
+	char *contenidoDir = string_new();
 	char *separador = ";";
 	int parentBlock = buscarArchivo(unaRuta);
 	int i;
@@ -506,26 +564,83 @@ char *osada_readdir(char *unaRuta){
 	}
 	// Busco todos los archivos hijos de ese directorio padre, y me copio el nombre de cada uno
 	for (i = 0; i <= 2048; i++){
+
 			if(miDisco.tablaDeArchivos[i].parent_directory == parentBlock){
-				nombreArchivo = getFileName(miDisco.tablaDeArchivos[i].fname);
+				char *nombreArchivo = getFileName(miDisco.tablaDeArchivos[i].fname);
 				if(strlen(nombreArchivo) > 0){
-				string_append(&contenido, nombreArchivo);
+				string_append(&contenidoDir, nombreArchivo);
+
 				// Concateno los nombres en un string, separados por la variable separador.
 				// Después la idea es separarlos y manejarlos como corresponda afuera de esta función
-				string_append(&contenido, separador);
+
+				string_append(&contenidoDir, separador);
+
 				}
+
 			}
+
 		}
 
-char **contenidoDirectorio = string_split(contenido, ";");
-int j;
-printf("contenido del directorio:\n");
-for (j = 0; contenidoDirectorio[j] != NULL; j++){
-	printf("%s\n", contenidoDirectorio[j]);
+
+return contenidoDir;
+
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+t_infoDirectorio osada_readdirV2(char *unaRuta){
+
+	t_infoDirectorio contenido;
+	void *tmp_ptr;
+	int largoNombre;
+//	char *nombreArchivo = string_new();
+	char *separador = ";";
+	int parentBlock = buscarArchivo(unaRuta);
+	int i;
+	int desplazamiento = 0;
+	int first_iteration = -1;
+
+	if(parentBlock == 999999){
+		printf("no existe el directorio o subdirectorio especificado\n");
+		exit(0);
+	}
+	// Busco todos los archivos hijos de ese directorio padre, y me copio el nombre de cada uno
+	for (i = 0; i <= 2048; i++){
+
+			if(miDisco.tablaDeArchivos[i].parent_directory == parentBlock){
+				char *nombreArchivo = getFileName(miDisco.tablaDeArchivos[i].fname);
+				largoNombre = strlen(nombreArchivo);
+				if(largoNombre > 0){
+
+					if(first_iteration < 0){
+						contenido.buffer = malloc(largoNombre + 1);
+						memcpy(contenido.buffer, nombreArchivo, largoNombre);
+						memcpy(contenido.buffer + largoNombre, separador, sizeof(char));
+						desplazamiento = desplazamiento + largoNombre + 1;
+						first_iteration = 1;
+					}
+					else{
+						tmp_ptr = realloc(contenido.buffer, desplazamiento + largoNombre + 1);
+						contenido.buffer = tmp_ptr;
+						memcpy(contenido.buffer + desplazamiento, nombreArchivo, largoNombre);
+						memcpy(contenido.buffer + desplazamiento + largoNombre, separador, sizeof(char));
+						desplazamiento = desplazamiento + largoNombre + 1;
+					}
+
+
+
+				}
+
+			}
+
+		}
+	char nullChar[1];
+	nullChar[0] = '\0';
+	memcpy(contenido.buffer + desplazamiento, &nullChar[0], sizeof(char));
+	contenido.buffer_size = desplazamiento + 1;
+	free(tmp_ptr);
 
 return contenido;
-free(fname);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -15,6 +15,13 @@ int setup_listen(char* IP, char* Port) {
 	int socketEscucha;
 	socketEscucha = socket(serverInfo->ai_family, serverInfo->ai_socktype,
 			serverInfo->ai_protocol);
+
+	const int       optVal = 1;
+	const socklen_t optLen = sizeof(optVal);
+
+	int rtn = setsockopt(socketEscucha, SOL_SOCKET, SO_REUSEADDR, (void*) &optVal, optLen);
+
+
 	int resultadoBind;
 	resultadoBind = bind(socketEscucha, serverInfo->ai_addr,
 			serverInfo->ai_addrlen);
@@ -23,10 +30,7 @@ int setup_listen(char* IP, char* Port) {
 		exit(-1);
 	}
 
-	const int       optVal = 1;
-	const socklen_t optLen = sizeof(optVal);
 
-	int rtn = setsockopt(socketEscucha, SOL_SOCKET, SO_REUSEADDR, (void*) &optVal, optLen);
 
 	freeaddrinfo(serverInfo);
 	return socketEscucha;
