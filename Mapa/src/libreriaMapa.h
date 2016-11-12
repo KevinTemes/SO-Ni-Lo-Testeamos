@@ -18,17 +18,19 @@
 #include <commons/collections/list.h>
 #include <commons/string.h>
 #include <commons/log.h>
+#include <ctype.h>
 #include <pthread.h>
 #include <poll.h>
 #include <semaphore.h>
 #include <signal.h>
 
-typedef struct{
+typedef struct {
 	int cliente;
 	int socket;
 } t_infoCliente;
 
 typedef struct pa {
+	char pokenestAsignado;
 	char simbolo;
 	char accion;
 	int numeroLlegada;
@@ -36,7 +38,6 @@ typedef struct pa {
 	int flagEstaEnLista;
 	int posx;
 	int posy;
-	int estadoConexion;
 	int posPokex;
 	int posPokey;
 	int flagLeAsignaronPokenest;
@@ -60,6 +61,5 @@ void notificarCaida();
 
 /* Función para atender una conexión en particular */
 void atenderConexion(void *numeroCliente);
-
 
 #endif /* LIBRERIAPOKEDEXSERVIDOR_H_ */

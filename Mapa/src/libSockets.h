@@ -21,6 +21,13 @@
 #include <commons/log.h>
 #include <commons/collections/list.h>
 
+//estructura de pokimons
+typedef struct{
+	t_list* listaPokemons;
+	char pokinest;
+}pokimons;
+
+
 typedef struct{
 	int tiempoChequeoDeadlock;
 	bool batalla; // 0= desactivado 1=activado
@@ -38,16 +45,17 @@ typedef struct{
 	int cantPokemons;
 }metaDataPokeNest;
 
-
-
-typedef struct{
+typedef struct {
+	char* especie;
+	char* nombreArch;
 	int nivel;
+    int estaOcupado;
+} metaDataPokemon;
 
-}metaDataPokemon;
 
 int leerConfiguracion(char* ruta, metaDataComun **datos);
 int leerConfigPokenest(char* ruta, t_list *pokenests);
-int leerConfigPokemon(char* ruta, metaDataPokemon **datos);
+int leerPokemons(char* ruta, t_list *datos);
 
 int setup_listen(char* IP, char* Port);
 int setup_listen_con_log(char* IP, char* Port, t_log * logger);

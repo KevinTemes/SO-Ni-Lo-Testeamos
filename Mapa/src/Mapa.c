@@ -27,14 +27,19 @@
 #include <pthread.h>
 #include <ctype.h>
 #include "libreriaMapa.h"
+#include <pkmn/battle.h>
+#include <pkmn/factory.h>
 
 #define PACKAGESIZE 1024
+
+
+//defino pokimon
+pokimons pic;
 
 //variables globales
 char paqueton[10] =
 		{ '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0' };
 extern metaDataPokeNest *datos;
-extern int numEntrenador;
 extern t_infoCliente clientesActivos[1024];
 char* nombreMapa;
 
@@ -50,6 +55,7 @@ int cols; // nro de columnas
 t_log* logs;
 
 //listas
+t_list* pokemons;
 t_list* pokenests;
 t_list* items;
 t_list* listaDeColasAccion;
@@ -67,6 +73,7 @@ sem_t sem_quantum;
 
 //declara hilos
 pthread_t hiloDePlanificador;
+pthread_t hiloDeBloqueados;
 pthread_t hiloAtenderConexiones[1024];
 
 //arranque de planificacion
@@ -80,8 +87,6 @@ void planificador(void* argu) {
 		sem_wait(&sem_Listos); //semaforo de nuevos bloqueando que se saque un ent si la cola esta vacia
 
 
-		log_info(logs,"volvio a empezar el while, sigo re loco, seguro ya se camnio el paqueton: %d",paqueton[1]);
-
 		//caso roun robin
 		if (!strcmp(datosMapa->algoritmo, "RR")) {
 
@@ -90,27 +95,19 @@ void planificador(void* argu) {
 			t_queue *colaAction;
 			entrenador* ent1;
 
-			log_info(logs,"hasta aca no rompe");
-
 
 			ent1 = (entrenador*) queue_pop(colaListos);
-			log_info(logs,"funca");
 
 
 
 			colaAction = list_get(listaDeColasAccion, ent1->numeroLlegada); //saco cola de accion de la lista de entrenadores
-			log_info(logs,"funca2");
-
-
-			log_info(logs,"hasta aca no rompe parte 2");
-
 
 			while (q) {
 
-
+				sem_wait(&sem_quantum);
 
 				acto = (int) queue_pop(colaAction);
-				log_info(logs,"funca3");
+				//log_info(logs,"funca3");
 
 
 				if (isalpha(acto)) {
@@ -134,6 +131,7 @@ void planificador(void* argu) {
 
 							ent1->posPokex = atoi(posicionPoke[0]);
 							ent1->posPokey = atoi(posicionPoke[1]);
+                            ent1->pokenestAsignado = datosPokenest->caracterPokeNest[0];
 							ent1->flagLeAsignaronPokenest = 1;
 
 
@@ -146,17 +144,12 @@ void planificador(void* argu) {
 
 				}
 
-
-				log_info(logs,"paso el isalpha");
-
-				sem_wait(&sem_quantum);
 				//8 es 56, 2 es 50, 4 es 52, 6 es 54
 
 				if (isdigit(acto)) {
-					log_info(logs,"se metio al isdigit");
 					if (acto == 50 || acto == 52 || acto == 54 || acto == 56) {
 
-						sleep(1);
+						usleep(datosMapa->retardoQ);
 						switch (acto) {
 
 						case 56:
@@ -210,17 +203,19 @@ void planificador(void* argu) {
 						}
 					}
 
-					if (acto == 9) {
+					if (acto == '9') {
 						usleep(datosMapa->retardoQ);
 						queue_push(colaBloqueados, ent1);
 						q = datosMapa->quantum;
+						sem_post(&sem_Bloqueados);
+
 					}
 
 				}
 			}
 
 
-			log_info(logs,"ahora pase por aca papurri, sigo andando");
+			//log_info(logs,"ahora pase por aca papurri, sigo andando");
 			/* if (   ((p == 26) && (q == 10)) || ((x == 26) && (y == 10)) ) {
 			 restarRecurso(items, 'H');
 			 }
@@ -243,7 +238,6 @@ void planificador(void* argu) {
 
 			sem_wait(&sem_Listos);
 			t_list* listaAux=list_create();
-			t_queue* colaAction;
 			  while(!queue_is_empty(colaListos)){
 			    	entrenador* ent;
 			    	ent=queue_pop(colaListos);
@@ -265,6 +259,65 @@ void planificador(void* argu) {
 	}
 }
 
+void bloqueados(){
+	while(1){
+		log_info(logs,"Se mete a bloqueados");
+        sem_wait(&sem_Bloqueados);
+        entrenador *ent1;
+        pokimons* poki;
+        log_info(logs,"Va a extraer un bloqueado");
+        ent1 = (entrenador*) queue_pop(colaBloqueados);
+        log_info(logs,"Extrajo un bloqueado");
+        bool esLaPokenest(pokimons *parametro1){
+        	return ent1->pokenestAsignado == parametro1->pokinest;
+        }
+        log_info(logs,"Ahora busca un poki");
+        poki = list_find(pokemons,(void*)esLaPokenest);
+        log_info(logs,"Saca un poki");
+        int auxi67;
+        int flagito = 0;
+        for(auxi67=0;auxi67<list_size(poki->listaPokemons) && flagito == 0;auxi67++){
+        	metaDataPokemon* pokem;
+            pokem = list_get(poki->listaPokemons,auxi67);
+            log_info(logs,"Saca un pokemon de la lista poki");
+            if(!pokem->estaOcupado){
+            	char* nombreAux = pokem->nombreArch;
+            	char** nombreSinDatAux = string_split(nombreAux,".");
+                char* nombreSinDAT = nombreSinDatAux[0];
+
+            	int tamanioCosaUno = sizeof(char) * strlen(pokem->especie);
+            	int tamanioCosaDos = sizeof(char) * strlen(nombreSinDAT);
+            	int tamanioCosaTres = sizeof(int);
+            	void* miBuffer = malloc ((3 * sizeof(int)) + tamanioCosaUno + tamanioCosaDos + tamanioCosaTres);
+            	memcpy(miBuffer, &tamanioCosaUno, sizeof(int));
+            	memcpy(miBuffer + sizeof(int), &tamanioCosaDos, sizeof(int));
+            	memcpy(miBuffer + (2*sizeof(int)), &tamanioCosaTres, sizeof(int));
+
+
+            	memcpy(miBuffer + (3 * sizeof(int)), pokem->especie, tamanioCosaUno); //VERIFICA DESPUES
+            	memcpy(miBuffer + (3 * sizeof(int)) + tamanioCosaUno, nombreSinDAT, tamanioCosaDos); //VERIFICAR DESPUES
+             	memcpy(miBuffer + (3 * sizeof(int)) + tamanioCosaUno + tamanioCosaDos, pokem->nivel, tamanioCosaTres); //VERIFICAR DESPUES
+
+            	send((clientesActivos[ent1->numeroCliente]).socket, miBuffer, tamanioCosaUno + tamanioCosaTres, 0);
+            	flagito = 1;
+            	pokem->estaOcupado = 1;
+
+            	log_info(logs,"llego a bloqueados");
+
+            	restarRecurso(items,poki->pokinest);
+
+            	queue_push(ent1,colaListos);
+            	sem_post(&sem_Listos);
+            }
+            else{
+            	queue_push(ent1,colaBloqueados);
+            	sem_post(&sem_Bloqueados);
+            }
+        }
+
+	}
+}
+
 
 
 ///////////////////////////////////////////Main//////////////////////////////////////////////////////////
@@ -274,6 +327,8 @@ int main(int argc, char* argv[]) {
 	//nombre de mapa
 	nombreMapa = argv[1];
 	//inicializo listas
+
+    pokemons = list_create();
 	pokenests = list_create();
 	items = list_create();
 	listaDeColasAccion = list_create();
@@ -290,11 +345,13 @@ int main(int argc, char* argv[]) {
 	remove("Mapa.log");
 	logs = log_create("Mapa.log", "Mapa", false, log_level_from_string("INFO"));
 
+
 // CONFIG
 
 	datosMapa = malloc(sizeof(metaDataComun));
 	datosPokenest = malloc(sizeof(metaDataPokeNest));
 	datosPokemon = malloc(sizeof(metaDataPokemon));
+
 
 	char* configMetaMapa = string_from_format("%s/Mapas/%s/metadata", argv[2],
 			argv[1]);
@@ -314,15 +371,34 @@ int main(int argc, char* argv[]) {
 	}
 
 	char* configPoke = string_from_format(
-			"%s/Mapas/%s/PokeNests/Pikachu/Pikachu001.dat", argv[2], argv[1]);
-	if (!leerConfigPokemon(configPoke, &datosPokemon)) {
+			"%s/Mapas/%s/PokeNests", argv[2], argv[1]);
+	if (!leerPokemons(configPoke, pokemons)) {
 		log_error(logs,
 				"Error al leer el archivo de configuracion de Metadata de Pokemons\n");
 		return 3;
 	}
+	//ordeno las listas de pokemons de la lista pokemons
+	bool esMenor(metaDataPokemon* pki1, metaDataPokemon* pki2){
+			char *pa;
+			pa=string_reverse(pki1->nombreArch);
+			char *pe;
+			pe=string_from_format("%c%c%c",pa[6],pa[5],pa[4]);
+			int numero1 = atoi(pe);
+			char *pi;
+			pi=string_reverse(pki2->nombreArch);
+			char *po;
+			po=string_from_format("%c%c%c",pi[6],pi[5],pi[4]);
+			int numero2 = atoi(po);
+			return numero1 < numero2;
+	}
+	int auxi2;
+	pokimons* pake;
+	for(auxi2=0;auxi2<list_size(pokemons);auxi2++){
+		pake = list_get(pokemons,auxi2);
+		list_sort(pake->listaPokemons,(void*)esMenor);
+	}
 
-	log_info(logs,
-			"Los tres archivos de config fueron creados exitosamente!\n");
+	log_info(logs,"Los tres archivos de config fueron creados exitosamente!\n");
 
 
 	nivel_gui_inicializar();
@@ -350,6 +426,9 @@ int main(int argc, char* argv[]) {
 
 	pthread_create(&hiloDePlanificador, NULL, (void*)planificador, (void*)argv[1]);
 
+	//hilo atencion a bloqueados
+
+	pthread_create(&hiloDeBloqueados, NULL, (void*)bloqueados, NULL);
 
 //SOCKETS
 	log_info(logs,

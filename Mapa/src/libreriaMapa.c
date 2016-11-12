@@ -124,7 +124,7 @@ void notificarCaida() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void atenderConexion(void *numeroCliente) {
 	int unCliente = *((int *) numeroCliente);
-	char* paquete = malloc(sizeof(char) * 2);
+	char paquete[1024];
 	int status = 1;
 
 	entrenador* ent1 = malloc(sizeof(entrenador));
@@ -141,19 +141,22 @@ void atenderConexion(void *numeroCliente) {
 	while (status != 0) {
 
 		// paquete = recibirDatos(clientesActivos[unCliente].socket,2);
-		status = recv(clientesActivos[unCliente].socket, (void*) paquete, 2, 0);
+		status = recv(clientesActivos[unCliente].socket, (void*) paquete, sizeof(char), MSG_WAITALL);
 		if (status != 0) {
 			//printf("el Entrenador #%d dijo: \n %s", clientesActivos[unCliente].cliente, paquete);
 			//status = recv(clientesActivos[unCliente].socket, paquete, 2, 0);
 			//log_info(logs,"paquete: %c%c",paquete[0],paquete[1]);
-			char* cambio = strdup(paquete);
-			pthread_mutex_lock(&mutexPaqueton);
 
-			numEntrenador = unCliente;
+			char cambio[1];
+			cambio[0] = paquete[0];
+			status = recv(clientesActivos[unCliente].socket, (void*) paquete, sizeof(char),MSG_WAITALL);
+
+			cambio[1] = paquete[0];
+
 			log_info(logs, "paquete global:%c %c", cambio[0], cambio[1]);
 			log_info(logs, "unCliente:%d clientesactivos[uncliente].cliente:%d",unCliente,clientesActivos[unCliente].cliente);
 			//printf("%c",paqueton[0]);
-			pthread_mutex_unlock(&mutexPaqueton);
+
 
 			//enviarHeader(clientesActivos[unCliente].socket, 1);
 
@@ -167,21 +170,25 @@ void atenderConexion(void *numeroCliente) {
 				//paso variable global al entrenador
 				ent1->simbolo = cambio[0]; //almaceno simbolo en entrenador (paqueton [0] es variable global
 				ent1->accion = cambio[1]; //almaceno que hacer en entrenador paqueton global
-				ent1->numeroCliente = numEntrenador; //numero de cliente para envio de informacion
+				ent1->numeroCliente = unCliente; //numero de cliente para envio de informacion
 				ent1->flagLeAsignaronPokenest = 0;
 
 				//si el entrenador no esta registrado
 				if (!ent1->flagEstaEnLista) {
+					pthread_mutex_lock(&mutexPaqueton);
+
+
 					 ent1->numeroLlegada = (clientesActivos[unCliente].cliente-1); //numero del entrenador
 					 ent1->flagEstaEnLista = 1; //ahora este entrenador nuevo esta en la lista
 					 ent1->posx = 0; //posicion en x inicializada en 0
 					 ent1->posy = 0; // idem en y
 
-					queue_push(colaAccion, ent1->accion); // meto la accion del entrenador en la cola
+					t_queue* coli = queue_create();
+					queue_push(coli, ent1->accion); // meto la accion del entrenador en la cola
 
 					//list_replace(listaDeColasAccion, ent1->numeroLlegada, colaAccion); // agrego en la lista que contiene su cola de accion
 
-                    list_add(listaDeColasAccion,colaAccion);
+                    list_add(listaDeColasAccion,coli);
 
 
 					log_info(logs, "llego aca");
@@ -194,11 +201,14 @@ void atenderConexion(void *numeroCliente) {
 
 					log_info(logs, "entrenador %c a listos", ent1->simbolo); //informo por archivo de log la llegada del entrenador
 
+					sem_post(&sem_Listos); //produce un ent en colaListos
 
+					sem_post(&sem_quantum);
 
+					pthread_mutex_unlock(&mutexPaqueton);
 					//	aux = '\0';
 
-					sem_post(&sem_Listos); //produce un ent en colaListos
+
 				}
 
 				//si el entrenador se encontraba registrado
@@ -222,12 +232,12 @@ void atenderConexion(void *numeroCliente) {
 				}
 
 				//aux = '\0';
+
 			}
 
 		}
 
 	free(ent1);
 
-free( paquete);
 
 }
