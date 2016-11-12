@@ -29,8 +29,13 @@ typedef struct {
 	int socket;
 } t_infoCliente;
 
-typedef struct pa {
+typedef struct{
+	int vecesPerdidas;
+	metaDataPokemon pokePeleador;
 	char pokenestAsignado;
+	t_list* asignados;
+	t_list* solicitud;
+	t_list* pokemones;
 	char simbolo;
 	char accion;
 	int numeroLlegada;
@@ -41,6 +46,7 @@ typedef struct pa {
 	int posPokex;
 	int posPokey;
 	int flagLeAsignaronPokenest;
+	int estaMarcado;
 } entrenador;
 
 /* Función loca para testear rececpción de mensajes a través de un socket. */

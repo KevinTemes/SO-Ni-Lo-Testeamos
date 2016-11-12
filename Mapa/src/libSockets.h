@@ -27,6 +27,10 @@ typedef struct{
 	char pokinest;
 }pokimons;
 
+typedef struct{
+	char pokenest;
+	int valor;
+}tabla;
 
 typedef struct{
 	int tiempoChequeoDeadlock;
@@ -53,7 +57,7 @@ typedef struct {
 } metaDataPokemon;
 
 
-int leerConfiguracion(char* ruta, metaDataComun **datos);
+void leerConfiguracion();
 int leerConfigPokenest(char* ruta, t_list *pokenests);
 int leerPokemons(char* ruta, t_list *datos);
 

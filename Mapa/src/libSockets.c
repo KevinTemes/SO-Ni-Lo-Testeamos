@@ -9,54 +9,58 @@
 #include "libSockets.h"
 #define HEADER_PAQUETE (sizeof(int)*3)
 
-
-extern pokimons pic;
+extern t_log* logs;
+extern t_list* disponibles;
+extern char* configMapa;
 metaDataPokeNest *datos; // Variable global
+metaDataComun* datosMapa;
 
-int leerConfiguracion(char *ruta, metaDataComun **datos) {
-	t_config* archivoConfiguracion = config_create(ruta); //Crea struct de configuracion
+void leerConfiguracion() {
+	t_config* archivoConfiguracion = config_create(configMapa); //Crea struct de configuracion
 	if (archivoConfiguracion == NULL) {
-		return 0;
+
+		log_error(logs,"Error al leer metadata Mapa");
+		perror("Error leer config");
 	} else {
 		int cantidadKeys = config_keys_amount(archivoConfiguracion);
 		if (cantidadKeys < 7) {
-			return 0; // sale, 0 es false
+			log_error(logs,"Error al leer metadata Mapa"); // sale, 0 es false
+			perror("Error leer config");
 		} else {
 
-			(*datos)->tiempoChequeoDeadlock = config_get_int_value(
+			datosMapa->tiempoChequeoDeadlock = config_get_int_value(
 					archivoConfiguracion, "TiempoChequeoDeadlock");
 			//printf("TiempoChequeo %d\n",(*datos)->tiempoChequeoDeadlock);
 
-			(*datos)->batalla = config_get_int_value(archivoConfiguracion,
+			datosMapa->batalla = config_get_int_value(archivoConfiguracion,
 					"Batalla");
 			//printf("batalla %d\n",(*datos)->batalla);
 
 			char* algoritmo = string_new();
 			string_append(&algoritmo,
 					config_get_string_value(archivoConfiguracion, "algoritmo"));
-			(*datos)->algoritmo = algoritmo;
+			datosMapa->algoritmo = algoritmo;
 			//printf("algoritmo  %s\n",(*datos)->algoritmo);
 
-			(*datos)->quantum = config_get_int_value(archivoConfiguracion,
+			datosMapa->quantum = config_get_int_value(archivoConfiguracion,
 					"quantum");
 			//printf("quantum  %d\n",(*datos)->quantum);
 
-			(*datos)->retardoQ = config_get_int_value(archivoConfiguracion,
+			datosMapa->retardoQ = config_get_int_value(archivoConfiguracion,
 					"retardo");
 			//printf("retardo  %d\n",(*datos)->retardoQ);
 
 			char* ip = string_new();
 			string_append(&ip,
 					config_get_string_value(archivoConfiguracion, "IP"));
-			(*datos)->ip = ip;
+			datosMapa->ip = ip;
 			//printf("ip  %s\n",(*datos)->ip);
 
-			(*datos)->puerto = config_get_int_value(archivoConfiguracion,
+			datosMapa->puerto = config_get_int_value(archivoConfiguracion,
 					"Puerto");
 			//printf("puerto %d\n",(*datos)->puerto);
 
 			config_destroy(archivoConfiguracion);
-			return 1; // cualquier otra cosa que no es 0, es true
 		}
 	}
 }
@@ -74,6 +78,8 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 
 
 		while ((dir = readdir(d)) != NULL ) {
+			tabla* dispo;
+			dispo = malloc(sizeof(tabla));
 			datos = malloc(sizeof(metaDataPokeNest));
 
 			if (dir->d_type == DT_DIR && (strcmp(dir->d_name, ".") != 0) && (strcmp(dir->d_name, "..") != 0)) {
@@ -110,6 +116,7 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 								config_get_string_value(archivoConfigPokenest,
 										"Identificador"));
 						datos->caracterPokeNest = simbolo;
+						dispo->pokenest=simbolo;
 
 						{
 							int file_count = 0;
@@ -126,9 +133,11 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 							}
 							closedir(dirp);
 							datos->cantPokemons = (file_count - 1);
+							dispo->valor = (file_count-1);
 						}
 
 						list_add(pokenests, (void*) datos);
+						list_add(disponibles, dispo);
 
 						config_destroy(archivoConfigPokenest);
 						//free(datos);
@@ -233,6 +242,10 @@ int setup_listen(char* IP, char* Port) {
 	int resultadoBind;
 	resultadoBind = bind(socketEscucha, serverInfo->ai_addr,
 			serverInfo->ai_addrlen);
+	const int optVal = 1;
+	const socklen_t optLen = sizeof(optVal);
+
+	int rtn = setsockopt(socketEscucha, SOL_SOCKET, SO_REUSEADDR, (void*) &optVal, optLen);
 	if (resultadoBind == -1) {
 		printf("Error en el Bind \n");
 		exit(-1);
@@ -397,9 +410,9 @@ void recibirTresCosasSerializadas(){
     void *bufferCosaDos = malloc(tamanioCosaDos);
     void *bufferCosaTres = malloc(tamanioCosaTres);
 
-    recv(pokedexServidor, bufferCosaUno, tamanioCosaUno);
-    recv(pokedexServidor, bufferCosaDos, tamanioCosaDos);
-    recv(pokedexServidor, bufferCosaTres, tamanioCosaTres);
+    recv(pokedexServidor, bufferCosaUno, tamanioCosaUno,MSG_WAITALL);
+    recv(pokedexServidor, bufferCosaDos, tamanioCosaDos,MSG_WAITALL);
+    recv(pokedexServidor, bufferCosaTres, tamanioCosaTres,MSG_WAITALL);
 
     cosaUno = (int) bufferCosaUno;
     CosaDos = (int) bufferCosaDos;

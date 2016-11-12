@@ -21,12 +21,11 @@ extern sem_t sem_quantum;
 
 extern char* nombreMapa;
 
-extern t_queue* colaAccion;
-
 extern t_queue* colaListos;
 
 extern t_list* listaDeColasAccion;
-
+extern t_list* entrenadoresEnCurso;
+extern t_list* pokenests;
 extern t_list* items;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -125,11 +124,11 @@ void notificarCaida() {
 void atenderConexion(void *numeroCliente) {
 	int unCliente = *((int *) numeroCliente);
 	char paquete[1024];
+	char cambio[2];
 	int status = 1;
 
 	entrenador* ent1 = malloc(sizeof(entrenador));
 	ent1->flagEstaEnLista = 0; //al ser nuevo no esta registrado en la lista
-
 
 	t_log* logs;
 	remove("Mapi.log");
@@ -146,30 +145,30 @@ void atenderConexion(void *numeroCliente) {
 			//printf("el Entrenador #%d dijo: \n %s", clientesActivos[unCliente].cliente, paquete);
 			//status = recv(clientesActivos[unCliente].socket, paquete, 2, 0);
 			//log_info(logs,"paquete: %c%c",paquete[0],paquete[1]);
-
-			char cambio[1];
 			cambio[0] = paquete[0];
-			status = recv(clientesActivos[unCliente].socket, (void*) paquete, sizeof(char),MSG_WAITALL);
+			if (isalpha(cambio[0]) || cambio[0] == '2' || cambio[0] == '6' || cambio[0] == '8' || cambio[0] == '4') {
+				status = recv(clientesActivos[unCliente].socket,
+						(void*) paquete, sizeof(char), MSG_WAITALL);
 
-			cambio[1] = paquete[0];
+				cambio[1] = paquete[0];
 
-			log_info(logs, "paquete global:%c %c", cambio[0], cambio[1]);
-			log_info(logs, "unCliente:%d clientesactivos[uncliente].cliente:%d",unCliente,clientesActivos[unCliente].cliente);
-			//printf("%c",paqueton[0]);
+				log_info(logs, "paquete global:%c %c", cambio[0], cambio[1]);
+				log_info(logs,
+						"unCliente:%d clientesactivos[uncliente].cliente:%d",
+						unCliente, clientesActivos[unCliente].cliente);
+				//printf("%c",paqueton[0]);
 
+				//enviarHeader(clientesActivos[unCliente].socket, 1);
 
-			//enviarHeader(clientesActivos[unCliente].socket, 1);
+				log_info(logs, "Este seria un caracter del entrenador: %c",
+						cambio[0]);
+				log_info(logs, "Este seria su accionar: %d", cambio[1]);
 
-			log_info(logs, "Este seria un caracter del entrenador: %c",cambio[0]);
-			log_info(logs, "Este seria su accionar: %d", cambio[1]);
-
-			//mientras no haya recibido nada
-
-
+				//mientras no haya recibido nada
 
 				//paso variable global al entrenador
-				ent1->simbolo = cambio[0]; //almaceno simbolo en entrenador (paqueton [0] es variable global
-				ent1->accion = cambio[1]; //almaceno que hacer en entrenador paqueton global
+				ent1->simbolo = cambio[1]; //almaceno simbolo en entrenador (paqueton [0] es variable global
+				ent1->accion = cambio[0]; //almaceno que hacer en entrenador paqueton global
 				ent1->numeroCliente = unCliente; //numero de cliente para envio de informacion
 				ent1->flagLeAsignaronPokenest = 0;
 
@@ -177,25 +176,40 @@ void atenderConexion(void *numeroCliente) {
 				if (!ent1->flagEstaEnLista) {
 					pthread_mutex_lock(&mutexPaqueton);
 
-
-					 ent1->numeroLlegada = (clientesActivos[unCliente].cliente-1); //numero del entrenador
-					 ent1->flagEstaEnLista = 1; //ahora este entrenador nuevo esta en la lista
-					 ent1->posx = 0; //posicion en x inicializada en 0
-					 ent1->posy = 0; // idem en y
+					ent1->numeroLlegada = (clientesActivos[unCliente].cliente - 1); //numero del entrenador
+					ent1->flagEstaEnLista = 1; //ahora este entrenador nuevo esta en la lista
+					ent1->estaMarcado = 0;
+					ent1->vecesPerdidas=0;
+					ent1->posx = 0; //posicion en x inicializada en 0
+					ent1->posy = 0; // idem en y
+					ent1->asignados = list_create();
+					ent1->solicitud = list_create();
+					int ka;
+					metaDataPokeNest* datosPo;
+					for (ka = 0; ka < list_size(pokenests); ka++) {
+						datosPo = (metaDataPokeNest*) list_get(pokenests, ka);
+						tabla* t = malloc(sizeof(tabla));
+						t->pokenest = datosPo->caracterPokeNest[0];
+						t->valor = 0;
+						list_add(ent1->asignados, t);
+						list_add(ent1->solicitud, t);
+					}
 
 					t_queue* coli = queue_create();
 					queue_push(coli, ent1->accion); // meto la accion del entrenador en la cola
 
 					//list_replace(listaDeColasAccion, ent1->numeroLlegada, colaAccion); // agrego en la lista que contiene su cola de accion
 
-                    list_add(listaDeColasAccion,coli);
-
+					list_add(listaDeColasAccion, coli);
 
 					log_info(logs, "llego aca");
 
-					CrearPersonaje(items, ent1->simbolo, ent1->posx, ent1->posy); //mete al pj en el mapa
+					CrearPersonaje(items, ent1->simbolo, ent1->posx,
+							ent1->posy); //mete al pj en el mapa
 
 					nivel_gui_dibujar(items, nombreMapa);
+
+					list_add(entrenadoresEnCurso, ent1);
 
 					queue_push(colaListos, (void*) ent1); //llego un entrenador entonces lo meto en la cola de listos
 
@@ -208,36 +222,51 @@ void atenderConexion(void *numeroCliente) {
 					pthread_mutex_unlock(&mutexPaqueton);
 					//	aux = '\0';
 
-
 				}
 
 				//si el entrenador se encontraba registrado
 				else {
 					t_queue* cola;
 
-					cola =  list_get(listaDeColasAccion, ent1->numeroLlegada); //saco la cola y se la meto a la auxiliar
-					log_info(logs,"llego a paso el list get joya");
+					cola = list_get(listaDeColasAccion, ent1->numeroLlegada); //saco la cola y se la meto a la auxiliar
+					log_info(logs, "llego a paso el list get joya");
 
 					queue_push(cola, ent1->accion); //pusheo nuevo accionar a la cola auxiliar
 					/*int ac;
-					ac = queue_pop(cola);
-					log_info(logs,"acto es %d", ac); */
+					 ac = queue_pop(cola);
+					 log_info(logs,"acto es %d", ac); */
 
-					list_replace(listaDeColasAccion, ent1->numeroLlegada, cola); //reemplaza la cola de la lista por la auxiliar
-
-					log_info(logs,"paso el replace");
+					//list_replace(listaDeColasAccion, ent1->numeroLlegada, cola); //reemplaza la cola de la lista por la auxiliar
+					log_info(logs, "paso el replace");
 
 					sem_post(&sem_quantum);
 					//aux = '\0';
 				}
 
 				//aux = '\0';
+			}
+			if(cambio[0] == 5){
+				int tamanioUno, tamanioDos;
 
+				recv(clientesActivos[ent1->numeroCliente].socket, &tamanioUno, sizeof(int), MSG_WAITALL);
+				recv(clientesActivos[ent1->numeroCliente].socket, &tamanioDos, sizeof(int), MSG_WAITALL);
+
+				void *bufferCosaUno = malloc(tamanioUno);
+				void *bufferCosaDos = malloc(tamanioDos);
+
+				recv(clientesActivos[ent1->numeroCliente].socket, bufferCosaUno, tamanioUno,MSG_WAITALL);
+				recv(clientesActivos[ent1->numeroCliente].socket, bufferCosaDos, tamanioDos,MSG_WAITALL);
+
+				((ent1->pokePeleador).especie) = (char*) bufferCosaUno;
+			    ((ent1->pokePeleador).nivel) = (int) bufferCosaDos;
 			}
 
 		}
 
-	free(ent1);
+	}
+	BorrarItem(items,ent1->simbolo);
 
+
+	free(ent1);
 
 }
