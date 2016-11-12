@@ -19,12 +19,12 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 				return 0;
 			} else {
 
-			char* nombre = string_new();
+			nombre = string_new();
 			string_append(&nombre, config_get_string_value(archivoConfiguracion, "nombre"));
 			(*datos)->nombreEntrenador=nombre;
 			//printf("nombre=%s \n",(*datos)->nombreEntrenador);
 
-			char* simbolo = string_new();
+			simbolo = string_new();
 			string_append(&simbolo,config_get_string_value(archivoConfiguracion,"simbolo"));
 			(*datos)->caracter=simbolo;
 			//printf("simbolo= %s \n",(*datos)->caracter);
@@ -37,11 +37,9 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 			int j =0;
 			int k=0;
 
-
 			char* mapa = string_new();
 			char* poke = string_new();
 			(*datos)->hojaDeViaje = list_create();
-			(*datos)->objetivosPorMapa = list_create();
 			pokesDeCadaMapa =dictionary_create();
 
 			ips = list_create();
@@ -54,9 +52,9 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 					string_append(&mapa, cadaMapa);
 					list_add((*datos)->hojaDeViaje,cadaMapa);
 
-					char* objetivoDeMapa = string_from_format("obj[%s]",hojaViaje[j]);
+					objetivoDeMapa = string_from_format("obj[%s]",hojaViaje[j]);
 
-					char** objetivosMapa = config_get_array_value(archivoConfiguracion,objetivoDeMapa);
+					objetivosMapa = config_get_array_value(archivoConfiguracion,objetivoDeMapa);
 					k=0;
 					do {
 						if (objetivosMapa[k]!=NULL){
@@ -64,8 +62,8 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 							string_append(&poke, cadaPoke);
 
 							dictionary_put(pokesDeCadaMapa,hojaViaje[j] , cadaPoke);
-
 							//printf("tengo que conseguir el Poke %s del mapa %s \n", cadaPoke, hojaViaje[j] );
+
 							k++;
 						} else {
 							l=0;
@@ -80,7 +78,7 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 					//creamos el config para leer las cosas de mapa
 					t_config* archivoMapa = config_create(configMapa);
 						if (archivoMapa == NULL) {
-							printf("Error, no hay nada \n");
+							log_info(logs,"Error, no hay nada \n");
 						} else {
 						char* ip = string_new();
 						string_append(&ip, config_get_string_value(archivoMapa,"IP"));

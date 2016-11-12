@@ -23,18 +23,17 @@
 
 #include "libSockets.h"
 
-
-t_log* logs;
+int servidor;
 char* puntoMontaje;
 t_entrenador* ent;
 t_posMapaposObjetivoYDeadlocks* posicionesYDeadlocks;
 char* protocAManejar;
+char* configEntrenador;
 
 #define ATRAPA 1
 #define DEADLOCK 3
 #define MORI 7
 #define SOBREVIVI 0
-#define PACKAGESIZE 10
 
 int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso/workspace/pokedex
 	char* nombreEnt = argv[1];
@@ -63,10 +62,8 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 posicionesYDeadlocks = malloc(sizeof(t_posMapaposObjetivoYDeadlocks));
 
 	 //CONFIG
-	 char* configEntrenador = string_from_format("%s/Entrenadores/%s/metadata",puntoMontaje,nombreEnt);
+	 configEntrenador = string_from_format("%s/Entrenadores/%s/metadata",puntoMontaje,nombreEnt);
 
-	 //para cuando debuggeamos, descomentar lo de abajo y comentar lo de arriba
-	 //char* configEntrenador = "/home/utnso/workspace/pokedex/Entrenadores/Red/metadata";
 
 	 if (!leerConfigEnt(configEntrenador,&ent, puntoMontaje)) {
 	     log_error(logs,"Error al leer el archivo de configuracion de Metadata Entrenador\n");
@@ -84,23 +81,26 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 //VARIABLES USADAS Y CONEXION
 	 int cantMapas = list_size((ent)->hojaDeViaje);
-	 char* protocolo = string_new();
-	 char* numConcatenado="1";
-	 string_append(&protocolo,(ent)->caracter);
-	 string_append(&protocolo,numConcatenado);
-	 protocAManejar = strdup(protocolo);
-	 char* coordPokenest;
-	 char** posPokenest;
-	 char* horaInicio;
-	 char *resultado = malloc(sizeof(int));
-	 char* miIP;
-	 char* miPuerto;
-	 t_list* listaNivAtrapados= list_create();
-	 t_dictionary* masFuertePokeYNivel = dictionary_create();
+	 posicionesYDeadlocks->reintentosActualizados=0;
 	 posicionesYDeadlocks->cantDeadlocks=0;
 
-	 //reiniciarHojaDeViaje:
-		 horaInicio = empezarAventura();
+	 char* protocolo = string_new();
+	 char* numConcatenado="1";
+	 char* coordPokenest;
+	 char* horaInicio;
+	 char* resultado = malloc(sizeof(int));
+	 char* miIP;
+	 char* miPuerto;
+	 char** posPokenest;
+
+	 string_append(&protocolo,numConcatenado);
+	 string_append(&protocolo,ent->caracter);
+	 protocAManejar = strdup(protocolo);
+
+	 t_list* listaNivAtrapados= list_create();
+	 t_list* pokemonsPorMapaCapturados = list_create();
+
+	 horaInicio = empezarAventura();
 
 		 do{
 			 for(posicionesYDeadlocks->pos = 0;posicionesYDeadlocks->pos<cantMapas;posicionesYDeadlocks->pos++){
@@ -117,76 +117,95 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 					int resultadoEnvio = 0;
 
 					char* mapa = list_get((ent)->hojaDeViaje,posicionesYDeadlocks->pos);
-					printf("Conectado al Mapa %s. Ingrese el mensaje que desee enviar, o cerrar para salir\n",mapa);
 
+					char* mensaje = string_from_format("Conectado al Mapa %s. Ingrese el mensaje que desee enviar, o cerrar para salir\n",mapa);
+					log_info(logs,mensaje);
+					free(mensaje);
 
 					//////////////// recibo y mando datos al Mapa /////////////////////
 
 					// cuando pase a otro mapa, o lo reinicia, vuelve a arrancar en (0;0)
 					int posXInicial =0;
 					int posYInicial =0;
-					posicionesYDeadlocks->valor = 1;
+					posicionesYDeadlocks->salirDeObjetivos = 0;
+					posicionesYDeadlocks->cargarDeNuevoObjetivo=0;
 
-						for(posicionesYDeadlocks->posObjetivo=0;(dictionary_get(pokesDeCadaMapa,mapa)!=NULL) && (posicionesYDeadlocks->valor!=0);posicionesYDeadlocks->posObjetivo++){
+						for(posicionesYDeadlocks->posObjetivo=0;(dictionary_get(pokesDeCadaMapa,mapa)!=NULL) && (posicionesYDeadlocks->salirDeObjetivos!=1);posicionesYDeadlocks->posObjetivo++){
 
 							char* caracterPoke = dictionary_get(pokesDeCadaMapa,mapa);
-							string_append(&protocolo,caracterPoke);
+							//string_append(&protocolo,caracterPoke);
 
 
-							printf("Voy a buscar este pokemon: %s \n", caracterPoke);
+							char* mensaje2 = string_from_format("Voy a buscar este pokemon: %s \n", caracterPoke);
+							log_info(logs,mensaje2);
+							free(mensaje2);
 
-							// MANDO: CARACTER + POKENEST
+							// MANDO: POKENEST + CARACTER
 							char carPoke = caracterPoke[0];
-							protocAManejar[1]=carPoke;
+							protocAManejar[0]=carPoke;
 
 							send(servidor, protocAManejar, 2, 0);
-							//recibo 5 chars, ej: "34;12"
-							//coordPokenest = (char*)recibirDatos(servidor,5);
+							//recibo 5 chars, ej: "02;05"
+							//coordPokenest= "02;03";
 
-							coordPokenest= "02;03";
-
+							coordPokenest = (char*)recibirDatos(servidor,5);
 							posPokenest = string_split(coordPokenest,";");
+
 							int x = atoi (posPokenest[0]);
-							printf("Coordenada X pokenest: %d\n", x);
+							char* mensaje3 = string_from_format("Coordenada X pokenest: %d\n", x);
+							log_info(logs,mensaje3);
+							free(mensaje3);
+
 							int y = atoi (posPokenest[1]);
-							printf("Coordenada Y pokenest: %d\n", y);
+							char* mensaje4 = string_from_format("Coordenada Y pokenest: %d\n", y);
+							log_info(logs,mensaje4);
+							free(mensaje4);
 
 
 							moverseEnUnaDireccion(posXInicial, posYInicial, x, y);
 
 
-							protocAManejar[1]='9'; // Solicitud Atrapar Pokemon
+							protocAManejar[0]='9';
 							send(servidor,protocAManejar,2,0);
-							solicitarAtraparPokemon(calculoTiempo,tiempo,masFuertePokeYNivel,pokePiola, listaNivAtrapados,mapa);
+							solicitarAtraparPokemon(calculoTiempo,tiempo,pokePiola, listaNivAtrapados,mapa);
 
 							// por si se cae
 							recv(servidor, (void *)resultado, sizeof(int), 0);
 							resultadoEnvio = *((int *)resultado);
 
 							if(resultadoEnvio == 9){
-								printf("Servidor caído! imposible reconectar. Cerrando...\n");
+								log_info(logs,"Servidor caído! imposible reconectar. Cerrando...\n");
 								exit(0);
 							}
 
-							dictionary_remove(pokesDeCadaMapa,mapa);
+							if (posicionesYDeadlocks->cargarDeNuevoObjetivo== 0){
+								list_add(pokemonsPorMapaCapturados,caracterPoke);
+								dictionary_remove(pokesDeCadaMapa,mapa);
+							}else{
+								dictionary_put(pokesDeCadaMapa,mapa,(ent)->pokemonsPorMapaCapturados); // vuelvo a meter todos los pokemons de ese mapa
+							}
+
 						} // cierro el for de los objetivos
 
-					if(posicionesYDeadlocks->valor==1){
+					if(posicionesYDeadlocks->salirDeObjetivos==0){
 						copiarMedalla(mapa);
 					}
 
 			} // cierro el for de los mapas
 
-		 } while((ent->cantidadInicialVidas!=0) && (list_get(ent->hojaDeViaje,posicionesYDeadlocks->pos)!=NULL));
+		 } while(list_get(ent->hojaDeViaje,posicionesYDeadlocks->pos)!=NULL);
 
 
 	terminarAventura(calculoTiempo,tiempo,horaInicio);
 
+	//libero listas
 	list_destroy_and_destroy_elements(ips,free);
 	list_destroy_and_destroy_elements(puertos,free);
-	//list_destroy_and_destroy_elements(tiempoBloqCadaPokenest,free); invalid free
-	dictionary_destroy_and_destroy_elements(masFuertePokeYNivel,free);
 
+	//libero dictionarys
+	dictionary_destroy_and_destroy_elements(pokesDeCadaMapa,free);
+
+	//libero variables del main
 	//free(coordPokenest); invalid free
 	//free(horaInicio); invalid free
 	free(objetivoDeMapa);
@@ -199,12 +218,26 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	free(configEntrenador);
 	free(nombre);
 	free(simbolo);
-	free(ent->objetivosPorMapa);
+
+	//libero punteros y struct de entrenador
+	free(ent->nombreEntrenador);
+	free(ent->caracter);
 	free(ent->hojaDeViaje);
+	free(ent->pokemonsPorMapaCapturados);
 	free(ent);
+
+	//libero punteros y struct de pokePiola
+	free(pokePiola->especie);
+	free(pokePiola->nombreMetadata);
 	free(pokePiola);
+
+	//libero struct de tiempo
 	free(tiempo);
+
+	//libero struct de calculoTiempo
 	free(calculoTiempo);
+
+	//libero struct posicionesYDeadlocks
 	free(posicionesYDeadlocks);
 
 	return EXIT_SUCCESS;
@@ -238,84 +271,102 @@ void pierdoUnaVida(){
 	sleep(1);
 }
 
-void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo, t_dictionary* masFuertePokeYNivel,t_pokemonDeserializado* pokePiola,t_list* listaNivAtrapados, char* mapa){
+void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,t_pokemonDeserializado* pokePiola,t_list* listaNivAtrapados, char* mapa){
 
 	char* inicioBloq = temporal_get_string_time();
 	char* finBloq;
 
-	//char* operacion = recibirDatos(servidor,21);
-	/* podria recibir serializado:
-	nroProtocolo especie nombreMetadata nivel sin los ; porque usamos un offset*/
-
-	char* operacion =  "3;Pikachu/Pikachu001;33";
-	char** cosasRecibidas = string_n_split(operacion,3,";");
-
-	//el nro del protocolo
-	char* nroRecString = cosasRecibidas[0];
-	int nroRec = atoi (nroRecString);
-	pokePiola->protocolo=nroRec;
-
-	// la ruta de mi poke atrapado
-	char* rutaPokeAtrapado = cosasRecibidas[1];
-	pokePiola->nombreMetadata = rutaPokeAtrapado;
-
-	//divido la ruta para usarla para copiarArchivo y para mandarla a Mapa
-	char** especieYEspecifico = string_split(pokePiola->nombreMetadata,"/");
-	//agarro Pikachu001
-	char* especifico = especieYEspecifico[1];
-
-	//nivel poke atrapado, hacer el atoi y castearlo a (int*)
-	char* nivelPoke = cosasRecibidas[2];
-	int nivelInt = atoi(nivelPoke);
-	pokePiola->nivelPokemon=nivelInt;
+	pokePiola->protocolo = (int)recibirDatos(servidor,sizeof(int));
+	//pokePiola->protocolo=1;
 
 		switch(pokePiola->protocolo){
 			case ATRAPA:
-				//simulo un tiempo de bloqueado de pokenest por el momento
 				usleep(1000);
-				list_add(listaNivAtrapados,pokePiola->nivelPokemon);
+				// deserializo el pokemon
+				int tamanioEspecie,tamanioNombreMetadata, tamanioNivel;
+
+				recv(servidor,&tamanioEspecie,sizeof(int),MSG_WAITALL);
+				recv(servidor,&tamanioNombreMetadata,sizeof(int),MSG_WAITALL);
+				recv(servidor,&tamanioNivel,sizeof(int),MSG_WAITALL);
+
+				void* bufferEspecie  = malloc(tamanioEspecie);
+				void* bufferNombreMetadata  = malloc(tamanioNombreMetadata);
+				void* bufferNivel  = malloc(tamanioNivel);
+
+				recv(servidor,bufferEspecie,tamanioEspecie, MSG_WAITALL);
+				recv(servidor,bufferNombreMetadata,tamanioNombreMetadata, MSG_WAITALL);
+				recv(servidor,bufferNivel,tamanioNivel, MSG_WAITALL);
+
+				//guardo lo que recibi en mi struct
+				pokePiola->especie = (char*)bufferEspecie;
+				pokePiola->nombreMetadata = (char*)bufferNombreMetadata;
+				pokePiola->nivelPokemon = (int)bufferNivel;
+
+				// para saber si los recibo bien
+				log_info(logs,"especie %s",pokePiola->especie);
+				log_info(logs,"nombre metadata %s", pokePiola->nombreMetadata);
+				log_info(logs,"nivel %d", pokePiola->nivelPokemon);
+
+				list_add(listaNivAtrapados,pokePiola);
 				finBloq = temporal_get_string_time();
-				copiarArchivo(especifico,mapa,pokePiola->nombreMetadata);
+				copiarArchivo(pokePiola->nombreMetadata,mapa,pokePiola->nombreMetadata);
 				tiempo = sacarTiempo(calculoTiempo,tiempo,"bloqueado",inicioBloq,finBloq);
-				//revisar si lo puedo manejar casteandolo o con el char* y fue
-				dictionary_put(masFuertePokeYNivel,nivelPoke,especifico);
+
+				//libero los buffer antes de volver
+				free(bufferEspecie);
+				free(bufferNombreMetadata);
+				free(bufferNivel);
 				return tiempo;
 
 			case DEADLOCK:
 				posicionesYDeadlocks->cantDeadlocks++;
-				//int nivelPokeAtrapado = agarrarPokeConMasNivel(listaNivAtrapados, pokePiola);
-				/*char* nivelString = string_itoa(nivelPokeAtrapado);
-				char* especificoMasFuerte = dictionary_get(masFuertePokeYNivel,nivelString);
-				char* pokeMFuerte = string_from_format("%s5;%s;%d",ent->caracter,especificoMasFuerte,nivelPokeAtrapado);
-				//revisar ese sizeof
-				send(servidor,pokeMFuerte,sizeof(pokeMFuerte),0);
-				free(pokeMFuerte);
+				int nivelPokeMasFuerte = agarrarPokeConMasNivel(listaNivAtrapados, pokePiola);
 
-				char* resolucionDeadlock = recibirDatos(servidor,1);*/
-				char* resolucionDeadlock = "0";
-				int respDeadlock = atoi(resolucionDeadlock);
-				if(respDeadlock==MORI){
+				//serializo mi pokemon
+				int tamanioEspecieEnviar = sizeof(char) * strlen(pokePiola->especie);
+				int tamanioNivelEnviar = sizeof(int);
+
+				int tamanioTotal = 3 *sizeof(int) + tamanioEspecieEnviar + tamanioNivelEnviar;
+
+				void* miBuffer = malloc(tamanioTotal);
+				pokePiola->protocolo = 5;
+
+				//cargo los tamanios
+				memcpy(miBuffer, &pokePiola->protocolo, sizeof(int));
+				memcpy(miBuffer + sizeof(int), &tamanioEspecieEnviar, sizeof(int));
+				memcpy(miBuffer + 2*sizeof(int), &tamanioNivelEnviar, sizeof(int));
+
+				//cargo lo que voy a mandar
+				pokePiola->nivelPokemon = nivelPokeMasFuerte;
+				memcpy(miBuffer + (3* sizeof(int)), pokePiola->especie, tamanioEspecieEnviar);
+				memcpy(miBuffer + (3* sizeof(int)) + tamanioEspecieEnviar, (void*)pokePiola->nivelPokemon, tamanioNivelEnviar);
+
+				send(servidor,miBuffer,tamanioTotal,0);
+
+				int resolucionDeadlock = (int)recibirDatos(servidor,sizeof(int));
+				//int resolucionDeadlock = 7;
+				if(resolucionDeadlock==MORI){
 					morir("deadlock");
-				} else if(respDeadlock==SOBREVIVI){
+				} else if(resolucionDeadlock==SOBREVIVI){
 					log_info(logs,"Sobrevivi al deadlock \n");
 				}
+				free(miBuffer);
 				return posicionesYDeadlocks;
 		}
 
-	free(nivelPoke);
-	free(nroRecString);
 	return NULL;
 }
 
+
 int agarrarPokeConMasNivel(t_list* listaNivAtrapados, t_pokemonDeserializado* pokePiola){
 
-	int ordenarDeMayorAMenor(t_pokemonDeserializado* niv1, t_pokemonDeserializado* niv2){
-		return (niv1->nivelPokemon>niv2->nivelPokemon);
+	int ordenarDeMayorAMenor(t_pokemonDeserializado* poke1, t_pokemonDeserializado* poke2){
+		return (poke1->nivelPokemon>poke2->nivelPokemon);
 	}
 
 	list_sort(listaNivAtrapados,(void*)ordenarDeMayorAMenor);
 
-	int nivelPokeDevuelto = list_get(listaNivAtrapados,0);
+	int nivelPokeDevuelto = (int)list_get(listaNivAtrapados,0);
 	return nivelPokeDevuelto;
 }
 
@@ -434,7 +485,7 @@ void* recibirDatos(int conexion, int tamanio){
 void moverseEnUnaDireccion(int posXInicial, int posYInicial,int x, int y){
 	int cantMovX = x - posXInicial; // cant total mov de x
 	int cantMovY = y - posYInicial; // cant total mov de y
-	char ultMov;
+	char ultMov = '\0';
 	int movDeX = 0; // movimientos que se hicieron de x
 	int movDeY = 0; // movimientos que se hicieron de y
 
@@ -443,13 +494,13 @@ void moverseEnUnaDireccion(int posXInicial, int posYInicial,int x, int y){
 		if(cantMovY==0)
 			ultMov='y';
 		if((cantMovX>0) && (ultMov!='x')){
-			protocAManejar[1]='6'; // derecha
+			protocAManejar[0]='6'; // derecha
 			send(servidor, protocAManejar, 2, 0);
 			ultMov = 'x';
 			cantMovX--;
 			movDeX++;
 		} else if((cantMovX<0) && (ultMov!='x')){
-			protocAManejar[1]='4'; //izquierda
+			protocAManejar[0]='4'; //izquierda
 			send(servidor, protocAManejar, 2, 0);
 			ultMov = 'x';
 			cantMovX--;
@@ -458,13 +509,13 @@ void moverseEnUnaDireccion(int posXInicial, int posYInicial,int x, int y){
 
 		if (cantMovX==0) ultMov = 'x';
 		if((cantMovY>0) && (ultMov!='y')){
-			protocAManejar[1]='2'; // abajo
+			protocAManejar[0]='2'; // abajo
 			send(servidor, protocAManejar, 2, 0);
 			ultMov = 'y';
 			cantMovY--;
 			movDeY++;
 		} else if((cantMovY<0) && (ultMov!='y')){
-			protocAManejar[1]='8'; //arriba
+			protocAManejar[0]='8'; //arriba
 			send(servidor, protocAManejar, 2, 0);
 			ultMov = 'y';
 			cantMovY--;
@@ -491,8 +542,9 @@ void* morir(char* motivo){
 			// empiezo del mapa anterior
 			posicionesYDeadlocks->pos = posicionesYDeadlocks->pos -1;
 			// no dejo que siga iterando los objetivos
-			posicionesYDeadlocks->valor = 0;
-			printf("Posicion antes de iterar el for de mapas: %d\n",posicionesYDeadlocks->pos);
+			posicionesYDeadlocks->salirDeObjetivos = 1;
+			posicionesYDeadlocks->cargarDeNuevoObjetivo=1;
+			//printf("Posicion antes de iterar el for de mapas: %d\n",posicionesYDeadlocks->pos);
 			return posicionesYDeadlocks;
 			} else if (!strcmp(motivo,"senial")){
 				char* infoSenial = string_from_format("Moriste por la senial SIGTERM, vidas restantes: %d\n", ent->cantidadInicialVidas);
@@ -517,14 +569,19 @@ void* morir(char* motivo){
 				resetear();
 				log_info(logs,"Borradas todas las medallas y todos los pokemons, empezando nueva aventura\n");
 				posicionesYDeadlocks->pos = -1;
-				posicionesYDeadlocks->valor = 0;
-				ent->reintentos = ent->reintentos+1;
+				posicionesYDeadlocks->salirDeObjetivos = 1;
+				if (!leerConfigEnt(configEntrenador,&ent, puntoMontaje)) {
+					log_error(logs,"Error al leer el archivo de configuracion de Metadata Entrenador\n");
+					return NULL;
+				}
+				posicionesYDeadlocks->reintentosActualizados++;
+				ent->reintentos = posicionesYDeadlocks->reintentosActualizados;
 				char* nroReintentos = string_from_format("Numero de reintentos realizados: %d",ent->reintentos);
 				log_info(logs,nroReintentos);
 				free(nroReintentos);
 				//aviso al mapa que reinicio desde cero
-				protocAManejar[1]='1';
-				send(servidor, protocAManejar, 2, 0); // para que sepa que reseteo desde 0 toda mi hoja
+				protocAManejar[0]='1';
+				send(servidor, protocAManejar, 2, 0);
 				return posicionesYDeadlocks;
 			}else if(string_equals_ignore_case(respuesta,"no")) {
 					log_info(logs,"Cerrando programa\n");

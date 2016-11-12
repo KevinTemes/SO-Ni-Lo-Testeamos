@@ -27,20 +27,22 @@
 #include <commons/temporal.h>
 #include <signal.h>
 
-int servidor;
-t_list* ips; // lo libero en el main
-t_list* puertos; // lo libero en el main
-char* objetivoDeMapa;
-char** objetivosMapa;
+t_log* logs;
+t_list* ips; // libero main
+t_list* puertos; // libero main
+char* nombre; //libero main
+char* simbolo; //libero main
+char* objetivoDeMapa; //libero main
+char** objetivosMapa; //libero main
 t_dictionary* pokesDeCadaMapa; // lo uso en el main
-char* nombre;
-char* simbolo;
 
 typedef struct{
 	int pos;
 	int posObjetivo;
 	int cantDeadlocks;
-	int valor;
+	int salirDeObjetivos;
+	int cargarDeNuevoObjetivo;
+	int reintentosActualizados;
 }t_posMapaposObjetivoYDeadlocks;
 
 
@@ -81,7 +83,7 @@ typedef struct {
     char* nombreEntrenador;
     char* caracter;
     t_list* hojaDeViaje;
-    t_list* objetivosPorMapa;
+    t_list* pokemonsPorMapaCapturados;
     int cantidadInicialVidas;
     int reintentos;
 }t_entrenador;
@@ -103,7 +105,7 @@ void copiarMedalla(char*);
 void copiarArchivo(char*, char*, char*);
 void* recibirDatos(int, int);
 void moverseEnUnaDireccion(int,int,int,int);
-void* solicitarAtraparPokemon(t_calculoTiempo*,t_tiempoBloqueado*, t_dictionary*,t_pokemonDeserializado*,t_list*,char*);
+void* solicitarAtraparPokemon(t_calculoTiempo*,t_tiempoBloqueado*,t_pokemonDeserializado*,t_list*,char*);
 void* sacarTiempo(t_calculoTiempo*,t_tiempoBloqueado*,char*,char*,char*);
 void borrarArchivosBill();
 void borrarMedallas();
