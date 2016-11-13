@@ -212,16 +212,14 @@ void planificador(void* argu) {
 
 			int acto;
 			t_queue *colaAction;
-			entrenador* ent1;
+			entrenador* entre;
 
-			ent1 = (entrenador*) queue_pop(colaListos);
+			entre = (entrenador*) queue_pop(colaListos);
 
-			colaAction = list_get(listaDeColasAccion, ent1->numeroLlegada); //saco cola de accion de la lista de entrenadores
+			colaAction = list_get(listaDeColasAccion, entre->numeroLlegada); //saco cola de accion de la lista de entrenadores
 
 			while (q) {
-
 				sem_wait(&sem_quantum);
-
 				acto = (int) queue_pop(colaAction);
 				//log_info(logs,"funca3");
 
@@ -237,7 +235,7 @@ void planificador(void* argu) {
 							int pedo;
 							pedo =
 									send(
-											(clientesActivos[ent1->numeroCliente]).socket,
+											(clientesActivos[entre->numeroCliente]).socket,
 											datosPokenest->posicion, 5, 0);
 
 							log_info(logs, "Se envio coordenadas: %d", pedo);
@@ -246,11 +244,11 @@ void planificador(void* argu) {
 							posicionPoke = string_split(datosPokenest->posicion,
 									";");
 
-							ent1->posPokex = atoi(posicionPoke[0]);
-							ent1->posPokey = atoi(posicionPoke[1]);
-							ent1->pokenestAsignado =
+							entre->posPokex = atoi(posicionPoke[0]);
+							entre->posPokey = atoi(posicionPoke[1]);
+							entre->pokenestAsignado =
 									datosPokenest->caracterPokeNest[0];
-							ent1->flagLeAsignaronPokenest = 1;
+							entre->flagLeAsignaronPokenest = 1;
 
 							ka = list_size(pokenests);
 
@@ -271,48 +269,48 @@ void planificador(void* argu) {
 						switch (acto) {
 
 						case '8':
-							if (ent1->posy > 1) {
+							if (entre->posy > 1) {
 								log_info(logs, "mueva arriba");
 
-								ent1->posy--;
-								MoverPersonaje(items, ent1->simbolo, ent1->posx,
-										ent1->posy);
-								nivel_gui_dibujar(items, argument);
+								entre->posy--;
+								MoverPersonaje(items, entre->simbolo, entre->posx,
+										entre->posy);
+								//nivel_gui_dibujar(items, argument);
 								q--;
 							}
 							break;
 
 						case '2':
-							if (ent1->posy < rows) {
+							if (entre->posy < rows) {
 								log_info(logs, "mueva abajo");
 
-								ent1->posy++;
-								MoverPersonaje(items, ent1->simbolo, ent1->posx,
-										ent1->posy);
-								nivel_gui_dibujar(items, argument);
+								entre->posy++;
+								MoverPersonaje(items, entre->simbolo, entre->posx,
+										entre->posy);
+								//nivel_gui_dibujar(items, argument);
 								q--;
 							}
 							break;
 
 						case '4':
-							if (ent1->posx > 1) {
+							if (entre->posx > 1) {
 								log_info(logs, "mueva izquierda");
 
-								ent1->posx--;
-								MoverPersonaje(items, ent1->simbolo, ent1->posx,
-										ent1->posy);
-								nivel_gui_dibujar(items, argument);
+								entre->posx--;
+								MoverPersonaje(items, entre->simbolo, entre->posx,
+										entre->posy);
+								//nivel_gui_dibujar(items, argument);
 								q--;
 							}
 							break;
 						case '6':
-							if (ent1->posx < cols) {
+							if (entre->posx < cols) {
 								log_info(logs, "mueva derecha");
 
-								ent1->posx++;
-								MoverPersonaje(items, ent1->simbolo, ent1->posx,
-										ent1->posy);
-								nivel_gui_dibujar(items, argument);
+								entre->posx++;
+								MoverPersonaje(items, entre->simbolo, entre->posx,
+										entre->posy);
+								//nivel_gui_dibujar(items, argument);
 
 								q--;
 							}
@@ -323,7 +321,7 @@ void planificador(void* argu) {
 
 					if (acto == '9') {
 						usleep(datosMapa->retardoQ);
-						queue_push(colaBloqueados, ent1);
+						queue_push(colaBloqueados, entre);
 						q = datosMapa->quantum;
 						sem_post(&sem_Bloqueados);
 
@@ -344,7 +342,7 @@ void planificador(void* argu) {
 			 } */
 
 			if (q == 0) {
-				queue_push(colaListos, ent1);
+				queue_push(colaListos, entre);
 				q = datosMapa->quantum;
 				sem_post(&sem_Listos);
 			}
@@ -379,8 +377,8 @@ void planificador(void* argu) {
 
 void bloqueados() {
 	while (1) {
-		log_info(logs, "Se mete a bloqueados");
 		sem_wait(&sem_Bloqueados);
+		log_info(logs, "Se mete a bloqueados");
 		entrenador *ent1;
 		pokimons* poki;
 		log_info(logs, "Va a extraer un bloqueado");
@@ -392,6 +390,7 @@ void bloqueados() {
 		log_info(logs, "Ahora busca un poki");
 		poki = list_find(pokemons, (void*) esLaPokenest);
 		log_info(logs, "Saca un poki");
+		log_info(logs, "%c", poki->pokinest);
 		int auxi67;
 		int flagito = 0;
 		int capturo = 0;
@@ -399,44 +398,44 @@ void bloqueados() {
 			return ent1->pokenestAsignado == a->pokenest;
 		}
 
-		for (auxi67 = 0;
-				auxi67 < list_size(poki->listaPokemons) && flagito == 0;
-				auxi67++) {
+		for (auxi67 = 0; auxi67 < list_size(poki->listaPokemons) && flagito == 0;auxi67++){
 			metaDataPokemon* pokem;
 			pokem = list_get(poki->listaPokemons, auxi67);
 			log_info(logs, "Saca un pokemon de la lista poki");
+			log_info(logs, "%s",pokem->especie);
+			log_info(logs, "%d",pokem->nivel);
 			if (!pokem->estaOcupado) {
 				char* nombreAux = pokem->nombreArch;
 				char** nombreSinDatAux = string_split(nombreAux, ".");
 				char* nombreSinDAT = nombreSinDatAux[0];
 
+				log_info(logs,"Creo el nombre sin DAT: %s",nombreSinDAT);
 				int protocolo = 1;
 
 				int tamanioCosaUno = sizeof(char) * strlen(pokem->especie);
 				int tamanioCosaDos = sizeof(char) * strlen(nombreSinDAT);
-				int tamanioCosaTres = sizeof(int);
-				void* miBuffer = malloc(
-						(4 * sizeof(int)) + tamanioCosaUno + tamanioCosaDos
-								+ tamanioCosaTres);
+
+				int auxilia = pokem->nivel;
+				void* miBuffer = malloc((3 * sizeof(int)) + tamanioCosaUno + tamanioCosaDos);
 				memcpy(miBuffer, &protocolo, sizeof(int));
 				memcpy(miBuffer + sizeof(int), &tamanioCosaUno, sizeof(int));
-				memcpy(miBuffer + (2 * sizeof(int)), &tamanioCosaDos,
-						sizeof(int));
-				memcpy(miBuffer + (3 * sizeof(int)), &tamanioCosaTres,
-						sizeof(int));
+				memcpy(miBuffer + (2 * sizeof(int)), &tamanioCosaDos, sizeof(int));
 
-				memcpy(miBuffer + (4 * sizeof(int)), pokem->especie,
-						tamanioCosaUno); //VERIFICA DESPUES
-				memcpy(miBuffer + (4 * sizeof(int)) + tamanioCosaUno,
-						nombreSinDAT, tamanioCosaDos); //VERIFICAR DESPUES
-				memcpy(
-						miBuffer + (4 * sizeof(int)) + tamanioCosaUno
-								+ tamanioCosaDos, (void*) pokem->nivel,
-						tamanioCosaTres); //VERIFICAR DESPUES
 
-				send((clientesActivos[ent1->numeroCliente]).socket, miBuffer,
-						(4 * sizeof(int)) + tamanioCosaUno + tamanioCosaDos
-								+ tamanioCosaTres, 0);
+				log_info(logs,"metio bien tamaños en buffer");
+
+				memcpy(miBuffer + (3 * sizeof(int)), pokem->especie, tamanioCosaUno); //VERIFICA DESPUES
+				log_info(logs,"mete bien especie:%s",pokem->especie);
+				memcpy(miBuffer + (3 * sizeof(int)) + tamanioCosaUno, nombreSinDAT, tamanioCosaDos); //VERIFICAR DESPUES
+				log_info(logs,"mete bien nombreSinDat:%s",nombreSinDAT);
+				memcpy(miBuffer + (3 * sizeof(int)) + tamanioCosaUno + tamanioCosaDos, &auxilia, sizeof(int)); //VERIFICAR DESPUES
+                log_info(logs,"mete bien nivel:%d",pokem->nivel);
+				log_info(logs,"mete bien mierda en buffer");
+
+				int e;
+				e = send((clientesActivos[ent1->numeroCliente]).socket, miBuffer, (3 * sizeof(int)) + tamanioCosaUno + tamanioCosaDos, 0);
+
+				log_info(logs,"envio la mierda %d",e);
 
 				free(miBuffer);
 				flagito = 1;
@@ -459,6 +458,7 @@ void bloqueados() {
 				log_info(logs, "llego a bloqueados");
 
 				restarRecurso(items, poki->pokinest);
+				//nivel_gui_dibujar(items,nombreMapa);
 
 				queue_push(colaListos, ent1);
 				sem_post(&sem_Listos);
@@ -551,8 +551,8 @@ int main(int argc, char* argv[]) {
 	log_info(logs,
 			"Los tres archivos de config fueron creados exitosamente!\n");
 
-	nivel_gui_inicializar();
-	nivel_gui_get_area_nivel(&rows, &cols);
+	//nivel_gui_inicializar();
+	//nivel_gui_get_area_nivel(&rows, &cols);
 
 	//POKENESTchar** posPoke;
 	int ka;
@@ -568,7 +568,7 @@ int main(int argc, char* argv[]) {
 				datosPokenest->cantPokemons);
 	}
 
-	nivel_gui_dibujar(items, argv[1]);
+	//nivel_gui_dibujar(items, argv[1]);
 
 	//hilo de planificacion
 

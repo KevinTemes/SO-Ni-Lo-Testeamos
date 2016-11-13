@@ -130,10 +130,10 @@ void atenderConexion(void *numeroCliente) {
 	entrenador* ent1 = malloc(sizeof(entrenador));
 	ent1->flagEstaEnLista = 0; //al ser nuevo no esta registrado en la lista
 
-	t_log* logs;
+	t_log* logi;
 	remove("Mapi.log");
 
-	logs = log_create("Mapi.log", "Mapa", false, log_level_from_string("INFO"));
+	logi = log_create("Mapi.log", "Mapa", false, log_level_from_string("INFO"));
 
 	//printf("Entrenador #%d conectado! esperando mensajes... \n",
 	//clientesActivos[unCliente].cliente);
@@ -146,40 +146,41 @@ void atenderConexion(void *numeroCliente) {
 			//status = recv(clientesActivos[unCliente].socket, paquete, 2, 0);
 			//log_info(logs,"paquete: %c%c",paquete[0],paquete[1]);
 			cambio[0] = paquete[0];
-			if (isalpha(cambio[0]) || cambio[0] == '2' || cambio[0] == '6' || cambio[0] == '8' || cambio[0] == '4') {
+			if (isalpha(cambio[0]) || cambio[0] == '2' || cambio[0] == '6' || cambio[0] == '8' || cambio[0] == '4' || cambio[0] == '9') {
 				status = recv(clientesActivos[unCliente].socket,
 						(void*) paquete, sizeof(char), MSG_WAITALL);
 
 				cambio[1] = paquete[0];
 
-				log_info(logs, "paquete global:%c %c", cambio[0], cambio[1]);
-				log_info(logs,
+				log_info(logi, "paquete global:%c %c", cambio[0], cambio[1]);
+				log_info(logi,
 						"unCliente:%d clientesactivos[uncliente].cliente:%d",
 						unCliente, clientesActivos[unCliente].cliente);
 				//printf("%c",paqueton[0]);
 
 				//enviarHeader(clientesActivos[unCliente].socket, 1);
 
-				log_info(logs, "Este seria un caracter del entrenador: %c",
+				log_info(logi, "Este seria un caracter del entrenador: %c",
 						cambio[0]);
-				log_info(logs, "Este seria su accionar: %d", cambio[1]);
+				log_info(logi, "Este seria su accionar: %d", cambio[1]);
 
 				//mientras no haya recibido nada
 
 				//paso variable global al entrenador
-				ent1->simbolo = cambio[1]; //almaceno simbolo en entrenador (paqueton [0] es variable global
+
 				ent1->accion = cambio[0]; //almaceno que hacer en entrenador paqueton global
-				ent1->numeroCliente = unCliente; //numero de cliente para envio de informacion
-				ent1->flagLeAsignaronPokenest = 0;
+
 
 				//si el entrenador no esta registrado
 				if (!ent1->flagEstaEnLista) {
 					pthread_mutex_lock(&mutexPaqueton);
 
+					ent1->simbolo = cambio[1]; //almaceno simbolo en entrenador (paqueton [0] es variable global
+					ent1->numeroCliente = unCliente; //numero de cliente para envio de informacion
+					ent1->flagLeAsignaronPokenest = 0;
 					ent1->numeroLlegada = (clientesActivos[unCliente].cliente - 1); //numero del entrenador
 					ent1->flagEstaEnLista = 1; //ahora este entrenador nuevo esta en la lista
 					ent1->estaMarcado = 0;
-					ent1->vecesPerdidas=0;
 					ent1->posx = 0; //posicion en x inicializada en 0
 					ent1->posy = 0; // idem en y
 					ent1->asignados = list_create();
@@ -202,18 +203,18 @@ void atenderConexion(void *numeroCliente) {
 
 					list_add(listaDeColasAccion, coli);
 
-					log_info(logs, "llego aca");
+					log_info(logi, "llego aca");
 
 					CrearPersonaje(items, ent1->simbolo, ent1->posx,
 							ent1->posy); //mete al pj en el mapa
 
-					nivel_gui_dibujar(items, nombreMapa);
+					//nivel_gui_dibujar(items, nombreMapa);
 
 					list_add(entrenadoresEnCurso, ent1);
 
 					queue_push(colaListos, (void*) ent1); //llego un entrenador entonces lo meto en la cola de listos
 
-					log_info(logs, "entrenador %c a listos", ent1->simbolo); //informo por archivo de log la llegada del entrenador
+					log_info(logi, "entrenador %c a listos", ent1->simbolo); //informo por archivo de log la llegada del entrenador
 
 					sem_post(&sem_Listos); //produce un ent en colaListos
 
@@ -229,7 +230,7 @@ void atenderConexion(void *numeroCliente) {
 					t_queue* cola;
 
 					cola = list_get(listaDeColasAccion, ent1->numeroLlegada); //saco la cola y se la meto a la auxiliar
-					log_info(logs, "llego a paso el list get joya");
+					log_info(logi, "llego a paso el list get joya");
 
 					queue_push(cola, ent1->accion); //pusheo nuevo accionar a la cola auxiliar
 					/*int ac;
@@ -237,7 +238,7 @@ void atenderConexion(void *numeroCliente) {
 					 log_info(logs,"acto es %d", ac); */
 
 					//list_replace(listaDeColasAccion, ent1->numeroLlegada, cola); //reemplaza la cola de la lista por la auxiliar
-					log_info(logs, "paso el replace");
+					log_info(logi, "paso el replace");
 
 					sem_post(&sem_quantum);
 					//aux = '\0';
@@ -264,9 +265,9 @@ void atenderConexion(void *numeroCliente) {
 		}
 
 	}
-	BorrarItem(items,ent1->simbolo);
 
-
+	BorrarItem(items, ent1->simbolo);
+	//nivel_gui_dibujar(items, nombreMapa);
 	free(ent1);
 
 }
