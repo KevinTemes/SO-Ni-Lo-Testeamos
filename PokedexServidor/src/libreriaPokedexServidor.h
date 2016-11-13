@@ -28,6 +28,7 @@
 #include "TestServidor.h"
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <assert.h>
 
 typedef struct{
 	int cliente;
@@ -39,13 +40,15 @@ typedef char bloque[64];
 t_infoCliente clientesActivos[1024];
 
 typedef struct{
-
+	void *buffer;
+	int buffer_size;
 }t_infoDirectorio;
 
 typedef struct{
 	int tipo_archivo;
 	int size;
 }t_getattr;
+
 
 osada_header mainHeader;
 osada_file tablaDeArchivos[2048];
@@ -81,6 +84,12 @@ void atenderConexion(void *numeroCliente);
 /* Serialización de strings */
 void *serializarString(char *unString);
 
+/* Concatenado de strings*/
+char* concat(const char *s1, const char *s2);
+
+/*conversión del contenido de un buffer en una ruta válida */
+char *convertirRuta(void *buffer, int tamanioRuta);
+
 /* Búsqueda de la posicion de un un archivo/directorio en la tabla de archivos */
 int recorrerDirectorio(char *nombre, int parentDir);
 
@@ -102,6 +111,8 @@ void actualizarTablaDeAsignaciones();
 t_getattr osada_getattr(char *unaRuta);
 
 char *osada_readdir(char *unDirectorio);
+
+t_infoDirectorio osada_readdirV2(char *unaRuta);
 
 void *osada_read(char *unaRuta);
 

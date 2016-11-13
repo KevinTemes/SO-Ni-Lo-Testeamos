@@ -37,6 +37,10 @@ int* pmap_arch;
 struct stat archivoStat;
 //-----------------------------------------------------
 
+#define DEFAULT_FILE_CONTENT "Hello World!\n"
+
+//-----------------------------------------------------
+
 /* defines para testear sockets */
 #define IP "127.0.0.1"
 #define PUERTO "7777"
@@ -167,7 +171,7 @@ int cliente_getattr(const char *path, struct stat *stbuf) {
 
 	respuesta = (t_getattr *) leAnswer;
 
-	int tipoFile = recibirTipoFile();
+//	int tipoFile = recibirTipoFile();
 	memset(stbuf,0,sizeof(struct stat));
 
 	if (respuesta->tipo_archivo == 2){ // Es un directorio
@@ -180,6 +184,7 @@ int cliente_getattr(const char *path, struct stat *stbuf) {
 		stbuf->st_size = respuesta->size;
 	}
 	else{
+
 		res= -ENOENT;
 	}
 	free(leBuffer);
@@ -192,7 +197,7 @@ static int cliente_readdir(const char *path, void *buf, fuse_fill_dir_t filler,o
 	int res= 0, i=0;
 	protocolo = 1;
 	int sizePath = (sizeof (char) * strlen(path));
-
+	char *listadoConcatenado = string_new();
 	void *leBuffer = malloc(sizePath + (2 * sizeof(int)));
 	int leTamanio;
 
@@ -207,16 +212,23 @@ static int cliente_readdir(const char *path, void *buf, fuse_fill_dir_t filler,o
 	void *leAnswer = malloc(leTamanio);
 	recv(pokedexServidor, leAnswer, leTamanio, MSG_WAITALL);
 
-	char* listadoConcatenado = (char *) leAnswer;
+	char* listado = (char *) leAnswer;
+	listadoConcatenado = string_substring_until(listado, leTamanio - 1);
 	char** archivos = string_split(listadoConcatenado,";");
 
-	while (archivos[i] != NULL){
-		filler(buf, archivos[i], NULL, 0);
-		i++;
-	}
 	if (archivos[i] == NULL){
-		res = -ENOENT;
+			res = -ENOENT;
+		}
+
+	else{
+		filler(buf, ".", NULL, 0);
+		filler(buf, "..", NULL, 0);
+		while (archivos[i] != NULL){
+			filler(buf, archivos[i], NULL, 0);
+			i++;
+		}
 	}
+
 
 	free(leBuffer);
 	free(leAnswer);
@@ -371,34 +383,6 @@ int main(int argc, char *argv[]) {
 
 	return fuse_main(argc, argv, &cliente_oper, NULL );
 
-
-
-/* gilada para el primer checkpoint */
-
-/*
-int enviar = 1;
-char message[PACKAGESIZE];
-char *resultado = malloc(sizeof(int));
-int resultadoEnvio = 0;
-printf("Conectado al servidor. Bienvenido a la enciclopedia global Pokemon! cerrar para salir\n");
-
-while(enviar != 0){
-	fgets(message, PACKAGESIZE, stdin);
-	if (!strcmp(message,"cerrar\n")) enviar = 0;
-	send(pokedexServidor, message, strlen(message) + 1, 0);
-	recv(pokedexServidor, (void *)resultado, sizeof(int), 0);
-	resultadoEnvio = *((int *)resultado);
-
-	if(resultadoEnvio == 1) {
-		printf("el servidor recibió el mensaje!: %d\n", resultadoEnvio);
-		}
-	else if(resultadoEnvio == 9){
-		printf("Servidor caído! imposible reconectar. Cerrando...\n");
-		exit(0);
-		}
-	}
-
-close(pokedexServidor); */
 
 return 0;
 

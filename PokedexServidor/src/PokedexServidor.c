@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
 
 // inicio todas las variables para arrancar
 	//SOCKETS
-	log_info(logs, "iniciado el servidor principal de la Pokedéx. Aguardando conexiones...\n\n");
+	// log_info(logs, "iniciado el servidor principal de la Pokedéx. Aguardando conexiones...\n\n");
 
 	int socketEscucha, retornoPoll;
 	int fd_index = 0;
