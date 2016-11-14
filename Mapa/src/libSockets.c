@@ -116,7 +116,7 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 								config_get_string_value(archivoConfigPokenest,
 										"Identificador"));
 						datos->caracterPokeNest = simbolo;
-						dispo->pokenest=simbolo;
+						dispo->pokenest=simbolo[0];
 
 						{
 							int file_count = 0;
@@ -147,17 +147,15 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 			}
 
 		}
-	/*
+
 		int ka;
-					metaDataPokeNest *a;
-					a = malloc(sizeof(metaDataPokeNest));
+					tabla *a;
+
 					   for(ka=0; ka<list_size(pokenests); ka++){
-					    	    a = (metaDataPokeNest*) list_get(pokenests,ka);
-					    	    printf("%s\n",a->caracterPokeNest);
-	                            printf("%s\n",a->tipoPokemon);
-	                            printf("%d\n",a->cantPokemons);
-	                            printf("%s\n",a->posicion);
-					    } */
+					    	    a = (tabla*) list_get(disponibles,ka);
+					    	    printf("%c\n",a->pokenest);
+					    	    printf("%d\n",a->valor);
+					    }
 
 		closedir(d);
 

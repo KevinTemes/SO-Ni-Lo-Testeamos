@@ -30,13 +30,13 @@ typedef struct {
 } t_infoCliente;
 
 typedef struct{
-	metaDataPokemon pokePeleador;
+	metaDataPokemon* pokePeleador;
 	char pokenestAsignado;
 	t_list* asignados;
 	t_list* solicitud;
 	t_list* pokemones;
 	char simbolo;
-	char accion;
+	int entroBloqueados;
 	int numeroLlegada;
 	int numeroCliente;
 	int flagEstaEnLista;
@@ -46,6 +46,7 @@ typedef struct{
 	int posPokey;
 	int flagLeAsignaronPokenest;
 	int estaMarcado;
+	int fallecio;
 } entrenador;
 
 /* Función loca para testear rececpción de mensajes a través de un socket. */
@@ -66,5 +67,8 @@ void notificarCaida();
 
 /* Función para atender una conexión en particular */
 void atenderConexion(void *numeroCliente);
+
+//mata un entrenador
+void matar(entrenador* en);
 
 #endif /* LIBRERIAPOKEDEXSERVIDOR_H_ */

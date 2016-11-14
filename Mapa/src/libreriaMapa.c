@@ -11,18 +11,16 @@
 #define MAX_LEN 128
 
 pthread_mutex_t mutexPaqueton = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutexRegistrado = PTHREAD_MUTEX_INITIALIZER;
 
 int numEntrenador;
 
-t_infoCliente clientesActivos[1024];
+t_infoCliente clientesActivos[2048];
 
 extern sem_t sem_Listos;
 extern sem_t sem_quantum;
-
 extern char* nombreMapa;
-
 extern t_queue* colaListos;
-
 extern t_list* listaDeColasAccion;
 extern t_list* entrenadoresEnCurso;
 extern t_list* pokenests;
@@ -121,6 +119,24 @@ void notificarCaida() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
+void matar(entrenador* entreni) {
+	list_remove(entrenadoresEnCurso, entreni->numeroLlegada);
+	free(entreni->pokePeleador);
+	list_destroy_and_destroy_elements(entreni->asignados, (void*) free);
+	list_destroy_and_destroy_elements(entreni->solicitud, (void*) free);
+	int y;
+	for (y = 0; y < list_size(entreni->pokemones); y++) {
+		metaDataPokemon* pok;
+		pok = list_get(entreni->pokemones, y);
+		pok->estaOcupado = 0;
+	}
+	list_destroy(entreni->pokemones);
+	BorrarItem(items, entreni->simbolo);
+	//nivel_gui_dibujar(items, nombreMapa);
+	free(entreni);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 void atenderConexion(void *numeroCliente) {
 	int unCliente = *((int *) numeroCliente);
 	char paquete[1024];
@@ -140,13 +156,16 @@ void atenderConexion(void *numeroCliente) {
 	while (status != 0) {
 
 		// paquete = recibirDatos(clientesActivos[unCliente].socket,2);
-		status = recv(clientesActivos[unCliente].socket, (void*) paquete, sizeof(char), MSG_WAITALL);
+		status = recv(clientesActivos[unCliente].socket, (void*) paquete,
+				sizeof(char), MSG_WAITALL);
 		if (status != 0) {
 			//printf("el Entrenador #%d dijo: \n %s", clientesActivos[unCliente].cliente, paquete);
 			//status = recv(clientesActivos[unCliente].socket, paquete, 2, 0);
 			//log_info(logs,"paquete: %c%c",paquete[0],paquete[1]);
 			cambio[0] = paquete[0];
-			if (isalpha(cambio[0]) || cambio[0] == '2' || cambio[0] == '6' || cambio[0] == '8' || cambio[0] == '4' || cambio[0] == '9') {
+			if (isalpha(cambio[0]) || cambio[0] == '2' || cambio[0] == '6'
+					|| cambio[0] == '8' || cambio[0] == '4'
+					|| cambio[0] == '9') {
 				status = recv(clientesActivos[unCliente].socket,
 						(void*) paquete, sizeof(char), MSG_WAITALL);
 
@@ -161,15 +180,14 @@ void atenderConexion(void *numeroCliente) {
 				//enviarHeader(clientesActivos[unCliente].socket, 1);
 
 				log_info(logi, "Este seria un caracter del entrenador: %c",
-						cambio[0]);
-				log_info(logi, "Este seria su accionar: %d", cambio[1]);
+						cambio[1]);
+				log_info(logi, "Este seria su accionar: %d", cambio[0]);
 
 				//mientras no haya recibido nada
 
 				//paso variable global al entrenador
 
-				ent1->accion = cambio[0]; //almaceno que hacer en entrenador paqueton global
-
+				//ent1->accion = cambio[0]; //almaceno que hacer en entrenador paqueton global
 
 				//si el entrenador no esta registrado
 				if (!ent1->flagEstaEnLista) {
@@ -178,30 +196,39 @@ void atenderConexion(void *numeroCliente) {
 					ent1->simbolo = cambio[1]; //almaceno simbolo en entrenador (paqueton [0] es variable global
 					ent1->numeroCliente = unCliente; //numero de cliente para envio de informacion
 					ent1->flagLeAsignaronPokenest = 0;
-					ent1->numeroLlegada = (clientesActivos[unCliente].cliente - 1); //numero del entrenador
+					ent1->numeroLlegada = (clientesActivos[unCliente].cliente
+							- 1); //numero del entrenador
 					ent1->flagEstaEnLista = 1; //ahora este entrenador nuevo esta en la lista
 					ent1->estaMarcado = 0;
+					ent1->entroBloqueados = 0;
+					ent1->fallecio = 0;
 					ent1->posx = 0; //posicion en x inicializada en 0
 					ent1->posy = 0; // idem en y
 					ent1->asignados = list_create();
 					ent1->solicitud = list_create();
+					ent1->pokemones = list_create();
 					int ka;
 					metaDataPokeNest* datosPo;
 					for (ka = 0; ka < list_size(pokenests); ka++) {
 						datosPo = (metaDataPokeNest*) list_get(pokenests, ka);
 						tabla* t = malloc(sizeof(tabla));
+						tabla* otre = malloc(sizeof(tabla));
 						t->pokenest = datosPo->caracterPokeNest[0];
 						t->valor = 0;
+						otre->pokenest = datosPo->caracterPokeNest[0];
+						otre->valor = 0;
 						list_add(ent1->asignados, t);
-						list_add(ent1->solicitud, t);
+						list_add(ent1->solicitud, otre);
 					}
 
 					t_queue* coli = queue_create();
-					queue_push(coli, ent1->accion); // meto la accion del entrenador en la cola
+					queue_push(coli, cambio[0]); // meto la accion del entrenador en la cola
 
-					//list_replace(listaDeColasAccion, ent1->numeroLlegada, colaAccion); // agrego en la lista que contiene su cola de accion
+					//list_replace(listaDeColasAccion, ent1->numeroLlegada, coli); // agrego en la lista que contiene su cola de accion
 
-					list_add(listaDeColasAccion, coli);
+					//list_add(listaDeColasAccion, coli);
+
+					list_add_in_index(listaDeColasAccion,ent1->numeroLlegada,coli);
 
 					log_info(logi, "llego aca");
 
@@ -227,12 +254,15 @@ void atenderConexion(void *numeroCliente) {
 
 				//si el entrenador se encontraba registrado
 				else {
+
+					pthread_mutex_lock(&mutexRegistrado);
+
 					t_queue* cola;
 
 					cola = list_get(listaDeColasAccion, ent1->numeroLlegada); //saco la cola y se la meto a la auxiliar
 					log_info(logi, "llego a paso el list get joya");
 
-					queue_push(cola, ent1->accion); //pusheo nuevo accionar a la cola auxiliar
+					queue_push(cola, cambio[0]); //pusheo nuevo accionar a la cola auxiliar
 					/*int ac;
 					 ac = queue_pop(cola);
 					 log_info(logs,"acto es %d", ac); */
@@ -241,33 +271,42 @@ void atenderConexion(void *numeroCliente) {
 					log_info(logi, "paso el replace");
 
 					sem_post(&sem_quantum);
+					pthread_mutex_unlock(&mutexRegistrado);
 					//aux = '\0';
 				}
 
 				//aux = '\0';
 			}
-			if(cambio[0] == 5){
+			if (cambio[0] == 5) {
 				int tamanioUno, tamanioDos;
 
-				recv(clientesActivos[ent1->numeroCliente].socket, &tamanioUno, sizeof(int), MSG_WAITALL);
-				recv(clientesActivos[ent1->numeroCliente].socket, &tamanioDos, sizeof(int), MSG_WAITALL);
+				ent1->pokePeleador = malloc(sizeof(metaDataPokemon));
+
+				recv(clientesActivos[ent1->numeroCliente].socket, &tamanioUno,
+						sizeof(int), MSG_WAITALL);
+				recv(clientesActivos[ent1->numeroCliente].socket, &tamanioDos,
+						sizeof(int), MSG_WAITALL);
 
 				void *bufferCosaUno = malloc(tamanioUno);
 				void *bufferCosaDos = malloc(tamanioDos);
 
-				recv(clientesActivos[ent1->numeroCliente].socket, bufferCosaUno, tamanioUno,MSG_WAITALL);
-				recv(clientesActivos[ent1->numeroCliente].socket, bufferCosaDos, tamanioDos,MSG_WAITALL);
+				recv(clientesActivos[ent1->numeroCliente].socket, bufferCosaUno,
+						tamanioUno, MSG_WAITALL);
+				recv(clientesActivos[ent1->numeroCliente].socket, bufferCosaDos,
+						tamanioDos, MSG_WAITALL);
 
-				((ent1->pokePeleador).especie) = (char*) bufferCosaUno;
-			    ((ent1->pokePeleador).nivel) = (int) bufferCosaDos;
+				((ent1->pokePeleador)->especie) = (char*) bufferCosaUno;
+				((ent1->pokePeleador)->nivel) = (int) bufferCosaDos;
+
+				free(bufferCosaDos);
+				free(bufferCosaUno);
 			}
 
 		}
 
 	}
 
-	BorrarItem(items, ent1->simbolo);
-	//nivel_gui_dibujar(items, nombreMapa);
-	free(ent1);
+	ent1->fallecio = 1;
+
 
 }
