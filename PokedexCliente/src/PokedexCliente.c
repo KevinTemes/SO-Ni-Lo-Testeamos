@@ -251,12 +251,19 @@ static int cliente_open(const char *path, struct fuse_file_info *file){
 	int protocolo = 9;
 	char *ruta = (char *)path;
 	int tamanio = strlen(ruta);
+	int exito;
 	void *buffer = malloc((2 * sizeof(int)) + tamanio);
 	memcpy(buffer, &protocolo, sizeof(int));
 	memcpy(buffer + sizeof(int), &tamanio, sizeof(int));
 	memcpy(buffer + (2 * sizeof(int)), ruta, tamanio);
 
 	send(pokedexServidor,buffer, tamanio + (2 * sizeof(int)), MSG_WAITALL);
+
+	recv(pokedexServidor, &exito, sizeof(int), MSG_WAITALL);
+
+	if(exito == 0){
+		res = -ENOENT;
+	}
 
 	return res;
 }
@@ -383,16 +390,13 @@ int cliente_truncate(const char * path, off_t offset) {
 	return res;
 }
 
-static int cliente_duplicarArchivo(const char* pathOrigen, const char* pathDestino){
-	protocolo = 9; // Vendria a ser una combinacion de las operaciones anteriores
-	return 0;
-}
 //--------------------------------------------------------------------------------
 
 
 static struct fuse_operations cliente_oper = {
 		.getattr = cliente_getattr,
 		.readdir = cliente_readdir,
+		.open = cliente_open,
 		.read = cliente_read,
 		.create = cliente_create,
 		.write = cliente_write,
