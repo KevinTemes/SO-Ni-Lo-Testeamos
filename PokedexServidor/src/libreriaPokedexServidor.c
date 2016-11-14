@@ -295,10 +295,8 @@ void atenderConexion(void *numeroCliente){
 	char *ruta = string_new();
 	char *contenidoDir = string_new();
 	void *contenido;
-	char *rutaRecibida;
 	void *buffer, *bufferDir;
 	void *respuesta;
-	t_infoDirectorio contDir;
 
 	printf("%sPokeCliente #%d conectado! esperando solicitudes... \n", KAMARILLO,
 				clientesActivos[unCliente].cliente);
@@ -436,7 +434,6 @@ void atenderConexion(void *numeroCliente){
 
 			case 8: // .rename
 
-
 				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				recv(clientesActivos[unCliente].socket, &tamanioNombre, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
@@ -452,8 +449,19 @@ void atenderConexion(void *numeroCliente){
 
 			break;
 
+			case 9: // .open
+
+				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				buffer = malloc(tamanioRuta);
+				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				ruta = convertirRuta(buffer, tamanioRuta);
+				int exito = osada_open(ruta);
+				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
+				free(buffer);
+
+			break;
+
 			}
-			free(buffer);
 		}
 
 	}
@@ -604,66 +612,18 @@ char *osada_readdir(char *unaRuta){
 return contenidoDir;
 
 }
-////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-t_infoDirectorio osada_readdirV2(char *unaRuta){
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+int osada_open(char *ruta){
+	int exito = 0;
+	t_getattr archivo = osada_getattr(ruta);
 
-	t_infoDirectorio contenido;
-	void *tmp_ptr = NULL;
-	contenido.buffer = NULL;
-	int largoNombre;
-	char *separador = ";";
-	int parentBlock = buscarArchivo(unaRuta);
-	int i;
-	int desplazamiento = 0;
-	int first_iteration = -1;
-
-	if(parentBlock == 999999){
-		printf("no existe el directorio o subdirectorio especificado\n");
-		exit(0);
+	if(archivo.tipo_archivo != 0){
+		exito = 1;
 	}
-	// Busco todos los archivos hijos de ese directorio padre, y me copio el nombre de cada uno
-	for (i = 0; i <= 2048; i++){
 
-			if(miDisco.tablaDeArchivos[i].parent_directory == parentBlock){
-				char *nombreArchivo = getFileName(miDisco.tablaDeArchivos[i].fname);
-				largoNombre = strlen(nombreArchivo);
-				if(largoNombre > 0){
-
-					if(first_iteration < 0){
-						contenido.buffer = malloc(largoNombre + 1);
-						memcpy(contenido.buffer, nombreArchivo, largoNombre);
-						memcpy(contenido.buffer + largoNombre, separador, sizeof(char));
-						desplazamiento = desplazamiento + largoNombre + 1;
-						first_iteration = 1;
-					}
-					else{
-						tmp_ptr = realloc(contenido.buffer, desplazamiento + largoNombre + 1);
-						contenido.buffer = tmp_ptr;
-						memcpy(contenido.buffer + desplazamiento, nombreArchivo, largoNombre);
-						memcpy(contenido.buffer + desplazamiento + largoNombre, separador, sizeof(char));
-						desplazamiento = desplazamiento + largoNombre + 1;
-						free(tmp_ptr);
-						//tmp_ptr = NULL;
-					}
-
-
-
-				}
-
-			}
-
-		}
-	char nullChar[1];
-	nullChar[0] = '\0';
-	memcpy(contenido.buffer + desplazamiento, &nullChar[0], sizeof(char));
-	contenido.buffer_size = desplazamiento + 1;
-	//free(tmp_ptr);
-
-return contenido;
-
+	return exito;
 }
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void *osada_read(char *ruta){
 

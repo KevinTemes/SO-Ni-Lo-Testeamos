@@ -112,9 +112,7 @@ t_getattr osada_getattr(char *unaRuta);
 
 char *osada_readdir(char *unDirectorio);
 
-t_infoDirectorio osada_readdirV2(char *unaRuta);
-
-void osada_readdirV3(char *unaRuta, int unSocket);
+int osada_open(char *unaRuta);
 
 void *osada_read(char *unaRuta);
 
