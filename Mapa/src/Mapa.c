@@ -232,7 +232,7 @@ void planificador(void* argu) {
 
 			colaAction = list_get(listaDeColasAccion, entre->numeroLlegada); //saco cola de accion de la lista de entrenadores
             int cq = 0;
-			while (q && !(entre->fallecio) && !cq) {
+			while (q && !(entre->fallecio) && (!cq)) {
 				sem_wait(&sem_quantum);
 				acto = (int) queue_pop(colaAction);
 				//log_info(logs,"funca3");
@@ -268,8 +268,6 @@ void planificador(void* argu) {
 
 						}
 					}
-
-					q--;
 
 				}
 
@@ -313,7 +311,7 @@ void planificador(void* argu) {
 								entre->posx--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-								nivel_gui_dibujar(items, argument);
+								//nivel_gui_dibujar(items, argument);
 								q--;
 							}
 							break;
@@ -324,7 +322,7 @@ void planificador(void* argu) {
 								entre->posx++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-								nivel_gui_dibujar(items, argument);
+								//nivel_gui_dibujar(items, argument);
 
 								q--;
 							}
@@ -337,6 +335,7 @@ void planificador(void* argu) {
 						usleep(datosMapa->retardoQ);
 						queue_push(colaBloqueados, entre);
 						q = datosMapa->quantum;
+						cq = 1;
 						sem_post(&sem_Bloqueados);
 
 					}
@@ -352,7 +351,6 @@ void planificador(void* argu) {
 			if (q == 0 && !entre->fallecio) {
 				queue_push(colaListos, entre);
 				q = datosMapa->quantum;
-				cq = 1;
 				sem_post(&sem_Listos);
 			}
 
