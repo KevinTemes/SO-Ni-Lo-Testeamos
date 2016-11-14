@@ -31,19 +31,22 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 
 			char** hojaViaje =config_get_array_value(archivoConfiguracion,"hojaDeViaje");
 
-
 			int i=1;
 			int l=1;
-			int j =0;
+			int j=0;
 			int k=0;
 
 			char* mapa = string_new();
 			char* poke = string_new();
-			(*datos)->hojaDeViaje = list_create();
+
 			pokesDeCadaMapa =dictionary_create();
 
+			(*datos)->hojaDeViaje = list_create();
+			(*datos)->pokemonsPorMapaCapturados = list_create();
+			(*datos)->listaNivAtrapados = list_create();
 			ips = list_create();
 			puertos= list_create();
+
 
 			do{
 				if (hojaViaje[j]!=NULL){

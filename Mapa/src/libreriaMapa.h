@@ -30,7 +30,6 @@ typedef struct {
 } t_infoCliente;
 
 typedef struct{
-	int vecesPerdidas;
 	metaDataPokemon pokePeleador;
 	char pokenestAsignado;
 	t_list* asignados;
