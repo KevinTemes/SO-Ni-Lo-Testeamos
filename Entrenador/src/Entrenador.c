@@ -145,6 +145,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 							coordPokenest = (char*)recibirDatos(servidor,5);
 							coordPokenest[5] = '\0';
+							log_info(logs, "Recibi esta coordenada entera %s",coordPokenest);
 
 							posPokenest = string_split(coordPokenest,";");
 
@@ -279,13 +280,15 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 	char* inicioBloq = temporal_get_string_time();
 	char* finBloq;
 
-	pokePiola->protocolo = (int)recibirDatos(servidor,sizeof(int));
+
+	recv(servidor,&(pokePiola->protocolo),sizeof(int),MSG_WAITALL);
+	log_info(logs, "Protocolo recibido: %d",pokePiola->protocolo);
 	//pokePiola->protocolo=1;
 
 		switch(pokePiola->protocolo){
 			case ATRAPA:
 				usleep(1000);
-				// deserializo el pokemon
+				// deserializo el pokemon, recibo 7 10 Pikachu Pikachu001 33
 				int tamanioEspecie,tamanioNombreMetadata;
 
 				recv(servidor,&tamanioEspecie,sizeof(int),MSG_WAITALL);
@@ -294,16 +297,21 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 
 				void* bufferEspecie  = malloc(tamanioEspecie);
 				void* bufferNombreMetadata  = malloc(tamanioNombreMetadata);
-				void* bufferNivel  = malloc(sizeof(int));
+				//void* bufferNivel  = malloc(sizeof(int));
 
 				recv(servidor,bufferEspecie,tamanioEspecie, MSG_WAITALL);
 				recv(servidor,bufferNombreMetadata,tamanioNombreMetadata, MSG_WAITALL);
-				recv(servidor,bufferNivel,sizeof(int), MSG_WAITALL);
+				//recv(servidor,bufferNivel,sizeof(int), MSG_WAITALL);
+
 
 				//guardo lo que recibi en mi struct
 				pokePiola->especie = (char*)bufferEspecie;
+				pokePiola->especie[tamanioEspecie] = '\0';
+
 				pokePiola->nombreMetadata = (char*)bufferNombreMetadata;
-				pokePiola->nivelPokemon = (int)bufferNivel;
+				pokePiola->nombreMetadata[tamanioNombreMetadata] = '\0';
+
+				recv(servidor, &pokePiola->nivelPokemon,sizeof(int),MSG_WAITALL);
 
 				// para saber si los recibo bien
 				log_info(logs,"especie %s",pokePiola->especie);
@@ -319,14 +327,14 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 				//libero los buffer antes de volver
 				free(bufferEspecie);
 				free(bufferNombreMetadata);
-				free(bufferNivel);
+				//free(bufferNivel);
 				return tiempo;
 
 			case DEADLOCK:
 				posicionesYDeadlocks->cantDeadlocks++;
 				int nivelPokeMasFuerte = agarrarPokeConMasNivel((ent)->listaNivAtrapados, pokePiola);
 
-				//serializo mi pokemon
+				//serializo mi pokemon, mando 5 7 Pikachu 33
 				int tamanioEspecieEnviar = sizeof(char) * strlen(pokePiola->especie);
 				//int tamanioNivelEnviar = sizeof(int);
 
