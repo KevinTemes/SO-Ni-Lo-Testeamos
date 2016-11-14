@@ -120,7 +120,7 @@ void *osada_read(char *unaRuta);
 
 int osada_create(char *ruta);
 
-int osada_write(char *ruta, void *nuevoContenido, off_t offset);
+int osada_write(char *ruta, void *nuevoContenido, size_t sizeAgregado, off_t offset);
 
 int osada_unlink(char *ruta);
 

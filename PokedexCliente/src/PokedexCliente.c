@@ -209,87 +209,59 @@ static int cliente_readdir(const char *path, void *buf, fuse_fill_dir_t filler,o
 	send(pokedexServidor,leBuffer, sizePath + (2 * sizeof(int)), MSG_WAITALL);
 
 	recv(pokedexServidor, &leTamanio, sizeof(int), MSG_WAITALL);
-	void *leAnswer = malloc(leTamanio);
-	recv(pokedexServidor, leAnswer, leTamanio, MSG_WAITALL);
 
-	char* listado = (char *) leAnswer;
-	listadoConcatenado = string_substring_until(listado, leTamanio - 1);
-	char** archivos = string_split(listadoConcatenado,";");
-
-	if (archivos[i] == NULL){
-			res = -ENOENT;
-		}
-
-	else{
-		filler(buf, ".", NULL, 0);
-		filler(buf, "..", NULL, 0);
-		while (archivos[i] != NULL){
-			filler(buf, archivos[i], NULL, 0);
-			i++;
-		}
-	}
-
-
-	free(leBuffer);
-	free(leAnswer);
-	return res;
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-
-static int cliente_readdirHorrible(const char *path, void *buf, fuse_fill_dir_t filler,off_t offset, struct fuse_file_info *fi) {
-	int res= 0, i=0;
-	protocolo = 1;
-	int sizePath = (sizeof (char) * strlen(path));
-	char *listadoConcatenado = string_new();
-	void *leBuffer = malloc(sizePath + (2 * sizeof(int)));
-	int leTamanio;
-
-	// Aca tengo que pasar los sizes para poder saber donde termina al path y donde empieza el protocolo
-	memcpy(leBuffer, &protocolo, sizeof(int));
-	memcpy(leBuffer + sizeof(int), &sizePath, sizeof(int));
-	memcpy(leBuffer + (2 * sizeof(int)), path, sizePath);
-
-	send(pokedexServidor,leBuffer, sizePath + (2 * sizeof(int)), MSG_WAITALL);
-
-	int tamanio;
-	recv(pokedexServidor, &tamanio, sizeof(int), MSG_WAITALL);
-
-	void *primerNombre = malloc(tamanio);
-	recv(pokedexServidor, primerNombre, tamanio, MSG_WAITALL);
-	char *nombre = (char *)primerNombre;
-	nombre[tamanio] = '\0';
-
-	if(strncmp(nombre, "lopinju", 7) == 0){
+	if(leTamanio == 0){
 		res = -ENOENT;
 	}
 
 	else{
-		filler(buf, ".", NULL, 0);
-		filler(buf, "..", NULL, 0);
-		filler(buf, nombre, NULL, 0);
-		recv(pokedexServidor, &tamanio, sizeof(int), MSG_WAITALL);
-		void *siguienteNombre = malloc(tamanio);
-		nombre = (char *)siguienteNombre;
-		while(!strncmp(nombre, "lopinju", 7) == 0){
-			filler(buf, nombre, NULL, 0);
-			recv(pokedexServidor, &tamanio, sizeof(int), MSG_WAITALL);
-			recv(pokedexServidor, siguienteNombre, tamanio, MSG_WAITALL);
-			char *nombre = (char *)siguienteNombre;
+		void *leAnswer = malloc(leTamanio);
+		recv(pokedexServidor, leAnswer, leTamanio, MSG_WAITALL);
+
+
+		char* listado = (char *) leAnswer;
+		listadoConcatenado = string_substring_until(listado, leTamanio - 1);
+		char** archivos = string_split(listadoConcatenado,";");
+
+		if (archivos[i] == NULL){
+			res = -ENOENT;
+			}
+
+		else{
+			filler(buf, ".", NULL, 0);
+			filler(buf, "..", NULL, 0);
+			while (archivos[i] != NULL){
+				filler(buf, archivos[i], NULL, 0);
+				i++;
+			}
 		}
-		free(siguienteNombre);
+		free(leAnswer);
 	}
 
 
-
 	free(leBuffer);
-	free(primerNombre);
 
 	return res;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////
+static int cliente_open(const char *path, struct fuse_file_info *file){
+	int res = 0;
+	int protocolo = 9;
+	char *ruta = (char *)path;
+	int tamanio = strlen(ruta);
+	void *buffer = malloc((2 * sizeof(int)) + tamanio);
+	memcpy(buffer, &protocolo, sizeof(int));
+	memcpy(buffer + sizeof(int), &tamanio, sizeof(int));
+	memcpy(buffer + (2 * sizeof(int)), ruta, tamanio);
+
+	send(pokedexServidor,buffer, tamanio + (2 * sizeof(int)), MSG_WAITALL);
+
+	return res;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static int cliente_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) { // Fijarse bien esta
 	protocolo = 2;
@@ -311,7 +283,6 @@ static int cliente_read(const char *path, char *buf, size_t size, off_t offset, 
 
 
 	free(leBuffer);
-	free(tamanioRespuesta);
 	free(contenido);
 	return size;
 }
@@ -421,7 +392,7 @@ static int cliente_duplicarArchivo(const char* pathOrigen, const char* pathDesti
 
 static struct fuse_operations cliente_oper = {
 		.getattr = cliente_getattr,
-		.readdir = cliente_readdirHorrible,
+		.readdir = cliente_readdir,
 		.read = cliente_read,
 		.create = cliente_create,
 		.write = cliente_write,
