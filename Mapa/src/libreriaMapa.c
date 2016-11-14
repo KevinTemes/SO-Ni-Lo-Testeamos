@@ -132,7 +132,7 @@ void matar(entrenador* entreni) {
 	}
 	list_destroy(entreni->pokemones);
 	BorrarItem(items, entreni->simbolo);
-	//nivel_gui_dibujar(items, nombreMapa);
+	nivel_gui_dibujar(items, nombreMapa);
 	free(entreni);
 }
 
@@ -235,7 +235,7 @@ void atenderConexion(void *numeroCliente) {
 					CrearPersonaje(items, ent1->simbolo, ent1->posx,
 							ent1->posy); //mete al pj en el mapa
 
-					//nivel_gui_dibujar(items, nombreMapa);
+					nivel_gui_dibujar(items, nombreMapa);
 
 					list_add(entrenadoresEnCurso, ent1);
 

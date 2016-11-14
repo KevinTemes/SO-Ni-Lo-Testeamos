@@ -277,7 +277,8 @@ void planificador(void* argu) {
 					if (acto == '2' || acto == '4' || acto == '6'
 							|| acto == '8') {
 
-						usleep(datosMapa->retardoQ);
+						//usleep(datosMapa->retardoQ);
+						sleep(1);
 						switch (acto) {
 
 						case '8':
@@ -287,7 +288,7 @@ void planificador(void* argu) {
 								entre->posy--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-								//nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 								q--;
 							}
 							break;
@@ -299,7 +300,7 @@ void planificador(void* argu) {
 								entre->posy++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-								//nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 								q--;
 							}
 							break;
@@ -311,7 +312,7 @@ void planificador(void* argu) {
 								entre->posx--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-								//nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 								q--;
 							}
 							break;
@@ -322,7 +323,7 @@ void planificador(void* argu) {
 								entre->posx++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-								//nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 
 								q--;
 							}
@@ -467,7 +468,7 @@ void bloqueados() {
 
 					log_info(logs, "envio la mierda %d", e);
 
-					free(caracterNulo); // si rompe, sacarlo
+					//free(caracterNulo); // si rompe, sacarlo
 					free(miBuffer);
 					flagito = 1;
 					capturo = 1;
@@ -488,7 +489,7 @@ void bloqueados() {
 					log_info(logs, "llego a bloqueados");
 
 					restarRecurso(items, poki->pokinest);
-					//nivel_gui_dibujar(items, nombreMapa);
+					nivel_gui_dibujar(items, nombreMapa);
 
 					queue_push(colaListos, ent1);
 					sem_post(&sem_Listos);
@@ -588,8 +589,8 @@ int main(int argc, char* argv[]) {
 	log_info(logs,
 			"Los tres archivos de config fueron creados exitosamente!\n");
 
-	//nivel_gui_inicializar();
-	//nivel_gui_get_area_nivel(&rows, &cols);
+	nivel_gui_inicializar();
+	nivel_gui_get_area_nivel(&rows, &cols);
 
 	//POKENESTchar** posPoke;
 	int ka;
@@ -605,7 +606,7 @@ int main(int argc, char* argv[]) {
 				datosPokenest->cantPokemons);
 	}
 
-	//nivel_gui_dibujar(items, argv[1]);
+	nivel_gui_dibujar(items, argv[1]);
 
 	//hilo de planificacion
 
@@ -710,7 +711,7 @@ int main(int argc, char* argv[]) {
 		BorrarItem(items, ide);
 	}
 	close(socketEscucha);
-	//nivel_gui_terminar();
+	nivel_gui_terminar();
 
 	free(datos); //siendo datos una variable global para el almacenamiento de pokenest
 	free(datosMapa);

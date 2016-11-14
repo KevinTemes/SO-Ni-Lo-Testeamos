@@ -166,7 +166,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 							protocAManejar[0]='9';
 							send(servidor,protocAManejar,2,0);
 							solicitarAtraparPokemon(calculoTiempo,tiempo,pokePiola,mapa);
-
+/*
 							// por si se cae
 							recv(servidor, (void *)resultado, sizeof(int), 0);
 							resultadoEnvio = *((int *)resultado);
@@ -175,7 +175,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 								log_info(logs,"Servidor caído! imposible reconectar. Cerrando...\n");
 								exit(0);
 							}
-
+*/
 							if (posicionesYDeadlocks->cargarDeNuevoObjetivo== 0){
 								list_add((ent)->pokemonsPorMapaCapturados,caracterPoke);
 								dictionary_remove(pokesDeCadaMapa,mapa);
