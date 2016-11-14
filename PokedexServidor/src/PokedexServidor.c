@@ -46,8 +46,6 @@ int main(int argc, char **argv) {
 	 fstat(fd_disco, &discoStat);
 	 miDisco.discoMapeado = mmap(0, discoStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_disco, 0);
 
-//	osada_iniciar(&mainHeader, &tablaDeArchivos, discoMapeado);
-
 
 
 		// ZONA DE TESTEO
@@ -68,10 +66,6 @@ int main(int argc, char **argv) {
 
 
 	signal(SIGINT, notificarCaida);
-
-// inicio todas las variables para arrancar
-	//SOCKETS
-	// log_info(logs, "iniciado el servidor principal de la Pokedéx. Aguardando conexiones...\n\n");
 
 	int socketEscucha, retornoPoll;
 	int fd_index = 0;

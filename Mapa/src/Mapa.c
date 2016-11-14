@@ -425,11 +425,13 @@ void bloqueados() {
 					int protocolo = 1;
 
 					int tamanioCosaUno = sizeof(char) * strlen(pokem->especie);
+					log_info(logs,"tamanio especie %d", tamanioCosaUno);
 					int tamanioCosaDos = sizeof(char) * strlen(nombreSinDAT);
+					log_info(logs,"tamanio sin dat %d",tamanioCosaDos);
 
 					int auxilia = pokem->nivel;
 					void* miBuffer = malloc(
-							(3 * sizeof(int)) + tamanioCosaUno
+							(4 * sizeof(int)) + tamanioCosaUno
 									+ tamanioCosaDos);
 					memcpy(miBuffer, &protocolo, sizeof(int));
 					memcpy(miBuffer + sizeof(int), &tamanioCosaUno,
@@ -438,6 +440,12 @@ void bloqueados() {
 							sizeof(int));
 
 					log_info(logs, "metio bien tamaños en buffer");
+
+					//convertir Ruta de especie, nombreSinDat
+					char* caracterNulo = string_new();
+					caracterNulo = "\0";
+					string_append(&pokem->especie,caracterNulo);
+					string_append(&nombreSinDAT,caracterNulo);
 
 					memcpy(miBuffer + (3 * sizeof(int)), pokem->especie,
 							tamanioCosaUno); //VERIFICA DESPUES
@@ -454,11 +462,12 @@ void bloqueados() {
 					int e;
 					e = send((clientesActivos[ent1->numeroCliente]).socket,
 							miBuffer,
-							(3 * sizeof(int)) + tamanioCosaUno + tamanioCosaDos,
+							(4 * sizeof(int)) + tamanioCosaUno + tamanioCosaDos,
 							0);
 
 					log_info(logs, "envio la mierda %d", e);
 
+					free(caracterNulo); // si rompe, sacarlo
 					free(miBuffer);
 					flagito = 1;
 					capturo = 1;

@@ -70,7 +70,7 @@ typedef struct{
 	t_bitarray *bitmap;
 	osada_file tablaDeArchivos[2048];
 	int *tablaDeAsignaciones;
-	int *discoMapeado;
+	char *discoMapeado;
 	tamanio_osada cantBloques;
 }disco_osada;
 
