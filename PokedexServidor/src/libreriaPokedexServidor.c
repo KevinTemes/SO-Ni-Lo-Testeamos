@@ -318,7 +318,6 @@ void atenderConexion(void *numeroCliente){
 				memcpy(respuesta, &archivo.tipo_archivo, sizeof(int));
 				memcpy(respuesta + sizeof(int), &archivo.size, sizeof(int));
 				send(clientesActivos[unCliente].socket, respuesta, 2 * sizeof(int), MSG_WAITALL);
-				//pthread_mutex_unlock(&mutexGetattr);
 				*ruta = '\0';
 				free(buffer);
 
@@ -330,13 +329,13 @@ void atenderConexion(void *numeroCliente){
 				buffer = malloc(tamanioRuta);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirRuta(buffer, tamanioRuta);
-				contDir = osada_readdirV2(ruta);
-				bufferDir = malloc(contDir.buffer_size);
-				memcpy(bufferDir, &contDir.buffer_size, sizeof(int));
-				memcpy(bufferDir + sizeof(int), contDir.buffer, contDir.buffer_size);
-				send(clientesActivos[unCliente].socket, bufferDir, sizeof(int) + contDir.buffer_size, 0);
-				*ruta = '\0';
-				free(buffer);
+				osada_readdirV3(ruta, clientesActivos[unCliente].socket);
+				//bufferDir = malloc(contDir.buffer_size);
+				//memcpy(bufferDir, &contDir.buffer_size, sizeof(int));
+				//memcpy(bufferDir + sizeof(int), contDir.buffer, contDir.buffer_size);
+				//send(clientesActivos[unCliente].socket, bufferDir, sizeof(int) + contDir.buffer_size, 0);
+				//*ruta = '\0';
+				//free(buffer);
 
 
 			break;
@@ -638,8 +637,54 @@ t_infoDirectorio osada_readdirV2(char *unaRuta){
 	memcpy(contenido.buffer + desplazamiento, &nullChar[0], sizeof(char));
 	contenido.buffer_size = desplazamiento + 1;
 	free(tmp_ptr);
+	tmp_ptr = NULL;
 
 return contenido;
+
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void osada_readdirV3(char *unaRuta, int unSocket){
+
+	t_list *listaHorrible = list_create();
+
+
+	int parent_directory = buscarArchivo(unaRuta);
+
+	int i;
+
+	for(i = 0; i <= 2048; i++){
+		if(miDisco.tablaDeArchivos[i].parent_directory == parent_directory){
+			list_add(listaHorrible, (void *)i);
+		}
+	}
+
+	int j = list_size(listaHorrible);
+
+	int k;
+	if(!list_is_empty(listaHorrible)){
+		for(i = 0; i <= j; i ++){
+			k = (int)list_remove(listaHorrible, 0);
+			char *nombreArchivo = getFileName(miDisco.tablaDeArchivos[k].fname);
+			int largoNombre = strlen(nombreArchivo);
+			nombreArchivo[largoNombre] = '\0';
+			void *buffer = malloc(sizeof(int) + largoNombre);
+			memcpy(buffer, &largoNombre, sizeof(int));
+			memcpy(buffer + sizeof(int), nombreArchivo, largoNombre);
+			send(unSocket, buffer, sizeof(int) + largoNombre, MSG_WAITALL);
+			free(buffer);
+		};
+	}
+
+	char *finalEnvio = "lopinju";
+	int largoFinal = strlen(finalEnvio);
+	void *buffer = malloc(sizeof(int) + largoFinal);
+	memcpy(buffer, &largoFinal, sizeof(int));
+	memcpy(buffer + sizeof(int), finalEnvio, largoFinal);
+	send(unSocket, buffer, sizeof(int) + largoFinal, MSG_WAITALL);
+	free(buffer);
+
+	list_destroy_and_destroy_elements(listaHorrible, free);
 
 }
 

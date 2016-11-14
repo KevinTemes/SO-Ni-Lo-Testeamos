@@ -114,6 +114,8 @@ char *osada_readdir(char *unDirectorio);
 
 t_infoDirectorio osada_readdirV2(char *unaRuta);
 
+void osada_readdirV3(char *unaRuta, int unSocket);
+
 void *osada_read(char *unaRuta);
 
 int osada_create(char *ruta);
