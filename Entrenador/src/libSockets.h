@@ -37,6 +37,11 @@ char** objetivosMapa; //libero main
 t_dictionary* pokesDeCadaMapa; // lo uso en el main
 
 typedef struct{
+	int posXInicial;
+	int posYInicial;
+}t_actualizarPos;
+
+typedef struct{
 	int pos;
 	int posObjetivo;
 	int cantDeadlocks;
@@ -105,7 +110,7 @@ char* empezarAventura();
 void copiarMedalla(char*);
 void copiarArchivo(char*, char*, char*);
 void* recibirDatos(int, int);
-void moverseEnUnaDireccion(int,int,int,int);
+void* moverseEnUnaDireccion(t_actualizarPos*,int,int);
 void* solicitarAtraparPokemon(t_calculoTiempo*,t_tiempoBloqueado*,t_pokemonDeserializado*,char*);
 void* sacarTiempo(t_calculoTiempo*,t_tiempoBloqueado*,char*,char*,char*);
 void borrarArchivosBill();

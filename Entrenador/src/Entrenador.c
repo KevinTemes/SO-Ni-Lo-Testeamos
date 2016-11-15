@@ -61,6 +61,9 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 posicionesYDeadlocks = malloc(sizeof(t_posMapaposObjetivoYDeadlocks));
 
+	 t_actualizarPos* posActual;
+	 posActual = malloc(sizeof(t_actualizarPos));
+
 	 //CONFIG
 	 configEntrenador = string_from_format("%s/Entrenadores/%s/metadata",puntoMontaje,nombreEnt);
 
@@ -121,9 +124,9 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 					//////////////// recibo y mando datos al Mapa /////////////////////
 
-					// cuando pase a otro mapa, o lo reinicia, vuelve a arrancar en (1;1)
-					int posXInicial =0;
-					int posYInicial =0;
+					// cuando pase a otro mapa, o lo reinicia, vuelve a arrancar en (0;0)
+					posActual->posXInicial =0;
+					posActual->posYInicial =0;
 					posicionesYDeadlocks->salirDeObjetivos = 0;
 					posicionesYDeadlocks->cargarDeNuevoObjetivo=0;
 
@@ -160,13 +163,13 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 							free(mensaje4);
 
 
-							moverseEnUnaDireccion(posXInicial, posYInicial, x, y);
+							moverseEnUnaDireccion(posActual, x, y);
 
 
 							protocAManejar[0]='9';
 							send(servidor,protocAManejar,2,0);
 							solicitarAtraparPokemon(calculoTiempo,tiempo,pokePiola,mapa);
-
+/*
 							// por si se cae
 							recv(servidor, (void *)resultado, sizeof(int), 0);
 							resultadoEnvio = *((int *)resultado);
@@ -174,7 +177,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 							if(resultadoEnvio == 9){
 								log_info(logs,"Servidor caído! imposible reconectar. Cerrando...\n");
 								exit(0);
-							}
+							} */
 
 							if (posicionesYDeadlocks->cargarDeNuevoObjetivo== 0){
 								list_add((ent)->pokemonsPorMapaCapturados,caracterPoke);
@@ -221,6 +224,9 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	//libero dictionarys
 	dictionary_destroy_and_destroy_elements(pokesDeCadaMapa,free);
 
+
+	//libero struct posActual
+	free(posActual);
 
 	//libero punteros y struct de entrenador
 	free(ent->nombreEntrenador);
@@ -494,49 +500,55 @@ void* recibirDatos(int conexion, int tamanio){
 }
 
 
-void moverseEnUnaDireccion(int posXInicial, int posYInicial,int x, int y){
-	int cantMovX = x - posXInicial; // cant total mov de x
-	int cantMovY = y - posYInicial; // cant total mov de y
+void* moverseEnUnaDireccion(t_actualizarPos* posActual,int x, int y){
+	int cantMovFaltantesX = x - posActual->posXInicial;
+	int cantMovFaltantesY = y - posActual->posYInicial;
+
+	//actualizar la pos x inicial, e y inicial
+
 	char ultMov = '\0';
 	int movDeX = 0; // movimientos que se hicieron de x
 	int movDeY = 0; // movimientos que se hicieron de y
 
 	do
 	{
-		if(cantMovY==0)
+		if(cantMovFaltantesY==0)
 			ultMov='y';
-		if((cantMovX>0) && (ultMov!='x')){
+		if((cantMovFaltantesX>0) && (ultMov!='x')){
 			protocAManejar[0]='6'; // derecha
 			send(servidor, protocAManejar, 2, 0);
 			ultMov = 'x';
-			cantMovX--;
+			cantMovFaltantesX--;
 			movDeX++;
-		} else if((cantMovX<0) && (ultMov!='x')){
+		} else if((cantMovFaltantesX<0) && (ultMov!='x')){
 			protocAManejar[0]='4'; //izquierda
 			send(servidor, protocAManejar, 2, 0);
 			ultMov = 'x';
-			cantMovX--;
+			cantMovFaltantesX++;
 			movDeX++;
 		}
 
-		if (cantMovX==0) ultMov = 'x';
-		if((cantMovY>0) && (ultMov!='y')){
+		if (cantMovFaltantesX==0) ultMov = 'x';
+		if((cantMovFaltantesY>0) && (ultMov!='y')){
 			protocAManejar[0]='2'; // abajo
 			send(servidor, protocAManejar, 2, 0);
 			ultMov = 'y';
-			cantMovY--;
+			cantMovFaltantesY--;
 			movDeY++;
-		} else if((cantMovY<0) && (ultMov!='y')){
+		} else if((cantMovFaltantesY<0) && (ultMov!='y')){
 			protocAManejar[0]='8'; //arriba
 			send(servidor, protocAManejar, 2, 0);
 			ultMov = 'y';
-			cantMovY--;
+			cantMovFaltantesY++;
 			movDeY++;
 		}
 
-	} while((cantMovX!=0) || (cantMovY != 0));
+	} while((cantMovFaltantesX != 0) || (cantMovFaltantesY != 0));
 
-	return;
+	posActual->posXInicial = x;
+	posActual->posYInicial = y;
+
+	return posActual;
 }
 
 
