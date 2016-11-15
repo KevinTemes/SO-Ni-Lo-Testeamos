@@ -64,6 +64,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 t_actualizarPos* posActual;
 	 posActual = malloc(sizeof(t_actualizarPos));
 
+
 	 //CONFIG
 	 configEntrenador = string_from_format("%s/Entrenadores/%s/metadata",puntoMontaje,nombreEnt);
 
@@ -114,7 +115,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 					servidor = conectarCliente(miIP, miPuerto);
 
-					int resultadoEnvio = 0;
+					//int resultadoEnvio = 0;
 
 					char* mapa = list_get((ent)->hojaDeViaje,posicionesYDeadlocks->pos);
 
@@ -125,7 +126,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 					//////////////// recibo y mando datos al Mapa /////////////////////
 
 					// cuando pase a otro mapa, o lo reinicia, vuelve a arrancar en (0;0)
-					posActual->posXInicial =0;
+					posActual->posXInicial=0;
 					posActual->posYInicial =0;
 					posicionesYDeadlocks->salirDeObjetivos = 0;
 					posicionesYDeadlocks->cargarDeNuevoObjetivo=0;
@@ -148,6 +149,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 							coordPokenest = (char*)recibirDatos(servidor,5);
 							coordPokenest[5] = '\0';
+
 							log_info(logs, "Recibi esta coordenada entera %s",coordPokenest);
 
 							posPokenest = string_split(coordPokenest,";");
@@ -164,12 +166,13 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 
 							moverseEnUnaDireccion(posActual, x, y);
-
+							free(coordPokenest);
+							free(posPokenest);
 
 							protocAManejar[0]='9';
 							send(servidor,protocAManejar,2,0);
 							solicitarAtraparPokemon(calculoTiempo,tiempo,pokePiola,mapa);
-/*
+							/*
 							// por si se cae
 							recv(servidor, (void *)resultado, sizeof(int), 0);
 							resultadoEnvio = *((int *)resultado);
@@ -190,6 +193,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 					if(posicionesYDeadlocks->salirDeObjetivos==0){
 						copiarMedalla(mapa);
+						list_clean(ent->pokemonsPorMapaCapturados);
 					}
 
 			} // cierro el for de los mapas
@@ -202,53 +206,42 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	//libero variables del main
 	//free(coordPokenest); invalid free
-	//free(horaInicio); invalid free
+	//free(posPokenest);
+	free(horaInicio);
 	free(objetivoDeMapa);
 	free(objetivosMapa);
-	free(posPokenest);
 	free(resultado);
 	free(protocolo);
 	free(protocAManejar);
 	free(cosasMapa);
 	free(configEntrenador);
-	free(nombre);
-	free(simbolo);
+
 
 	//libero listas
 	list_destroy_and_destroy_elements(ent->hojaDeViaje,free);
 	list_destroy_and_destroy_elements(ent->pokemonsPorMapaCapturados,free);
-	list_destroy_and_destroy_elements((ent)->listaNivAtrapados,free);
+	list_destroy((ent)->listaNivAtrapados);
 	list_destroy_and_destroy_elements(ips,free);
 	list_destroy_and_destroy_elements(puertos,free);
 
 	//libero dictionarys
 	dictionary_destroy_and_destroy_elements(pokesDeCadaMapa,free);
 
-
-	//libero struct posActual
-	free(posActual);
-
-	//libero punteros y struct de entrenador
+	//libero punteros y struct de entrenador, las listas ya fueron destruidas, no se liberan
 	free(ent->nombreEntrenador);
 	free(ent->caracter);
-	free(ent->hojaDeViaje);
-	free(ent->pokemonsPorMapaCapturados);
-	free(ent->listaNivAtrapados);
 	free(ent);
 
 	//libero punteros y struct de pokePiola
-	free(pokePiola->especie);
-	free(pokePiola->nombreMetadata);
-	free(pokePiola);
+	//free(pokePiola->especie);
+	//free(pokePiola->nombreMetadata);
+	//free(pokePiola);
 
-	//libero struct de tiempo
-	free(tiempo);
-
-	//libero struct de calculoTiempo
+	//libero structs de int
 	free(calculoTiempo);
-
-	//libero struct posicionesYDeadlocks
+	free(posActual);
 	free(posicionesYDeadlocks);
+	free(tiempo);
 
 	return EXIT_SUCCESS;
 }
@@ -301,8 +294,8 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 				recv(servidor,&tamanioNombreMetadata,sizeof(int),MSG_WAITALL);
 
 
-				void* bufferEspecie  = malloc(tamanioEspecie);
-				void* bufferNombreMetadata  = malloc(tamanioNombreMetadata);
+				void* bufferEspecie  = malloc(tamanioEspecie+1);
+				void* bufferNombreMetadata  = malloc(tamanioNombreMetadata+1);
 				//void* bufferNivel  = malloc(sizeof(int));
 
 				recv(servidor,bufferEspecie,tamanioEspecie, MSG_WAITALL);
@@ -361,11 +354,12 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 
 				send(servidor,miBuffer,tamanioTotal,0);
 
-				int resolucionDeadlock = (int)recibirDatos(servidor,sizeof(int));
-				//int resolucionDeadlock = 7;
-				if(resolucionDeadlock==MORI){
+				recv(servidor,&(pokePiola->protocolo),sizeof(int),MSG_WAITALL);
+				log_info(logs,"Recibi este protocolo: %d",pokePiola->protocolo);
+				//int pokePiola->protocolo = 7;
+				if(pokePiola->protocolo==MORI){
 					morir("deadlock");
-				} else if(resolucionDeadlock==SOBREVIVI){
+				} else if(pokePiola->protocolo==SOBREVIVI){
 					log_info(logs,"Sobrevivi al deadlock \n");
 				}
 				free(miBuffer);
@@ -392,14 +386,10 @@ int agarrarPokeConMasNivel(t_list* listaNivAtrapados, t_pokemonDeserializado* po
 void terminarAventura(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,char* horaInicio){
 	char* horaFin = temporal_get_string_time();
 	sacarTiempo(calculoTiempo,tiempo,"aventura",horaInicio,horaFin);
+	free(horaFin);
 
-	char* tiempoTotalBloqueado = string_from_format("El tiempo total que paso bloqueado en las pokenests fue: %d:%d:%d:%d", (tiempo)->horasBloqueado,(tiempo)->minutosBloqueado,(tiempo)->segundosBloqueado,(tiempo)->milesimasBloqueado);
-	log_info(logs,tiempoTotalBloqueado);
-	free(tiempoTotalBloqueado);
-
-	char* deadlock = string_from_format("la cantidad de deadlocks es: %d \n", posicionesYDeadlocks->cantDeadlocks);
-	log_info(logs,deadlock);
-	free(deadlock);
+	log_info(logs,"El tiempo total que paso bloqueado en las pokenests fue: %d:%d:%d:%d", (tiempo)->horasBloqueado,(tiempo)->minutosBloqueado,(tiempo)->segundosBloqueado,(tiempo)->milesimasBloqueado);
+	log_info(logs,"la cantidad de deadlocks es: %d \n", posicionesYDeadlocks->cantDeadlocks);
 
 	return;
 }
@@ -454,9 +444,7 @@ void* sacarTiempo(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,char*
 
 char* empezarAventura(){
 	char* horaInicio = temporal_get_string_time();
-	char* mensaje = string_from_format("Empezo a las: %s \n", horaInicio);
-	log_info(logs, mensaje);
-	free(mensaje);
+	log_info(logs,"Empezo a las: %s \n", horaInicio);
 	return horaInicio;
 }
 
@@ -488,7 +476,7 @@ void copiarArchivo(char* mapa, char* especie, char* especifico){
 }
 
 void* recibirDatos(int conexion, int tamanio){
-	void* mensaje=(void*)malloc(tamanio);
+	void* mensaje=(void*)malloc(tamanio+1);
 	int bytesRecibidos = recv(conexion, mensaje, tamanio, MSG_WAITALL);
 	if (bytesRecibidos != tamanio) {
 		perror("Error al recibir el mensaje\n");
@@ -556,9 +544,7 @@ void* morir(char* motivo){
 	ent->cantidadInicialVidas = ent->cantidadInicialVidas-1;
 	if (ent->cantidadInicialVidas>0){
 		if(!strcmp(motivo,"deadlock")){
-			char* infoDeadlock = string_from_format("Moriste por deadlock, vidas restantes: %d\n", ent->cantidadInicialVidas);
-			log_info(logs,infoDeadlock);
-			free(infoDeadlock);
+			log_info(logs,"Moriste por deadlock, vidas restantes: %d\n", ent->cantidadInicialVidas);
 			borrarArchivosBill();
 			log_info(logs,"Borrados archivos de pokemones del Dir de Bill exitosamente!\n");
 			//reconecto al mismo mapa, y reinicio el objetivo siempre desde cero
@@ -571,9 +557,7 @@ void* morir(char* motivo){
 			//printf("Posicion antes de iterar el for de mapas: %d\n",posicionesYDeadlocks->pos);
 			return posicionesYDeadlocks;
 			} else if (!strcmp(motivo,"senial")){
-				char* infoSenial = string_from_format("Moriste por la senial SIGTERM, vidas restantes: %d\n", ent->cantidadInicialVidas);
-				log_info(logs,infoSenial);
-				free(infoSenial);
+				log_info(logs,"Moriste por la senial SIGTERM, vidas restantes: %d\n", ent->cantidadInicialVidas);
 			}
 	} else if(ent->cantidadInicialVidas==0){
 		if(!strcmp(motivo,"deadlock")){
@@ -597,7 +581,7 @@ void* morir(char* motivo){
 
 				list_destroy_and_destroy_elements(ent->hojaDeViaje,free);
 				list_destroy_and_destroy_elements(ent->pokemonsPorMapaCapturados,free);
-				list_destroy_and_destroy_elements((ent)->listaNivAtrapados,free);
+				list_destroy((ent)->listaNivAtrapados);
 				list_destroy_and_destroy_elements(ips,free);
 				list_destroy_and_destroy_elements(puertos,free);
 

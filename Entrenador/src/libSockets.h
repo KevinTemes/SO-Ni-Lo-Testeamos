@@ -30,8 +30,6 @@
 t_log* logs;
 t_list* ips; // libero main
 t_list* puertos; // libero main
-char* nombre; //libero main
-char* simbolo; //libero main
 char* objetivoDeMapa; //libero main
 char** objetivosMapa; //libero main
 t_dictionary* pokesDeCadaMapa; // lo uso en el main

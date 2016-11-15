@@ -19,12 +19,12 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 				return 0;
 			} else {
 
-			nombre = string_new();
+			char* nombre = string_new();
 			string_append(&nombre, config_get_string_value(archivoConfiguracion, "nombre"));
 			(*datos)->nombreEntrenador=nombre;
 			//printf("nombre=%s \n",(*datos)->nombreEntrenador);
 
-			simbolo = string_new();
+			char* simbolo = string_new();
 			string_append(&simbolo,config_get_string_value(archivoConfiguracion,"simbolo"));
 			(*datos)->caracter=simbolo;
 			//printf("simbolo= %s \n",(*datos)->caracter);
