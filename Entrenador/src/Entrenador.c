@@ -87,6 +87,10 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 int cantMapas = list_size((ent)->hojaDeViaje);
 	 posicionesYDeadlocks->reintentosActualizados=0;
 	 posicionesYDeadlocks->cantDeadlocks=0;
+	 tiempo->horasBloqueado = 0;
+	 tiempo->minutosBloqueado = 0;
+	 tiempo->segundosBloqueado = 0;
+	 tiempo->milesimasBloqueado = 0;
 
 	 char* protocolo = string_new();
 	 char* numConcatenado="1";
