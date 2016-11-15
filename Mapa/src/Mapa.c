@@ -57,7 +57,6 @@ t_list* pokemons;
 t_list* pokenests;
 t_list* disponibles;
 t_list* items;
-t_list* listaDeColasAccion;
 t_list* entrenadoresEnCurso;
 t_list* entrenadoresEnDeadlock;
 //colas
@@ -216,26 +215,24 @@ void planificador(void* argu) {
 
 	char* argument = (char*) argu;
 
-	int q = datosMapa->quantum;
-
 	while (1) {
 		sem_wait(&sem_Listos); //semaforo de nuevos bloqueando que se saque un ent si la cola esta vacia
 
+		int q = datosMapa->quantum;
+
+		log_info(logs,"se mete a planificador");
 		//caso roun robin
 		if (!strcmp(datosMapa->algoritmo, "RR")) {
 
 			int acto;
-			t_queue *colaAction;
 			entrenador* entre;
 
 			entre = (entrenador*) queue_pop(colaListos);
 
-			colaAction = list_get(listaDeColasAccion, entre->numeroLlegada); //saco cola de accion de la lista de entrenadores
-            int cq = 0;
-			while (q && !(entre->fallecio) && (!cq)) {
-				sem_wait(&sem_quantum);
-				acto = (int) queue_pop(colaAction);
-				//log_info(logs,"funca3");
+			while (q && !(entre->fallecio)) {
+				//sem_wait(&sem_quantum);
+				acto = (int) queue_pop(entre->colaAccion);
+			    //log_info(logs,"funca3");
 
 				if (isalpha(acto)) {
 					int ka;
@@ -247,16 +244,12 @@ void planificador(void* argu) {
 							log_info(logs, "antes del send %s",
 									datosPokenest->posicion);
 							int pedo;
-							pedo =
-									send(
-											(clientesActivos[entre->numeroCliente]).socket,
-											datosPokenest->posicion, 5, 0);
+							pedo =send((clientesActivos[entre->numeroCliente]).socket,datosPokenest->posicion, 5, 0);
 
 							log_info(logs, "Se envio coordenadas: %d", pedo);
 
 							char** posicionPoke;
-							posicionPoke = string_split(datosPokenest->posicion,
-									";");
+							posicionPoke = string_split(datosPokenest->posicion,";");
 
 							entre->posPokex = atoi(posicionPoke[0]);
 							entre->posPokey = atoi(posicionPoke[1]);
@@ -283,49 +276,53 @@ void planificador(void* argu) {
 
 						case '8':
 							if (entre->posy > 1) {
-								log_info(logs, "mueva arriba");
-
+								log_info(logs, "entrenador %c se mueve arriba",entre->simbolo);
+                                usleep(datosMapa->retardoQ);
 								entre->posy--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
 								nivel_gui_dibujar(items, argument);
 								q--;
+								log_info(logs,"valor de quantum %d",q);
 							}
 							break;
 
 						case '2':
 							if (entre->posy < rows) {
-								log_info(logs, "mueva abajo");
-
+								log_info(logs, "entrenador %c se mueve abajo", entre->simbolo);
+                                usleep(datosMapa->retardoQ);
 								entre->posy++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
 								nivel_gui_dibujar(items, argument);
 								q--;
+								log_info(logs,"valor de quantum %d",q);
 							}
 							break;
 
 						case '4':
 							if (entre->posx > 1) {
-								log_info(logs, "mueva izquierda");
-
+								log_info(logs, "entrenador %c se mueve a la izquierda", entre->simbolo);
+								usleep(datosMapa->retardoQ);
 								entre->posx--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
 								nivel_gui_dibujar(items, argument);
 								q--;
+								log_info(logs,"valor de quantum %d",q);
 							}
 							break;
 						case '6':
 							if (entre->posx < cols) {
-								log_info(logs, "mueva derecha");
-
+								log_info(logs, "entrenador % c se mueve a la derecha", entre->simbolo);
+								usleep(datosMapa->retardoQ);
 								entre->posx++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
 								nivel_gui_dibujar(items, argument);
 
 								q--;
+								log_info(logs, "valor de quantum %d", q);
 							}
 							break;
 
@@ -335,8 +332,7 @@ void planificador(void* argu) {
 					if (acto == '9') {
 						usleep(datosMapa->retardoQ);
 						queue_push(colaBloqueados, entre);
-						q = datosMapa->quantum;
-						cq = 1;
+						q = 0;
 						sem_post(&sem_Bloqueados);
 
 					}
@@ -347,11 +343,14 @@ void planificador(void* argu) {
 			if (entre->fallecio) {
 				log_info(logs,"Ahora lo mata");
 				matar(entre);
+				//sem_post(&sem_quantum);
+				entre->fallecio=0;
 			}
 
-			if (q == 0 && !entre->fallecio) {
+			if (q == 0 && !(entre->fallecio)) {
+				usleep(datosMapa->retardoQ);
+				//q = datosMapa->quantum;
 				queue_push(colaListos, entre);
-				q = datosMapa->quantum;
 				sem_post(&sem_Listos);
 			}
 
@@ -385,6 +384,7 @@ void planificador(void* argu) {
 
 void bloqueados() {
 	while (1) {
+		usleep(datosMapa->retardoQ);
 		sem_wait(&sem_Bloqueados);
 		log_info(logs, "Se mete a bloqueados");
 		entrenador *ent1;
@@ -491,8 +491,13 @@ void bloqueados() {
 					restarRecurso(items, poki->pokinest);
 					nivel_gui_dibujar(items, nombreMapa);
 
+					usleep(datosMapa->retardoQ);
+
 					queue_push(colaListos, ent1);
+
 					sem_post(&sem_Listos);
+
+					log_info(logs,"pushea a entrenador a listos");
 				}
 
 			}
@@ -527,7 +532,6 @@ int main(int argc, char* argv[]) {
 	pokenests = list_create();
 	items = list_create();
 	entrenadoresEnCurso = list_create();
-	listaDeColasAccion = list_create();
 	//inicializo colas
 	colaListos = queue_create();
 	colaBloqueados = queue_create();

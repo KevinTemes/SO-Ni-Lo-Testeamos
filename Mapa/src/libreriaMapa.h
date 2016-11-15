@@ -32,6 +32,7 @@ typedef struct {
 typedef struct{
 	metaDataPokemon* pokePeleador;
 	char pokenestAsignado;
+	t_queue* colaAccion;
 	t_list* asignados;
 	t_list* solicitud;
 	t_list* pokemones;

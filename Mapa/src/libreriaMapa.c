@@ -6,6 +6,7 @@
  */
 
 #include "libreriaMapa.h"
+#include "libSockets.h"
 #include <tad_items.h>
 
 #define MAX_LEN 128
@@ -20,8 +21,9 @@ t_infoCliente clientesActivos[2048];
 extern sem_t sem_Listos;
 extern sem_t sem_quantum;
 extern char* nombreMapa;
+extern metaDataComun* datosMapa;
+extern t_log* logs;
 extern t_queue* colaListos;
-extern t_list* listaDeColasAccion;
 extern t_list* entrenadoresEnCurso;
 extern t_list* pokenests;
 extern t_list* items;
@@ -120,10 +122,14 @@ void notificarCaida() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void matar(entrenador* entreni) {
+	log_info(logs,"sale entrenado %c de los que estan en curso",entreni->simbolo);
 	list_remove(entrenadoresEnCurso, entreni->numeroLlegada);
 	free(entreni->pokePeleador);
+	log_info(logs,"libera pokemon del entrenador %c",entreni->simbolo);
 	list_destroy_and_destroy_elements(entreni->asignados, (void*) free);
+	log_info(logs,"libera lista de asignados de %c",entreni->simbolo);
 	list_destroy_and_destroy_elements(entreni->solicitud, (void*) free);
+	log_info(logs,"libera lista de solicitud de %c",entreni->simbolo);
 	int y;
 	for (y = 0; y < list_size(entreni->pokemones); y++) {
 		metaDataPokemon* pok;
@@ -202,6 +208,7 @@ void atenderConexion(void *numeroCliente) {
 					ent1->estaMarcado = 0;
 					ent1->entroBloqueados = 0;
 					ent1->fallecio = 0;
+					ent1->pokePeleador=malloc(sizeof(metaDataPokemon));
 					ent1->posx = 0; //posicion en x inicializada en 0
 					ent1->posy = 0; // idem en y
 					ent1->asignados = list_create();
@@ -221,14 +228,14 @@ void atenderConexion(void *numeroCliente) {
 						list_add(ent1->solicitud, otre);
 					}
 
-					t_queue* coli = queue_create();
-					queue_push(coli, cambio[0]); // meto la accion del entrenador en la cola
+					ent1->colaAccion = queue_create();
+					queue_push(ent1->colaAccion, cambio[0]); // meto la accion del entrenador en la cola
 
 					//list_replace(listaDeColasAccion, ent1->numeroLlegada, coli); // agrego en la lista que contiene su cola de accion
 
 					//list_add(listaDeColasAccion, coli);
 
-					list_add_in_index(listaDeColasAccion,ent1->numeroLlegada,coli);
+					//list_add_in_index(listaDeColasAccion,ent1->numeroLlegada,coli);
 
 					log_info(logi, "llego aca");
 
@@ -239,14 +246,16 @@ void atenderConexion(void *numeroCliente) {
 
 					list_add(entrenadoresEnCurso, ent1);
 
+					usleep(datosMapa->retardoQ);
 					queue_push(colaListos, (void*) ent1); //llego un entrenador entonces lo meto en la cola de listos
 
 					log_info(logi, "entrenador %c a listos", ent1->simbolo); //informo por archivo de log la llegada del entrenador
 
 					sem_post(&sem_Listos); //produce un ent en colaListos
 
+					if(!strcmp(datosMapa->algoritmo,"RR")){
 					sem_post(&sem_quantum);
-
+					}
 					pthread_mutex_unlock(&mutexPaqueton);
 					//	aux = '\0';
 
@@ -257,12 +266,8 @@ void atenderConexion(void *numeroCliente) {
 
 					pthread_mutex_lock(&mutexRegistrado);
 
-					t_queue* cola;
 
-					cola = list_get(listaDeColasAccion, ent1->numeroLlegada); //saco la cola y se la meto a la auxiliar
-					log_info(logi, "llego a paso el list get joya");
-
-					queue_push(cola, cambio[0]); //pusheo nuevo accionar a la cola auxiliar
+					queue_push(ent1->colaAccion, cambio[0]); //pusheo nuevo accionar a la cola auxiliar
 					/*int ac;
 					 ac = queue_pop(cola);
 					 log_info(logs,"acto es %d", ac); */
@@ -270,7 +275,9 @@ void atenderConexion(void *numeroCliente) {
 					//list_replace(listaDeColasAccion, ent1->numeroLlegada, cola); //reemplaza la cola de la lista por la auxiliar
 					log_info(logi, "paso el replace");
 
+					if(!strcmp(datosMapa->algoritmo,"RR")){
 					sem_post(&sem_quantum);
+					}
 					pthread_mutex_unlock(&mutexRegistrado);
 					//aux = '\0';
 				}
@@ -307,6 +314,6 @@ void atenderConexion(void *numeroCliente) {
 	}
 
 	ent1->fallecio = 1;
-
+    log_info(logi,"entrenador fallece");
 
 }
