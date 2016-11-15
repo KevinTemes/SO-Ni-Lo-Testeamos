@@ -356,7 +356,6 @@ void planificador(void* argu) {
 
 		}
 		if (!strcmp(datosMapa->algoritmo, "SDRF")) {
-
 			sem_wait(&sem_Listos);
 			t_list* listaAux = list_create();
 			while (!queue_is_empty(colaListos)) {
