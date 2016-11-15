@@ -355,11 +355,19 @@ static int cliente_rename(const char* path, const char* nuevoNombre){
 
 // char *ipServidor = getenv("IP_SERVIDOR");
 
-static int cliente_mkdir(const char* path){
-	int res= 1;
+static int cliente_mkdir(const char* path, mode_t mode){
+	int res;
 	protocolo = 6;
-	solicitarServidor(path,protocolo);
-	res = recibirEstadoOperacion();
+	char *ruta = (char *)path;
+	int tamanioRuta = strlen(ruta);
+	void *buffer = malloc((2 * sizeof(int)) + tamanioRuta);
+	memcpy(buffer, &protocolo, sizeof(int));
+	memcpy(buffer + sizeof(int), &tamanioRuta, sizeof(int));
+	memcpy(buffer + (2 * sizeof(int)), ruta, tamanioRuta);
+	send(pokedexServidor, buffer, (2 * sizeof(int)) + tamanioRuta, MSG_WAITALL);
+
+	recv(pokedexServidor, &res, sizeof(int), MSG_WAITALL);
+
 	if (res==0){
 		printf("El archivo fue creado exitosamente\n");
 	}
