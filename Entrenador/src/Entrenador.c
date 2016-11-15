@@ -119,9 +119,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 					char* mapa = list_get((ent)->hojaDeViaje,posicionesYDeadlocks->pos);
 
-					char* mensaje = string_from_format("Conectado al Mapa %s. Ingrese el mensaje que desee enviar, o cerrar para salir\n",mapa);
-					log_info(logs,mensaje);
-					free(mensaje);
+					log_info(logs,"Conectado al Mapa %s. Ingrese el mensaje que desee enviar, o cerrar para salir\n",mapa);
 
 					//////////////// recibo y mando datos al Mapa /////////////////////
 
@@ -155,15 +153,10 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 							posPokenest = string_split(coordPokenest,";");
 
 							int x = atoi (posPokenest[0]);
-							char* mensaje3 = string_from_format("Coordenada X pokenest: %d\n", x);
-							log_info(logs,mensaje3);
-							free(mensaje3);
+							log_info(logs,"Coordenada X pokenest: %d\n", x);
 
 							int y = atoi (posPokenest[1]);
-							char* mensaje4 = string_from_format("Coordenada Y pokenest: %d\n", y);
-							log_info(logs,mensaje4);
-							free(mensaje4);
-
+							log_info(logs,"Coordenada Y pokenest: %d\n", y);
 
 							moverseEnUnaDireccion(posActual, x, y);
 							free(coordPokenest);
@@ -262,9 +255,7 @@ void handler(int n){
 void reciboUnaVida(){
 	sleep(1);
 	ent->cantidadInicialVidas++;
-	char* ganeVida = string_from_format("Me dieron una vida, ahora tengo %d vidas \n",ent->cantidadInicialVidas);
-	log_info(logs,ganeVida);
-	free(ganeVida);
+	log_info(logs,"Me dieron una vida, ahora tengo %d vidas \n",ent->cantidadInicialVidas);
 	sleep(1);
 }
 
@@ -293,7 +284,6 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 				recv(servidor,&tamanioEspecie,sizeof(int),MSG_WAITALL);
 				recv(servidor,&tamanioNombreMetadata,sizeof(int),MSG_WAITALL);
 
-
 				void* bufferEspecie  = malloc(tamanioEspecie+1);
 				void* bufferNombreMetadata  = malloc(tamanioNombreMetadata+1);
 				//void* bufferNivel  = malloc(sizeof(int));
@@ -301,7 +291,6 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 				recv(servidor,bufferEspecie,tamanioEspecie, MSG_WAITALL);
 				recv(servidor,bufferNombreMetadata,tamanioNombreMetadata, MSG_WAITALL);
 				//recv(servidor,bufferNivel,sizeof(int), MSG_WAITALL);
-
 
 				//guardo lo que recibi en mi struct
 				pokePiola->especie = (char*)bufferEspecie;
@@ -422,19 +411,12 @@ void* sacarTiempo(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,char*
 			(tiempo)->segundosBloqueado = (tiempo)->segundosBloqueado + segAventura;
 			(tiempo)->milesimasBloqueado = (tiempo)->milesimasBloqueado + milAventura;
 
+			log_info(logs,"El tiempo que paso bloqueado en esta pokenest fue: %d:%d:%d:%d  \n",horasAventura,minAventura,segAventura,milAventura);
 
-			char* mensBloq = string_from_format("El tiempo que paso bloqueado en esta pokenest fue: %d:%d:%d:%d  \n",horasAventura,minAventura,segAventura,milAventura);
-			log_info(logs,mensBloq);
-			free(mensBloq);
 			return tiempo;
 		} else if (!strcmp(estado,"aventura")){
-			char* aviso = string_from_format("Ahora sos un maestro pokemon, lo lograste a las %s \n", horaFin);
-			log_info(logs,aviso);
-			free(aviso);
-
-			char* mensTiempo = string_from_format("La aventura duró: %d:%d:%d:%d  \n",horasAventura,minAventura,segAventura,milAventura);
-			log_info(logs,mensTiempo);
-			free(mensTiempo);
+			log_info(logs,"Ahora sos un maestro pokemon, lo lograste a las %s \n", horaFin);
+			log_info(logs,"La aventura duró: %d:%d:%d:%d  \n",horasAventura,minAventura,segAventura,milAventura);
 		}
 
 	return NULL;
@@ -453,13 +435,10 @@ void copiarMedalla(char* mapa){
 	char* medalla=string_from_format("cp %s/Mapas/%s/medalla-%s.jpg %s/Entrenadores/%s/medallas/medalla-%s.jpg", puntoMontaje, mapa, mapa, puntoMontaje, (ent)->nombreEntrenador,mapa);
 	system(medalla);
 
-	char* logueo = string_from_format("Copiada medalla del Mapa %s con exito \n", mapa);
-	log_info(logs, logueo);
+	log_info(logs,"Copiada medalla del Mapa %s con exito \n", mapa);
 
 	free(medalla);
-	free(logueo);
-
-return;
+	return;
 }
 
 void copiarArchivo(char* mapa, char* especie, char* especifico){
@@ -467,11 +446,9 @@ void copiarArchivo(char* mapa, char* especie, char* especifico){
 	char* poke = string_from_format("cp %s/Mapas/%s/PokeNests/%s/%s.dat %s/Entrenadores/%s/Dir\\ de\\ Bill/%s.dat", puntoMontaje, mapa, especie, especifico ,puntoMontaje, (ent)->nombreEntrenador,especifico);
 	system(poke);
 
-	char* logueo = string_from_format("Copiada metadata de %s exitosamente \n", especifico);
-	log_info(logs, logueo);
+	log_info(logs,"Copiada metadata de %s exitosamente \n", especifico);
 
 	free(poke);
-	free(logueo);
 	return;
 }
 
@@ -566,9 +543,7 @@ void* morir(char* motivo){
 			log_info(logs,"Perdiste tu ultima vida, fue por SIGTERM \n");
 		}
 		char respuesta[3];
-		char* reintentos = string_from_format("Numero de reintentos realizados hasta el momento: %d\n", ent->reintentos);
-		log_info(logs,reintentos);
-		free(reintentos);
+		log_info(logs,"Numero de reintentos realizados hasta el momento: %d\n", ent->reintentos);
 		do{
 			log_info(logs,"Desea reiniciar juego?\n");
 			fgets(respuesta, 3, stdin);
@@ -593,9 +568,7 @@ void* morir(char* motivo){
 				}
 				posicionesYDeadlocks->reintentosActualizados++;
 				ent->reintentos = posicionesYDeadlocks->reintentosActualizados;
-				char* nroReintentos = string_from_format("Numero de reintentos realizados: %d",ent->reintentos);
-				log_info(logs,nroReintentos);
-				free(nroReintentos);
+				log_info(logs,"Numero de reintentos realizados: %d",ent->reintentos);
 				//aviso al mapa que reinicio desde cero
 				protocAManejar[0]='1';
 				send(servidor, protocAManejar, 2, 0);
