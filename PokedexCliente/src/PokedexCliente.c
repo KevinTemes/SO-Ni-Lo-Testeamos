@@ -291,7 +291,7 @@ static int cliente_read(const char *path, char *buf, size_t size, off_t offset, 
 
 	free(leBuffer);
 	free(contenido);
-	return size;
+	return tamanioRespuesta;
 }
 
 /* Crea un archivo vacio*/

@@ -59,6 +59,8 @@ disco_osada miDisco;
 /* Función para obtener el nombre de un archivo desde una tabla de archivos, en formato char * */
 char *getFileName(unsigned char *nombreArchivo);
 
+void iterarNombreAlReves(char* origen, unsigned char respuesta[17]);
+
 // Función para obtener el nombre de un directorio, dada su ruta
 char *getNombreDirectorio(char *ruta);
 

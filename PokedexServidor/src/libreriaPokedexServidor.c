@@ -128,12 +128,11 @@ char *getFileName(unsigned char *nombreArchivo){
 			i++;
 		}
 		char *nombre = malloc(i + 1);
-		memcpy(nombre, nombreArchivo, i);
-		memcpy(nombre + i, &nullChar[0], 1);
+	//	memcpy(nombre, nombreArchivo, i);
+	//	memcpy(nombre + i, &nullChar[0], 1);
 		return nombre;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 char* concat(const char *s1, const char *s2)
 {
     const size_t len1 = strlen(s1);
@@ -149,7 +148,7 @@ char* concat(const char *s1, const char *s2)
 
 int buscarArchivo(char *unaRuta){
 	int parentDir = 65535;
-	int existeArchivo = 0;
+//	int existeArchivo = 0;
 	if(strlen(unaRuta) == 1){
 		goto terminar;
 	}
@@ -157,7 +156,7 @@ int buscarArchivo(char *unaRuta){
 	else{
 		char **separadas = string_split(unaRuta, "/");
 		int a = 0;
-		existeArchivo = recorrerDirectorio(separadas[0], parentDir);
+	//	existeArchivo = recorrerDirectorio(separadas[0], parentDir);
 
 		while(separadas[a] != NULL){
 			parentDir = recorrerDirectorio(separadas[a], parentDir);
@@ -166,8 +165,10 @@ int buscarArchivo(char *unaRuta){
 			}
 			a++;
 		}
+		free(separadas);
 	}
 terminar:
+
 return parentDir;
 
 }
@@ -176,7 +177,6 @@ int recorrerDirectorio(char *nombre, int parentDir){
 	int posicion, i;
 	posicion = -1;
 	char *archivo = nombre;
-//	char *fname = string_new();
 	if(strcmp(archivo, "")== 0){
 			goto finalizar;
 		}
@@ -185,19 +185,26 @@ int recorrerDirectorio(char *nombre, int parentDir){
 	for(i = 0; i <= 2047; i++){
 		if(miDisco.tablaDeArchivos[i].state != DELETED){
 
-			char *fname = getFileName(miDisco.tablaDeArchivos[i].fname);
+		//	char *fname = getFileName(miDisco.tablaDeArchivos[i].fname);
+		//	char *fname = string_new();
+		//	strncpy(fname, miDisco.tablaDeArchivos[i].fname, strlen(miDisco.tablaDeArchivos[i].fname));
 
-			if((strncmp(archivo, fname, nameLength) == 0) &&
+			if((strncmp(archivo, miDisco.tablaDeArchivos[i].fname, nameLength) == 0) &&
 				((int)miDisco.tablaDeArchivos[i].parent_directory == parentDir)){
 					posicion = i;
 
 			}
 
+			//*fname = '\0';
+			//  memset(fname, 0, strlen(fname) * sizeof(fname[0]));
+			//free(fname);
+
 		}
+
 	}
 
+	//free(fname);
 	finalizar:
-//	free(fname);
 	return posicion;
 }
 
@@ -262,6 +269,16 @@ void iterarNombre(char* origen, unsigned char respuesta[17]){
 			}
 		}
 }
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+void iterarNombreAlReves(char* origen, unsigned char respuesta[17]){
+	int i;
+		for (i = 0; i <= 17; i++ ){
+			origen[i] = respuesta[i];
+			if (i == 17){
+				respuesta[i] = '\0';
+			}
+		}
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void llenarEstructuraNuevo(osada_file archivo, char* ruta, int bloqueTablaAsignacionesLibre){ // revisar lo del char[17]
@@ -320,7 +337,7 @@ void atenderConexion(void *numeroCliente){
 				memcpy(respuesta + sizeof(int), &archivo.size, sizeof(int));
 				send(clientesActivos[unCliente].socket, respuesta, 2 * sizeof(int), MSG_WAITALL);
 				*ruta = '\0';
-				//free(buffer);
+				free(buffer);
 
 			break;
 
@@ -344,7 +361,7 @@ void atenderConexion(void *numeroCliente){
 					send(clientesActivos[unCliente].socket, bufferDir, sizeof(int) + tamanio, 0);
 				}
 				*ruta = '\0';
-				//free(buffer);
+				free(buffer);
 
 
 			break;
@@ -352,17 +369,19 @@ void atenderConexion(void *numeroCliente){
 			case 2: // .read
 
 				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
-				void *buffer = malloc(tamanioRuta);
+				buffer = malloc(tamanioRuta);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirRuta(buffer, tamanioRuta);
 				void *contenidoArchivo = osada_read(ruta);
-				int i = buscarArchivo(ruta);
-				int tamanioArchivo = (int)miDisco.tablaDeArchivos[i].file_size;
+				int j = buscarArchivo(ruta);
+				int tamanioArchivo = (int)miDisco.tablaDeArchivos[j].file_size;
 				buffer = malloc(tamanioArchivo + sizeof(int));
 				memcpy(buffer, &tamanioArchivo, sizeof(int));
 				memcpy(buffer + sizeof(int), contenidoArchivo, tamanioArchivo);
 				send(clientesActivos[unCliente].socket, buffer, sizeof(int) + tamanioArchivo, 0);
 				//free(buffer);
+				free(contenidoArchivo);
+				*ruta = '\0';
 
 			break;
 
@@ -404,7 +423,7 @@ void atenderConexion(void *numeroCliente){
 				ruta = convertirRuta(buffer, tamanioRuta);
 				// int exito = osada_unlink(ruta);
 				//send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
-				//free(buffer);
+				free(buffer);
 
 			break;
 
@@ -416,7 +435,7 @@ void atenderConexion(void *numeroCliente){
 				ruta = convertirRuta(buffer, tamanioRuta);
 				// int exito = osada_mkdir(ruta);
 				//send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
-				//free(buffer);
+				free(buffer);
 
 			break;
 
@@ -428,7 +447,7 @@ void atenderConexion(void *numeroCliente){
 				ruta = convertirRuta(buffer, tamanioRuta);
 				// int exito = osada_rmdir(ruta);
 				//send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
-				//free(buffer);
+				free(buffer);
 
 			break;
 
@@ -444,7 +463,7 @@ void atenderConexion(void *numeroCliente){
 				char *nombre = (char *) bufferNombre;
 				// int exito = osada_rename(ruta, nombre);
 				//send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
-				//free(buffer);
+				free(buffer);
 				free(bufferNombre);
 
 			break;
@@ -457,16 +476,17 @@ void atenderConexion(void *numeroCliente){
 				ruta = convertirRuta(buffer, tamanioRuta);
 				int exito = osada_open(ruta);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
-				free(buffer);
+			//	free(buffer);
 
 			break;
 
 			}
+			//free(buffer);
 		}
 
 	}
 	free(contenido);
-	free(buffer);
+
 	free(bufferDir);
 
 }
@@ -588,9 +608,10 @@ char *osada_readdir(char *unaRuta){
 
 			if(miDisco.tablaDeArchivos[i].parent_directory == parentBlock
 					&& miDisco.tablaDeArchivos[i].state != DELETED){
-				char *nombreArchivo = getFileName(miDisco.tablaDeArchivos[i].fname);
-				if(strlen(nombreArchivo) > 0){
-				string_append(&contenidoDir, nombreArchivo);
+				//char *nombreArchivo = getFileName(miDisco.tablaDeArchivos[i].fname);
+
+
+				string_append(&contenidoDir, miDisco.tablaDeArchivos[i].fname);
 
 				// Concateno los nombres en un string, separados por la variable separador.
 				// Después la idea es separarlos y manejarlos como corresponda afuera de esta función
@@ -599,7 +620,7 @@ char *osada_readdir(char *unaRuta){
 				string_append(&contenidoDir, nullChar);
 				numElems++;
 
-				}
+
 
 			}
 
@@ -627,12 +648,12 @@ int osada_open(char *ruta){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void *osada_read(char *ruta){
 
-	t_log* logRead;
-	remove("osada_read.log");
-	logRead = log_create("osada_read.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
+//	t_log* logRead;
+//	remove("osada_read.log");
+//	logRead = log_create("osada_read.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
 
 	int i = buscarArchivo(ruta);
-	log_info(logRead, "Comienza la operacion del archivo %s", ruta);
+	//log_info(logRead, "Comienza la operacion del archivo %s", ruta);
 	int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
 	void *buffer = malloc(miDisco.tablaDeArchivos[i].file_size);
 	div_t bloquesOcupados = div(miDisco.tablaDeArchivos[i].file_size, 64);
@@ -642,21 +663,19 @@ void *osada_read(char *ruta){
 				+ miDisco.cantBloques.bloques_tablaDeArchivos
 				+ miDisco.cantBloques.bloques_tablaDeAsignaciones) * 64;
 	void *desplazamiento;
-	int cuentaGotas = 0;
 	if(bloquesOcupados.rem == 0){
 		while(siguienteBloque != -1){
-			desplazamiento = &miDisco.discoMapeado[inicioDatos + (siguienteBloque * 64)];
+			desplazamiento = &miDisco.discoMapeado[inicioDatos + (siguienteBloque) * 64];
 			memcpy(buffer + tamanioActualBuffer, desplazamiento, 64);
 
 			tamanioActualBuffer += 64;
 			siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
-			cuentaGotas++;
 		}
 	}
 	else{
 		int bloquesCopiados = 0;
 		while(siguienteBloque != -1){
-			if(bloquesCopiados <= bloquesOcupados.quot){
+			if(bloquesCopiados < bloquesOcupados.quot){
 				desplazamiento = &miDisco.discoMapeado[inicioDatos + (siguienteBloque * 64)];
 				memcpy(buffer + tamanioActualBuffer,desplazamiento, 64);
 				tamanioActualBuffer += 64;
@@ -674,9 +693,9 @@ void *osada_read(char *ruta){
 		}
 	}
 
-	log_info(logRead, "Cantidad de bytes leidos: %d", tamanioActualBuffer);
-	char *epifania = buffer;
-	printf("%s\n", epifania);
+	//log_info(logRead, "Cantidad de bytes leidos: %d", tamanioActualBuffer);
+	//char *epifania = buffer;
+	//printf("%s\n", epifania);
 
 	return(buffer);
 }
