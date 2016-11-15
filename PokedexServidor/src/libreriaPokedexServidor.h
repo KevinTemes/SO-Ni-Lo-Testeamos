@@ -61,6 +61,8 @@ char *getFileName(unsigned char *nombreArchivo);
 
 void iterarNombreAlReves(char* origen, unsigned char respuesta[17]);
 
+char *obtenerNombre(char *unaRuta);
+
 // Función para obtener el nombre de un directorio, dada su ruta
 char *getNombreDirectorio(char *ruta);
 
@@ -97,12 +99,17 @@ int recorrerDirectorio(char *nombre, int parentDir);
 
 int buscarArchivo(char *unaRuta);
 
+/* Búsqueda de la primera posición libre en la tabla de archivos*/
+int buscarPosicionLibre();
+
 /* copiado de un bloque de datos en un buffer */
 void copiarBloque(void *buffer, int bloque, int offset);
 
 void copiarBloqueIncompleto(void *buffer, int bloque, int offset, int tamanio);
 
 /* Funciones de modificación del disco OSADA*/
+void crearDirectorio(char *unaRuta, int parentDir, int pos);
+
 void actualizarBitmap();
 
 void actualizarTablaDeArchivos();
@@ -124,7 +131,7 @@ int osada_write(char *ruta, void *nuevoContenido, size_t sizeAgregado, off_t off
 
 int osada_unlink(char *ruta);
 
-int osada_mkdir(char *ruta, char *nombreDir);
+int osada_mkdir(char *ruta);
 
 int osada_rmdir(char *ruta);
 
