@@ -64,9 +64,6 @@ int main(int argc, char **argv) {
 
 
 
-
-	signal(SIGINT, notificarCaida);
-
 	int socketEscucha, retornoPoll;
 	int fd_index = 0;
 

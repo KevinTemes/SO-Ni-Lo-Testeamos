@@ -110,6 +110,8 @@ void copiarBloqueIncompleto(void *buffer, int bloque, int offset, int tamanio);
 /* Funciones de modificación del disco OSADA*/
 void crearDirectorio(char *unaRuta, int parentDir, int pos);
 
+void crearArchivo(char *nombreArchivo, int parentDir, int bloqueLibre, int posTablaArchivos);
+
 void actualizarBitmap();
 
 void actualizarTablaDeArchivos();

@@ -296,10 +296,18 @@ static int cliente_read(const char *path, char *buf, size_t size, off_t offset, 
 
 /* Crea un archivo vacio*/
 static int cliente_create(const char* path, mode_t modo, struct fuse_file_info * fi){ //Por ahora asumimos que el nombre del archivo esta en el path
-	int res = 1; // 0 para exito y 1 para error
+	int res; // 0 para exito y 1 para error
 	protocolo = 3;
-	solicitarServidor(path,protocolo);
-	res = recibirEstadoOperacion();
+	char *ruta = (char *)path;
+	int tamanioRuta = strlen(ruta);
+	void *buffer = malloc((2 * sizeof(int)) + tamanioRuta);
+	memcpy(buffer, &protocolo, sizeof(int));
+	memcpy(buffer + sizeof(int), &tamanioRuta, sizeof(int));
+	memcpy(buffer + (2 * sizeof(int)), ruta, tamanioRuta);
+	send(pokedexServidor, buffer, (2 * sizeof(int)) + tamanioRuta, MSG_WAITALL);
+
+	recv(pokedexServidor, &res, sizeof(int), MSG_WAITALL);
+
 	if (res==0){
 		printf("Archivo creado exitosamente\n");
 	}

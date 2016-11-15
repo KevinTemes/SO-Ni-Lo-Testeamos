@@ -391,8 +391,8 @@ void atenderConexion(void *numeroCliente){
 				buffer = malloc(tamanioRuta);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirRuta(buffer, tamanioRuta);
-				// int exito = osada_crearArchivo(ruta);
-				// send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
+				// int exito = osada_create(ruta);
+				// send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
 				//free(buffer);
 
 			break;
@@ -545,11 +545,23 @@ return separador[i];
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 unsigned int primerBloqueBitmapLibre(){
-	unsigned int nroBloque = 0;
-	while(bitarray_test_bit(miDisco.bitmap,nroBloque) == 1){
-		nroBloque++;
+	int pos = -1;
+
+	int bloquesDeDatos = miDisco.header-> fs_blocks - (miDisco.cantBloques.bloques_header
+			+ miDisco.cantBloques.bloques_bitmap
+			+ miDisco.cantBloques.bloques_tablaDeArchivos
+			+ miDisco.cantBloques.bloques_tablaDeAsignaciones);
+
+	int i;
+	for(i = 0; i <= bloquesDeDatos; i++){
+		if(bitarray_test_bit(miDisco.bitmap, i)){
+			pos = i;
+			break;
+		}
 	}
-	return nroBloque;
+
+
+	return pos;
 }
 
 unsigned int primerBloqueTablaAsignacionesLibre(){
@@ -729,39 +741,39 @@ int osada_create(char *ruta){
 	t_log* logCreate;
 	remove("osada_create.log");
 	logCreate = log_create("osada_create.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
-	log_info(logCreate, "Comienza el create del archivo %s", ruta);
-	int exito = 0;
+	log_info(logCreate, "recibida solicitud de creación (.create) del archivo %s", ruta);
+	int exito = 1;
 
-	unsigned int BloqueLibre = primerBloqueBitmapLibre();
-	unsigned int BloqueAsignacionesLibre = primerBloqueTablaAsignacionesLibre(); // Implementar
-
-	osada_file archivoNuevo;
-	llenarEstructuraNuevo(archivoNuevo, ruta, BloqueAsignacionesLibre);
-	int posTablaArchivos = asignarPosicionTablaArchivos(archivoNuevo); // Revisar orden
-
-
-	if (bloquesBitmapLibres(archivoNuevo)){
-		char* touch = string_from_format("touch %s", ruta);
-		int exito = system(touch); // Revisar, touch no te genera osada_file
-
-		bitarray_set_bit(miDisco.bitmap, BloqueLibre);
-		actualizarBitmap();
-
-		if(posTablaArchivos>=0){
-			iterarNombre(archivoNuevo.fname,miDisco.tablaDeArchivos[posTablaArchivos].fname);
-			miDisco.tablaDeArchivos[posTablaArchivos].state = '\1';
-			miDisco.tablaDeArchivos[posTablaArchivos].file_size = archivoNuevo.file_size;
-			miDisco.tablaDeArchivos[posTablaArchivos].first_block = archivoNuevo.first_block; // Deberia ser con tabla de asginaciones
-			miDisco.tablaDeArchivos[posTablaArchivos].lastmod = archivoNuevo.lastmod;
-			miDisco.tablaDeArchivos[posTablaArchivos].parent_directory = archivoNuevo.parent_directory;
-			actualizarTablaDeArchivos();
-			actualizarTablaDeAsignaciones();
-		}
+	unsigned int bloqueLibre = primerBloqueBitmapLibre();
+	char *nombreArchivo = obtenerNombre(ruta);
+	int largo = strlen(nombreArchivo);
+	nombreArchivo[largo] = '\0';
+	int posTablaArchivos = buscarPosicionLibre();
+	if(bloqueLibre >= 0 && posTablaArchivos >= 0 && largo <= 17){
+		int largoRuta = strlen(ruta);
+		char *dirPadre = string_substring_until(ruta, largoRuta - largo);
+		int parentDir = buscarArchivo(dirPadre);
+		pthread_mutex_lock(&mutexOsada);
+		crearArchivo(nombreArchivo, parentDir, bloqueLibre, posTablaArchivos);
+		pthread_mutex_unlock(&mutexOsada);
+		exito = 0;
 	}
-	if(exito){
-	log_info(logCreate, "El archivo se creo exitosamente");
+
+	if(exito == 0){
+	log_info(logCreate, "El archivo %s se creo exitosamente", ruta);
 	}
 	else{
+		if(bloqueLibre < 0){
+			log_error(logCreate, "error al crear el archivo %s: espacio en disco insuficiente", ruta);
+		}
+		if(posTablaArchivos < 0){
+			log_error(logCreate, "error al crear el archivo %s: se ha alcanzado el número máximo de"
+					"archivos soportados por el sistema", ruta);
+		}
+		if(largo > 17){
+			log_error(logCreate, "error al crear el archivo %s: el nombre del archivo no es válido"
+					"(longitud superior a 17 caracteres)", ruta);
+		}
 		log_error(logCreate, "No se pudo crear el archivo");
 	}
 	return exito;
@@ -1049,6 +1061,22 @@ void crearDirectorio(char *nombreArchivo, int parentDir, int pos){
 	miDisco.tablaDeArchivos[pos] = nuevoDir;
 	actualizarTablaDeArchivos();
 
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+void crearArchivo(char *nombreArchivo, int parentDir, int bloqueLibre, int posTablaArchivos){
+	osada_file nuevoArchivo;
+	nuevoArchivo.file_size = 0;
+	nuevoArchivo.first_block = bloqueLibre;
+	strcpy(nuevoArchivo.fname, nombreArchivo);
+	nuevoArchivo.lastmod = consultarTiempo();
+	nuevoArchivo.parent_directory = parentDir;
+	nuevoArchivo.state = REGULAR;
+
+	miDisco.tablaDeArchivos[posTablaArchivos] = nuevoArchivo;
+	bitarray_set_bit(miDisco.bitmap, bloqueLibre);
+	actualizarTablaDeArchivos();
+	actualizarBitmap();
 }
 
 
