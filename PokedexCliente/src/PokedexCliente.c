@@ -325,10 +325,19 @@ static int cliente_write(const char* path,const char *buf, size_t size, off_t of
 }
 
 static int cliente_unlink(const char* path){
-	int res = 1;
+	int res;
 	protocolo = 5;
-	solicitarServidor(path,protocolo);
-	res = recibirEstadoOperacion();
+	char *ruta = (char *)path;
+	int tamanioRuta = strlen(ruta);
+	void *buffer = malloc((2 * sizeof(int)) + tamanioRuta);
+	memcpy(buffer, &protocolo, sizeof(int));
+	memcpy(buffer + sizeof(int), &tamanioRuta, sizeof(int));
+	memcpy(buffer + (2 * sizeof(int)), ruta, tamanioRuta);
+
+	send(pokedexServidor, buffer, tamanioRuta + (2 * sizeof(int)), MSG_WAITALL);
+
+	recv(pokedexServidor, &res, sizeof(int), MSG_WAITALL);
+
 	if (res==0){
 		printf("Archivo borrado exitosamente\n");
 	}
@@ -374,15 +383,23 @@ static int cliente_mkdir(const char* path, mode_t mode){
 	else{
 		printf("No se pudo crear el archivo\n");
 	}
+	free(buffer);
 	return res;
 
 }
 
 static int cliente_rmdir(const char* path){
-	int res = 1;
+	int res;
 	protocolo = 7;
-	solicitarServidor(path,protocolo);
-		res = recibirEstadoOperacion();
+	char *ruta = (char *)path;
+	int tamanioRuta = strlen(ruta);
+	void *buffer = malloc((2 * sizeof(int)) + tamanioRuta);
+	memcpy(buffer, &protocolo, sizeof(int));
+	memcpy(buffer + sizeof(int), &tamanioRuta, sizeof(int));
+	memcpy(buffer + (2 * sizeof(int)), ruta, tamanioRuta);
+	send(pokedexServidor, buffer, (2 * sizeof(int)) + tamanioRuta, MSG_WAITALL);
+
+	recv(pokedexServidor, &res, sizeof(int), MSG_WAITALL);
 		if (res==0){
 			printf("Directorio borrado exitosamente\n");
 		}

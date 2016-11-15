@@ -421,8 +421,8 @@ void atenderConexion(void *numeroCliente){
 				buffer = malloc(tamanioRuta);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirRuta(buffer, tamanioRuta);
-				// int exito = osada_unlink(ruta);
-				//send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
+				int exito = osada_unlink(ruta);
+				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
 				free(buffer);
 
 			break;
@@ -445,8 +445,8 @@ void atenderConexion(void *numeroCliente){
 				buffer = malloc(tamanioRuta);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirRuta(buffer, tamanioRuta);
-				// int exito = osada_rmdir(ruta);
-				//send(clientesActivos[unCliente].socket, exito, sizeof(int), 0);
+				exito = osada_rmdir(ruta);
+				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
 				free(buffer);
 
 			break;
@@ -492,7 +492,7 @@ void atenderConexion(void *numeroCliente){
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void actualizarBitmap(){
-	int inicioBitmap = (miDisco.cantBloques.bloques_header * 64) / 4;
+	int inicioBitmap = miDisco.cantBloques.bloques_header * 64;
 	int tamanioBitmap = miDisco.cantBloques.bloques_bitmap * 64;
 	memcpy(miDisco.discoMapeado + inicioBitmap, miDisco.bitmap, tamanioBitmap);
 }
@@ -505,7 +505,7 @@ void actualizarTablaDeArchivos(){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void actualizarTablaDeAsignaciones(){
 	int inicioTabla = ((miDisco.cantBloques.bloques_header +miDisco.cantBloques.bloques_bitmap +
-			miDisco.cantBloques.bloques_tablaDeArchivos) * 64) / 4;
+			miDisco.cantBloques.bloques_tablaDeArchivos) * 64);
 	int tamanioTabla = miDisco.cantBloques.bloques_tablaDeAsignaciones * 64;
 	memcpy(miDisco.discoMapeado + inicioTabla, miDisco.tablaDeAsignaciones, tamanioTabla);
 }
@@ -938,20 +938,26 @@ int osada_unlink(char *ruta){
 	remove("osada_unlink.log");
 	logUnlink = log_create("osada_unlink.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
 	int exito = 0;
-	log_info(logUnlink, "Comienza la operacion unlink sobre el archivo %s", ruta);
-
+	int aux;
+	log_info(logUnlink, "recibida solicitud de borrado (.unlink) del archivo %s", ruta);
 	int i = buscarArchivo(ruta);
+
 	pthread_mutex_lock(&mutexOsada);
-	miDisco.tablaDeArchivos[i].state = '\0';
-	actualizarTablaDeArchivos();
+
+	miDisco.tablaDeArchivos[i].state = DELETED;
 	int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
 	while(siguienteBloque != -1){
 		bitarray_clean_bit(miDisco.bitmap, siguienteBloque);
-		siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
+		aux = miDisco.tablaDeAsignaciones[siguienteBloque];
+		miDisco.tablaDeAsignaciones[siguienteBloque] = -1;
+		siguienteBloque = aux;
 	}
+	actualizarTablaDeArchivos();
 	actualizarBitmap();
+	actualizarTablaDeAsignaciones();
+
 	pthread_mutex_unlock(&mutexOsada);
-	exito = 1; // hay chances de error? validar
+
 	log_info(logUnlink, "El archivo se ha borrado exitosamente");
 	return exito;
 }
@@ -998,15 +1004,15 @@ int osada_rmdir(char *ruta){
 	remove("osada_rmdir.log");
 	logRmdir = log_create("osada_rmdir.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
 	int exito;
-	log_info(logRmdir, "Comienza la operacion rmdir sobre el directorio %s", ruta);
+	log_info(logRmdir, "Recibida solicitud de borrado (.rmdir)del directorio %s", ruta);
 
 	int i = buscarArchivo(ruta);
 	pthread_mutex_lock(&mutexOsada);
-	miDisco.tablaDeArchivos[i].state = '\0';
+	miDisco.tablaDeArchivos[i].state = DELETED;
 	actualizarTablaDeArchivos();
 	pthread_mutex_unlock(&mutexOsada);
-	exito = 1; // hay chances de error? validar
-	log_info(logRmdir, "El directorio se ha borrado exitosamente");
+	exito = 0; // hay chances de error? validar
+	log_info(logRmdir, "El directorio %s se ha borrado exitosamente", ruta);
 
 	return exito;
 }
