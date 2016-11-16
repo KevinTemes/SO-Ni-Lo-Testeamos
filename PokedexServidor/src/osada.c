@@ -84,7 +84,7 @@ disco_osada osada_iniciar() {
 	unDisco.header = malloc(sizeof(osada_header));
 
 	FILE* archivo;
-/*	if ((archivo = fopen("../basic.bin" , "r")) == NULL) {
+/*	if ((archivo = fopen("../challenge.bin" , "r")) == NULL) {
 		log_error(logs,"No se pudo abrir archivo\n");
 		exit(0);
 			} */
@@ -99,7 +99,6 @@ disco_osada osada_iniciar() {
 	//datos del archivo, no lo pongo en funcion auxiliar porque despues necesito los int
 	int sz;
 
-
 	//recorro el archivo para saber el tamaño
 	sz = fsize(archivo);
 
@@ -110,6 +109,12 @@ disco_osada osada_iniciar() {
     //BITMAP ----> N bloques = F/8/OSADA_BLOCK_SIZE
     int N = bloques/8/OSADA_BLOCK_SIZE;
 
+    /*
+     * int N = bloques/8;
+     * div_t bitmap = div(N, OSADA_BLOCK_SIZE);
+     * if(bitmap.rem == 0){
+     * }*/
+
 
     //TABLA DE ASIGNACIONES ----> A bloques = (F-1-N-1024) * 4 / OSADA_BLOCK_SIZE
 	int A = ((bloques-1-N-1024)*4)/OSADA_BLOCK_SIZE;
@@ -118,16 +123,29 @@ disco_osada osada_iniciar() {
 	//BLOQUES DE DATOS ------> X bloques = F-1-N-1024-A
 	int X = bloques-1-N-1024-A;
 
-	unDisco.cantBloques.bloques_header = 1;
-	unDisco.cantBloques.bloques_bitmap = N;
-	unDisco.cantBloques.bloques_tablaDeArchivos = 1024;
-	unDisco.cantBloques.bloques_tablaDeAsignaciones = A;
-	unDisco.cantBloques.bloques_datos = X;
+
 
 
 	//leo el header
 	// fread(head,sizeof(osada_header),1,archivo);
     fread(unDisco.header,sizeof(osada_header),1,archivo);
+
+    int tablaAsignacionesEnBytes = (unDisco.header->fs_blocks - 1 -1024 - unDisco.header->bitmap_blocks)
+    		* 4;
+    div_t bloquesTablaAsignacion = div(tablaAsignacionesEnBytes, OSADA_BLOCK_SIZE);
+
+
+	unDisco.cantBloques.bloques_header = 1;
+	unDisco.cantBloques.bloques_bitmap = unDisco.header->bitmap_blocks;
+	unDisco.cantBloques.bloques_tablaDeArchivos = 1024;
+	if(bloquesTablaAsignacion.rem != 0){
+	    unDisco.cantBloques.bloques_tablaDeAsignaciones = bloquesTablaAsignacion.quot + 1;
+	}
+	else{
+		unDisco.cantBloques.bloques_tablaDeAsignaciones = bloquesTablaAsignacion.quot;
+	}
+	unDisco.cantBloques.bloques_datos = unDisco.header->fs_blocks - unDisco.header->bitmap_blocks
+			- 1 - 1024 - unDisco.cantBloques.bloques_tablaDeAsignaciones;
 
     //esto muestra el header
     log_info(logs,"\n\n----HEADER----\n\n");

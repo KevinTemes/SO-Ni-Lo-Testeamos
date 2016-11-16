@@ -683,12 +683,12 @@ int osada_open(char *ruta){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void *osada_read(char *ruta){
 
-//	t_log* logRead;
-//	remove("osada_read.log");
-//	logRead = log_create("osada_read.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
+	t_log* logRead;
+	remove("osada_read.log");
+	logRead = log_create("osada_read.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
 
 	int i = buscarArchivo(ruta);
-	//log_info(logRead, "Comienza la operacion del archivo %s", ruta);
+	log_info(logRead, "Recibida solicitud de lectura (.read) del archivo %s", ruta);
 	int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
 	void *buffer = malloc(miDisco.tablaDeArchivos[i].file_size);
 	div_t bloquesOcupados = div(miDisco.tablaDeArchivos[i].file_size, 64);

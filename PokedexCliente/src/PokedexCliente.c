@@ -356,10 +356,24 @@ static int cliente_unlink(const char* path){
 }
 
 static int cliente_rename(const char* path, const char* nuevoNombre){
-	int res=1;
+	int res;
 	protocolo = 8;
-	solicitarModificacionServidor(path,nuevoNombre,protocolo);
-	res = recibirEstadoOperacion();
+	char *ruta = (char *)path;
+	char *nombre = (char *)nuevoNombre;
+	int tamanioRuta = strlen(ruta);
+	int tamanioNombre = strlen(nombre);
+	int package_size = (3 * sizeof(int)) + tamanioRuta + tamanioNombre;
+	void *buffer = malloc(package_size);
+	memcpy(buffer, &protocolo, sizeof(int));
+	memcpy(buffer + sizeof(int), &tamanioRuta, sizeof(int));
+	memcpy(buffer + (2 * sizeof(int)), tamanioNombre, sizeof(int));
+	memcpy(buffer + (3 * sizeof(int)), ruta, tamanioRuta);
+	memcpy(buffer + (3 * sizeof(int)) + tamanioRuta, nombre, tamanioNombre);
+
+	send(pokedexServidor, buffer, package_size, MSG_WAITALL);
+
+	recv(pokedexServidor, &res, sizeof(int), MSG_WAITALL);
+
 	if (res==0){
 		printf("El archivo fue renombrado exitosamente\n");
 	}
