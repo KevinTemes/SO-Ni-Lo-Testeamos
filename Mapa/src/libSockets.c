@@ -137,6 +137,7 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 						}
 
 						list_add(pokenests, (void*) datos);
+						log_info(logs,"Disponible: %c%d",dispo->pokenest,dispo->valor);
 						list_add(disponibles, dispo);
 
 						config_destroy(archivoConfigPokenest);
