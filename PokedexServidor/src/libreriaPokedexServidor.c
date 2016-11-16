@@ -189,7 +189,7 @@ int recorrerDirectorio(char *nombre, int parentDir){
 		//	char *fname = string_new();
 		//	strncpy(fname, miDisco.tablaDeArchivos[i].fname, strlen(miDisco.tablaDeArchivos[i].fname));
 
-			if((strncmp(archivo, miDisco.tablaDeArchivos[i].fname, nameLength) == 0) &&
+			if((strcmp(archivo, miDisco.tablaDeArchivos[i].fname) == 0) &&
 				((int)miDisco.tablaDeArchivos[i].parent_directory == parentDir)){
 					posicion = i;
 
@@ -391,8 +391,8 @@ void atenderConexion(void *numeroCliente){
 				buffer = malloc(tamanioRuta);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirRuta(buffer, tamanioRuta);
-				// int exito = osada_create(ruta);
-				// send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
+				int exito = osada_create(ruta);
+				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
 				//free(buffer);
 
 			break;
@@ -421,7 +421,7 @@ void atenderConexion(void *numeroCliente){
 				buffer = malloc(tamanioRuta);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirRuta(buffer, tamanioRuta);
-				int exito = osada_unlink(ruta);
+				exito = osada_unlink(ruta);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
 				free(buffer);
 

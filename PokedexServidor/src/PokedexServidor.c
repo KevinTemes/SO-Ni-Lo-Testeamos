@@ -30,8 +30,6 @@ int main(int argc, char **argv) {
 
 
 
-
-
 	//LOGS
 	remove("PokeServidor.log");
 	puts("Creando archivo de logueo PokeServidor...\n");
@@ -46,7 +44,7 @@ int main(int argc, char **argv) {
 	 fstat(fd_disco, &discoStat);
 	 miDisco.discoMapeado = mmap(0, discoStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_disco, 0);
 
-
+	 //signal(SIGPIPE, SIG_IGN);
 
 		// ZONA DE TESTEO
 /*		printf("ingrese la accion a testear, o escriba 'ayuda' para ver comandos disponibles:\n");
