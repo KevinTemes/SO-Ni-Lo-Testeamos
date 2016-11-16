@@ -277,17 +277,23 @@ void atenderConexion(void *numeroCliente){
 				buffer = malloc(tamanioRuta);
 				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
-				void *contenidoArchivo = osada_read(ruta);
 				int j = buscarArchivo(ruta);
 				int tamanioArchivo = (int)miDisco.tablaDeArchivos[j].file_size;
-				buffer = malloc(tamanioArchivo + sizeof(int));
-				memcpy(buffer, &tamanioArchivo, sizeof(int));
-				memcpy(buffer + sizeof(int), contenidoArchivo, tamanioArchivo);
-				send(clientesActivos[unCliente].socket, buffer, sizeof(int) + tamanioArchivo, 0);
-				//free(buffer);
-				free(contenidoArchivo);
+				if(tamanioArchivo == 0){
+					buffer = malloc(sizeof(int));
+					memcpy(buffer, &tamanioArchivo, sizeof(int));
+					send(clientesActivos[unCliente].socket, buffer, sizeof(int), 0);
+				}
+				else{
+					void *contenidoArchivo = osada_read(ruta);
+					buffer = malloc(tamanioArchivo + sizeof(int));
+					memcpy(buffer, &tamanioArchivo, sizeof(int));
+					memcpy(buffer + sizeof(int), contenidoArchivo, tamanioArchivo);
+					send(clientesActivos[unCliente].socket, buffer, sizeof(int) + tamanioArchivo, 0);
+					free(contenidoArchivo);
+				}
 				*ruta = '\0';
-
+				free(buffer);
 			break;
 
 			case 3: // .create (por ahora supongo que el nombre ya viene en la ruta)
@@ -404,7 +410,7 @@ void actualizarBitmap(){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void actualizarTablaDeArchivos(){
 	int inicioTabla = ((miDisco.cantBloques.bloques_header + miDisco.cantBloques.bloques_bitmap) * 64);
-	memcpy(miDisco.discoMapeado + inicioTabla, &miDisco.tablaDeArchivos, sizeof(osada_file) * 2048);
+	memcpy(miDisco.discoMapeado + inicioTabla, &miDisco.tablaDeArchivos, sizeof(osada_file) * 2047);
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -441,14 +447,11 @@ return (bloquesLibres >= calcularBloquesNecesarios(archivo)) ;
 unsigned int primerBloqueBitmapLibre(){
 	int pos = -1;
 
-	int bloquesDeDatos = miDisco.header-> fs_blocks - (miDisco.cantBloques.bloques_header
-			+ miDisco.cantBloques.bloques_bitmap
-			+ miDisco.cantBloques.bloques_tablaDeArchivos
-			+ miDisco.cantBloques.bloques_tablaDeAsignaciones);
+	int bloquesDeDatos = miDisco.header->data_blocks;
 
 	int i;
 	for(i = 0; i <= bloquesDeDatos; i++){
-		if(bitarray_test_bit(miDisco.bitmap, i)){
+		if(!bitarray_test_bit(miDisco.bitmap, i)){
 			pos = i;
 			break;
 		}
@@ -457,6 +460,7 @@ unsigned int primerBloqueBitmapLibre(){
 
 	return pos;
 }
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 unsigned int primerBloqueTablaAsignacionesLibre(){
 	unsigned int nroBloque = 0;
@@ -468,7 +472,7 @@ unsigned int primerBloqueTablaAsignacionesLibre(){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int  asignarPosicionTablaArchivos(osada_file archivo){
 	int i, posAsignada = -1;
-	for (i=0; i <=2048; i++){
+	for (i=0; i <=2047; i++){
 		if(miDisco.tablaDeArchivos[i].state == DELETED){
 			miDisco.tablaDeArchivos[i] = archivo;
 			posAsignada = i;
@@ -481,7 +485,7 @@ int  asignarPosicionTablaArchivos(osada_file archivo){
 int buscarPosicionLibre(){
 	int pos = -1;
 	int i;
-	for(i = 0; i<= 2048; i++){
+	for(i = 0; i<= 2047; i++){
 		if(miDisco.tablaDeArchivos[i].state == DELETED){
 			pos = i;
 			break;
@@ -533,7 +537,7 @@ char *osada_readdir(char *unaRuta){
 		exit(0);
 	}
 	// Busco todos los archivos hijos de ese directorio padre, y me copio el nombre de cada uno
-	for (i = 0; i <= 2048; i++){
+	for (i = 0; i <= 2047; i++){
 
 			if(miDisco.tablaDeArchivos[i].parent_directory == parentBlock
 					&& miDisco.tablaDeArchivos[i].state != DELETED){
@@ -580,6 +584,9 @@ void *osada_read(char *ruta){
 	int i = buscarArchivo(ruta);
 	log_info(logRead, "Recibida solicitud de lectura (.read) del archivo %s", ruta);
 	int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
+	if(miDisco.tablaDeArchivos[i].file_size == 0){
+		goto terminar;
+	}
 	void *buffer = malloc(miDisco.tablaDeArchivos[i].file_size);
 	div_t bloquesOcupados = div(miDisco.tablaDeArchivos[i].file_size, 64);
 	int tamanioActualBuffer = 0;
@@ -622,6 +629,7 @@ void *osada_read(char *ruta){
 	//char *epifania = buffer;
 	//printf("%s\n", epifania);
 
+	terminar:
 	return(buffer);
 }
 
@@ -637,7 +645,6 @@ int osada_create(char *ruta){
 	unsigned int bloqueLibre = primerBloqueBitmapLibre();
 	char *nombreArchivo = obtenerNombre(ruta);
 	int largo = strlen(nombreArchivo);
-	nombreArchivo[largo] = '\0';
 	int posTablaArchivos = buscarPosicionLibre();
 	if(bloqueLibre >= 0 && posTablaArchivos >= 0 && largo <= 17){
 		int largoRuta = strlen(ruta);
@@ -982,17 +989,17 @@ void borrarDirectorio(int posicion){
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-void crearArchivo(char *nombreArchivo, int parentDir, int bloqueLibre, int posTablaArchivos){
+void crearArchivo(char *nombreArchivo, int parentDir, int bloqueInicial, int posTablaArchivos){
 	osada_file nuevoArchivo;
 	nuevoArchivo.file_size = 0;
-	nuevoArchivo.first_block = bloqueLibre;
+	nuevoArchivo.first_block = bloqueInicial;
 	strcpy(nuevoArchivo.fname, nombreArchivo);
 	nuevoArchivo.lastmod = consultarTiempo();
 	nuevoArchivo.parent_directory = parentDir;
 	nuevoArchivo.state = REGULAR;
 
 	miDisco.tablaDeArchivos[posTablaArchivos] = nuevoArchivo;
-	bitarray_set_bit(miDisco.bitmap, bloqueLibre);
+	bitarray_set_bit(miDisco.bitmap, bloqueInicial);
 	actualizarTablaDeArchivos();
 	actualizarBitmap();
 }
