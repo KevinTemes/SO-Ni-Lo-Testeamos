@@ -366,7 +366,7 @@ static int cliente_rename(const char* path, const char* nuevoNombre){
 	void *buffer = malloc(package_size);
 	memcpy(buffer, &protocolo, sizeof(int));
 	memcpy(buffer + sizeof(int), &tamanioRuta, sizeof(int));
-	memcpy(buffer + (2 * sizeof(int)), tamanioNombre, sizeof(int));
+	memcpy(buffer + (2 * sizeof(int)), &tamanioNombre, sizeof(int));
 	memcpy(buffer + (3 * sizeof(int)), ruta, tamanioRuta);
 	memcpy(buffer + (3 * sizeof(int)) + tamanioRuta, nombre, tamanioNombre);
 
