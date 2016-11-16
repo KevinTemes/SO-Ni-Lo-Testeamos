@@ -55,9 +55,9 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 					string_append(&mapa, cadaMapa);
 					list_add((*datos)->hojaDeViaje,cadaMapa);
 
-					objetivoDeMapa = string_from_format("obj[%s]",hojaViaje[j]);
+					char* objetivoDeMapa = string_from_format("obj[%s]",hojaViaje[j]);
 
-					objetivosMapa = config_get_array_value(archivoConfiguracion,objetivoDeMapa);
+					char** objetivosMapa = config_get_array_value(archivoConfiguracion,objetivoDeMapa);
 					k=0;
 					do {
 						if (objetivosMapa[k]!=NULL){
@@ -72,9 +72,8 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 							l=0;
 						}
 					} while (l);
-					//printf("\n");
 
-
+					t_mapa* cosasMapa;
 					cosasMapa = malloc(sizeof(t_mapa));
 
 					char* configMapa = string_from_format("%s/Mapas/%s/metadata",puntoMontaje,hojaViaje[j]);
@@ -90,14 +89,19 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 						(cosasMapa)->puertoMapa=config_get_int_value(archivoMapa,"Puerto");
 						//printf("%d \n", (cosasMapa)->puertoMapa);
 						}
+
 					free(configMapa);
 					config_destroy(archivoMapa);
-					//printf("\n");
 
 					list_add(ips,(cosasMapa)->ipMapa);
 
 					char* puertoChar = string_itoa((cosasMapa)->puertoMapa);
 					list_add(puertos,puertoChar);
+
+					// probar si funciona aca y sino lo cambio
+					free(cosasMapa);
+					free(objetivoDeMapa);
+					free(objetivosMapa);
 
 					j++;
 				}
@@ -111,7 +115,6 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 
 			(*datos)->reintentos= config_get_int_value(archivoConfiguracion,"reintentos");
 			//printf("reintentos=%d \n",(*datos)->reintentos);
-
 
 			free(mapa);
 			free(poke);

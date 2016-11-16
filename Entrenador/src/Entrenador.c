@@ -204,15 +204,15 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	//libero variables del main
 	//free(coordPokenest); invalid free
 	//free(posPokenest);
+	//free(objetivoDeMapa);
+	//free(objetivosMapa);
+	//free(cosasMapa);
+
 	free(horaInicio);
-	free(objetivoDeMapa);
-	free(objetivosMapa);
 	free(resultado);
 	free(protocolo);
 	free(protocAManejar);
-	free(cosasMapa);
 	free(configEntrenador);
-
 
 	//libero listas
 	list_destroy_and_destroy_elements(ent->hojaDeViaje,free);
@@ -232,7 +232,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	//libero punteros y struct de pokePiola
 	//free(pokePiola->especie);
 	//free(pokePiola->nombreMetadata);
-	//free(pokePiola);
+	free(pokePiola);
 
 	//libero structs de int
 	free(calculoTiempo);
@@ -402,6 +402,9 @@ void* sacarTiempo(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,char*
 		calculoTiempo->mFin = atoi(fin[1]);
 		calculoTiempo->sFin = atoi(fin[2]);
 		calculoTiempo->milFin = atoi(fin[3]);
+
+		free(inicio);
+		free(fin);
 
 		int horasAventura = calculoTiempo->hFin - calculoTiempo->hInicio;
 		int minAventura = calculoTiempo->mFin - calculoTiempo-> mInicio;

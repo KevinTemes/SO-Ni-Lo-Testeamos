@@ -30,8 +30,8 @@
 t_log* logs;
 t_list* ips; // libero main
 t_list* puertos; // libero main
-char* objetivoDeMapa; //libero main
-char** objetivosMapa; //libero main
+//char* objetivoDeMapa; //libero main
+//char** objetivosMapa; //libero main
 t_dictionary* pokesDeCadaMapa; // lo uso en el main
 
 typedef struct{
@@ -79,8 +79,6 @@ typedef struct{
 	char* ipMapa;
 	int puertoMapa;
 }t_mapa;
-
-t_mapa* cosasMapa;
 
 typedef struct {
     char* nombreEntrenador;
