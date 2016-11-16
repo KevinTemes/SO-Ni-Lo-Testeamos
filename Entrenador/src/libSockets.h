@@ -46,6 +46,7 @@ typedef struct{
 	int salirDeObjetivos;
 	int cargarDeNuevoObjetivo;
 	int reintentosActualizados;
+	int cantMuertes;
 }t_posMapaposObjetivoYDeadlocks;
 
 

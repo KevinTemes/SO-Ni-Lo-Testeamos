@@ -85,6 +85,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 //VARIABLES USADAS Y CONEXION
 	 int cantMapas = list_size((ent)->hojaDeViaje);
+	 posicionesYDeadlocks->cantMuertes = 0;
 	 posicionesYDeadlocks->reintentosActualizados=0;
 	 posicionesYDeadlocks->cantDeadlocks=0;
 	 tiempo->horasBloqueado = 0;
@@ -381,8 +382,9 @@ void terminarAventura(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,c
 	sacarTiempo(calculoTiempo,tiempo,"aventura",horaInicio,horaFin);
 	free(horaFin);
 
-	log_info(logs,"El tiempo total que paso bloqueado en las pokenests fue: %d:%d:%d:%d", (tiempo)->horasBloqueado,(tiempo)->minutosBloqueado,(tiempo)->segundosBloqueado,(tiempo)->milesimasBloqueado);
-	log_info(logs,"la cantidad de deadlocks es: %d \n", posicionesYDeadlocks->cantDeadlocks);
+	log_info(logs,"El tiempo total que paso bloqueado en las pokenests fue: %d:%d:%d:%d \n", (tiempo)->horasBloqueado,(tiempo)->minutosBloqueado,(tiempo)->segundosBloqueado,(tiempo)->milesimasBloqueado);
+	log_info(logs,"La cantidad de deadlocks es: %d \n", posicionesYDeadlocks->cantDeadlocks);
+	log_info(logs,"Cantidad de muertes: %d\n",posicionesYDeadlocks->cantMuertes);
 
 	return;
 }
@@ -526,6 +528,7 @@ void* moverseEnUnaDireccion(t_actualizarPos* posActual,int x, int y){
 
 void* morir(char* motivo){
 	ent->cantidadInicialVidas = ent->cantidadInicialVidas-1;
+	posicionesYDeadlocks->cantMuertes = posicionesYDeadlocks->cantMuertes+1;
 	if (ent->cantidadInicialVidas>0){
 		if(!strcmp(motivo,"deadlock")){
 			log_info(logs,"Moriste por deadlock, vidas restantes: %d\n", ent->cantidadInicialVidas);
