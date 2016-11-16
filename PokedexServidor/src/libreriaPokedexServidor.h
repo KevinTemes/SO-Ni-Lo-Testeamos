@@ -91,8 +91,8 @@ void *serializarString(char *unString);
 /* Concatenado de strings*/
 char* concat(const char *s1, const char *s2);
 
-/*conversión del contenido de un buffer en una ruta válida */
-char *convertirRuta(void *buffer, int tamanioRuta);
+/*conversión del contenido de un buffer en un string válido */
+char *convertirString(void *buffer, int tamanio);
 
 /* Búsqueda de la posicion de un un archivo/directorio en la tabla de archivos */
 int recorrerDirectorio(char *nombre, int parentDir);
@@ -108,9 +108,15 @@ void copiarBloque(void *buffer, int bloque, int offset);
 void copiarBloqueIncompleto(void *buffer, int bloque, int offset, int tamanio);
 
 /* Funciones de modificación del disco OSADA*/
-void crearDirectorio(char *unaRuta, int parentDir, int pos);
+void renombrar(char *nombre, int posicion);
 
 void crearArchivo(char *nombreArchivo, int parentDir, int bloqueLibre, int posTablaArchivos);
+
+void borrarArchivo(int posicion);
+
+void crearDirectorio(char *nombreArchivo, char *ruta, int pos);
+
+void borrarDirectorio(int posicion);
 
 void actualizarBitmap();
 

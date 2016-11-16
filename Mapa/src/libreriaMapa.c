@@ -75,6 +75,19 @@ void imprimirGiladas(void *unCliente) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
+int calcularDistancia(entrenador* ent)
+{
+	return abs(ent->posx - ent->posPokex)+abs(ent->posy - ent->posPokey);
+}
+
+bool esMasCerca(entrenador* cerca, entrenador* lejos)
+{
+	return calcularDistancia(cerca) < calcularDistancia(lejos);
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 void enviarHeader(int unSocket, int unHeader) {
 	char *recepcion = malloc(sizeof(int));
 	memcpy(recepcion, &unHeader, sizeof(int));

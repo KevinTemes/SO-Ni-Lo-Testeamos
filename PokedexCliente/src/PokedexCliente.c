@@ -284,13 +284,18 @@ static int cliente_read(const char *path, char *buf, size_t size, off_t offset, 
 	send(pokedexServidor, leBuffer, tamanioRuta + (2 * sizeof(int)), MSG_WAITALL);
 
 	recv(pokedexServidor, &tamanioRespuesta, sizeof(int), MSG_WAITALL);
+	if(tamanioRespuesta == 0){
+		goto terminar;
+	}
 	void *contenido = malloc(tamanioRespuesta);
 	recv(pokedexServidor, contenido, tamanioRespuesta, MSG_WAITALL);
 	memcpy(buf, ((char *)contenido + offset), size);
 
 
-	free(leBuffer);
+
 	free(contenido);
+	terminar:
+	free(leBuffer);
 	return tamanioRespuesta;
 }
 
@@ -366,7 +371,7 @@ static int cliente_rename(const char* path, const char* nuevoNombre){
 	void *buffer = malloc(package_size);
 	memcpy(buffer, &protocolo, sizeof(int));
 	memcpy(buffer + sizeof(int), &tamanioRuta, sizeof(int));
-	memcpy(buffer + (2 * sizeof(int)), tamanioNombre, sizeof(int));
+	memcpy(buffer + (2 * sizeof(int)), &tamanioNombre, sizeof(int));
 	memcpy(buffer + (3 * sizeof(int)), ruta, tamanioRuta);
 	memcpy(buffer + (3 * sizeof(int)) + tamanioRuta, nombre, tamanioNombre);
 
