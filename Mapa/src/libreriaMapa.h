@@ -59,6 +59,10 @@ void imprimir_archivo(char *rutaDelArchivo);
 /* Función para volcar el contenido de un archivo .txt dentro de un string */
 char *txtAString(char *rutaDelArchivo);
 
+// Funciones para ordenar colas en srdf
+int calcularDistancia(entrenador* ent); //calcula la distancia de un entrenador a una pokenest
+bool esMasCerca(entrenador* cerca, entrenador* lejos); //compara dos distancias de dos entrenadores a sus respectivas pokenests
+
 /* Función par enviar un código de operación (header) via sockets */
 void enviarHeader(int unSocket, int unHeader);
 
