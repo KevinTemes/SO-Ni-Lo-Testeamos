@@ -27,6 +27,7 @@ extern t_queue* colaListos;
 extern t_list* entrenadoresEnCurso;
 extern t_list* pokenests;
 extern t_list* items;
+extern t_list* disponibles;
 
 /////////////////////////////////////////////////////////////////////////////
 void* recibirDatos(int conexion, int tamanio) {
@@ -133,12 +134,14 @@ void notificarCaida() {
 	exit(0);
 }
 
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void matar(entrenador* entreni) {
 	log_info(logs,"sale entrenado %c de los que estan en curso",entreni->simbolo);
 	bool esEntrenador(entrenador* entiti){
 		return entreni->simbolo == entiti->simbolo;
 	}
+
 	list_remove_by_condition(entrenadoresEnCurso, (void*)esEntrenador);
 	free(entreni->pokePeleador);
 	log_info(logs,"libera pokemon del entrenador %c",entreni->simbolo);
@@ -149,7 +152,13 @@ void matar(entrenador* entreni) {
 	int y;
 	for (y = 0; y < list_size(entreni->pokemones); y++) {
 		metaDataPokemon* pok;
+		tabla* d;
 		pok = list_get(entreni->pokemones, y);
+		bool esLaPokenest3(tabla* a) {
+				return pok->especie[0] == a->pokenest;
+			}
+		d = list_find(disponibles,(void*)esLaPokenest3);
+		d->valor++;
 		pok->estaOcupado = 0;
 	}
 	list_destroy(entreni->pokemones);
@@ -157,6 +166,12 @@ void matar(entrenador* entreni) {
 	BorrarItem(items, entreni->simbolo);
 	nivel_gui_dibujar(items, nombreMapa);
 	free(entreni);
+	int iiiuax;
+	for(iiiuax=0; iiiuax<list_size(disponibles);iiiuax++){
+		tabla* e;
+		e = list_get(disponibles,iiiuax);
+		log_info(logs,"Disponible de %c es %d",e->pokenest,e->valor);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -239,8 +254,10 @@ void atenderConexion(void *numeroCliente) {
 						tabla* otre = malloc(sizeof(tabla));
 						t->pokenest = datosPo->caracterPokeNest[0];
 						t->valor = 0;
+						log_info(logs,"Asignados: %c%d",t->pokenest,t->valor);
 						otre->pokenest = datosPo->caracterPokeNest[0];
 						otre->valor = 0;
+						log_info(logs,"Solicitud: %c%d",otre->pokenest,otre->valor);
 						list_add(ent1->asignados, t);
 						list_add(ent1->solicitud, otre);
 					}

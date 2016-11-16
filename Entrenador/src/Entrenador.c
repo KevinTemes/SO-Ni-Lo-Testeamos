@@ -192,6 +192,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 					if(posicionesYDeadlocks->salirDeObjetivos==0){
 						copiarMedalla(mapa);
 						list_clean(ent->pokemonsPorMapaCapturados);
+						close(servidor);
 					}
 
 			} // cierro el for de los mapas
@@ -542,6 +543,7 @@ void* morir(char* motivo){
 			posicionesYDeadlocks->salirDeObjetivos = 1;
 			posicionesYDeadlocks->cargarDeNuevoObjetivo=1;
 			//printf("Posicion antes de iterar el for de mapas: %d\n",posicionesYDeadlocks->pos);
+			close(servidor);
 			return posicionesYDeadlocks;
 			} else if (!strcmp(motivo,"senial")){
 				log_info(logs,"Moriste por la senial SIGTERM, vidas restantes: %d\n", ent->cantidadInicialVidas);
@@ -579,9 +581,10 @@ void* morir(char* motivo){
 				posicionesYDeadlocks->reintentosActualizados++;
 				ent->reintentos = posicionesYDeadlocks->reintentosActualizados;
 				log_info(logs,"Numero de reintentos realizados: %d",ent->reintentos);
-				//aviso al mapa que reinicio desde cero
+				/*aviso al mapa que reinicio desde cero
 				protocAManejar[0]='1';
-				send(servidor, protocAManejar, 2, 0);
+				send(servidor, protocAManejar, 2, 0); */
+				close(servidor);
 				return posicionesYDeadlocks;
 			}else if(string_equals_ignore_case(respuesta,"no")) {
 					log_info(logs,"Cerrando programa\n");
