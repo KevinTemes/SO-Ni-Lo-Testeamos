@@ -12,14 +12,14 @@
 #define MAX_LEN 128
 
 pthread_mutex_t mutexPaqueton = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t mutexRegistrado = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutexRegistro = PTHREAD_MUTEX_INITIALIZER;
+
 
 int numEntrenador;
 
 t_infoCliente clientesActivos[2048];
 
 extern sem_t sem_Listos;
-extern sem_t sem_quantum;
 extern char* nombreMapa;
 extern metaDataComun* datosMapa;
 extern t_log* logs;
@@ -123,7 +123,10 @@ void notificarCaida() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void matar(entrenador* entreni) {
 	log_info(logs,"sale entrenado %c de los que estan en curso",entreni->simbolo);
-	list_remove(entrenadoresEnCurso, entreni->numeroLlegada);
+	bool esEntrenador(entrenador* entiti){
+		return entreni->simbolo == entiti->simbolo;
+	}
+	list_remove_by_condition(entrenadoresEnCurso, (void*)esEntrenador);
 	free(entreni->pokePeleador);
 	log_info(logs,"libera pokemon del entrenador %c",entreni->simbolo);
 	list_destroy_and_destroy_elements(entreni->asignados, (void*) free);
@@ -137,6 +140,7 @@ void matar(entrenador* entreni) {
 		pok->estaOcupado = 0;
 	}
 	list_destroy(entreni->pokemones);
+	queue_destroy(entreni->colaAccion);
 	BorrarItem(items, entreni->simbolo);
 	nivel_gui_dibujar(items, nombreMapa);
 	free(entreni);
@@ -197,7 +201,7 @@ void atenderConexion(void *numeroCliente) {
 
 				//si el entrenador no esta registrado
 				if (!ent1->flagEstaEnLista) {
-					pthread_mutex_lock(&mutexPaqueton);
+
 
 					ent1->simbolo = cambio[1]; //almaceno simbolo en entrenador (paqueton [0] es variable global
 					ent1->numeroCliente = unCliente; //numero de cliente para envio de informacion
@@ -237,7 +241,6 @@ void atenderConexion(void *numeroCliente) {
 
 					//list_add_in_index(listaDeColasAccion,ent1->numeroLlegada,coli);
 
-					log_info(logi, "llego aca");
 
 					CrearPersonaje(items, ent1->simbolo, ent1->posx,
 							ent1->posy); //mete al pj en el mapa
@@ -246,26 +249,46 @@ void atenderConexion(void *numeroCliente) {
 
 					list_add(entrenadoresEnCurso, ent1);
 
+					pthread_mutex_lock(&mutexPaqueton);
+
 					usleep(datosMapa->retardoQ);
-					queue_push(colaListos, (void*) ent1); //llego un entrenador entonces lo meto en la cola de listos
+					queue_push(colaListos, ent1); //llego un entrenador entonces lo meto en la cola de listos
 
 					log_info(logi, "entrenador %c a listos", ent1->simbolo); //informo por archivo de log la llegada del entrenador
 
+					int otroauxix;
+
+					t_list* listAux = list_create();
+
+					for(otroauxix=0;otroauxix<queue_size(colaListos);otroauxix++){
+						list_add(listAux,queue_pop(colaListos));
+					}
+
+					for(otroauxix=0;otroauxix<list_size(listAux);otroauxix++){
+						entrenador* entrena;
+						entrena = list_get(listAux,otroauxix);
+						log_info(logs,"entrenadores en cola listos: %c",entrena->simbolo);
+						queue_push(colaListos,entrena);
+					}
+
+
 					sem_post(&sem_Listos); //produce un ent en colaListos
 
-					if(!strcmp(datosMapa->algoritmo,"RR")){
+				/*	if(!strcmp(datosMapa->algoritmo,"RR")){
 					sem_post(&sem_quantum);
-					}
+					} */
+
 					pthread_mutex_unlock(&mutexPaqueton);
+
+
+
 					//	aux = '\0';
 
 				}
 
 				//si el entrenador se encontraba registrado
 				else {
-
-					pthread_mutex_lock(&mutexRegistrado);
-
+					pthread_mutex_lock(&mutexRegistro);
 
 					queue_push(ent1->colaAccion, cambio[0]); //pusheo nuevo accionar a la cola auxiliar
 					/*int ac;
@@ -275,10 +298,12 @@ void atenderConexion(void *numeroCliente) {
 					//list_replace(listaDeColasAccion, ent1->numeroLlegada, cola); //reemplaza la cola de la lista por la auxiliar
 					log_info(logi, "paso el replace");
 
-					if(!strcmp(datosMapa->algoritmo,"RR")){
+		/*			if(!strcmp(datosMapa->algoritmo,"RR")){
 					sem_post(&sem_quantum);
 					}
-					pthread_mutex_unlock(&mutexRegistrado);
+*/
+					pthread_mutex_unlock(&mutexRegistro);
+
 					//aux = '\0';
 				}
 
@@ -309,11 +334,16 @@ void atenderConexion(void *numeroCliente) {
 				free(bufferCosaUno);
 			}
 
+			if(cambio[0] == 1){
+				status = 0;
+
+			}
+
 		}
 
 	}
-
 	ent1->fallecio = 1;
+	queue_clean(ent1->colaAccion);
     log_info(logi,"entrenador fallece");
 
 }
