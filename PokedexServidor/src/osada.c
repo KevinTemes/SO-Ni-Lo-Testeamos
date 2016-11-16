@@ -96,44 +96,14 @@ disco_osada osada_iniciar() {
 		exit(0);
 			}
 
-	//datos del archivo, no lo pongo en funcion auxiliar porque despues necesito los int
-	int sz;
-
-	//recorro el archivo para saber el tamaño
-	sz = fsize(archivo);
-
-	//segun el tamaño en bytes del archivo, divido para obtener la cantidad de bloques total
-	int bloques = sz/64;
-
-
-    //BITMAP ----> N bloques = F/8/OSADA_BLOCK_SIZE
-    int N = bloques/8/OSADA_BLOCK_SIZE;
-
-    /*
-     * int N = bloques/8;
-     * div_t bitmap = div(N, OSADA_BLOCK_SIZE);
-     * if(bitmap.rem == 0){
-     * }*/
-
-
-    //TABLA DE ASIGNACIONES ----> A bloques = (F-1-N-1024) * 4 / OSADA_BLOCK_SIZE
-	int A = ((bloques-1-N-1024)*4)/OSADA_BLOCK_SIZE;
-
-
-	//BLOQUES DE DATOS ------> X bloques = F-1-N-1024-A
-	int X = bloques-1-N-1024-A;
-
-
-
-
 	//leo el header
-	// fread(head,sizeof(osada_header),1,archivo);
     fread(unDisco.header,sizeof(osada_header),1,archivo);
 
     int tablaAsignacionesEnBytes = (unDisco.header->fs_blocks - 1 -1024 - unDisco.header->bitmap_blocks)
     		* 4;
     div_t bloquesTablaAsignacion = div(tablaAsignacionesEnBytes, OSADA_BLOCK_SIZE);
 
+    // Cargo el tamaño en bloques de cada estructura
 
 	unDisco.cantBloques.bloques_header = 1;
 	unDisco.cantBloques.bloques_bitmap = unDisco.header->bitmap_blocks;
@@ -149,15 +119,6 @@ disco_osada osada_iniciar() {
 
     //esto muestra el header
     log_info(logs,"\n\n----HEADER----\n\n");
-    /*int i;
-    for(i=0;i<7;i++){
-    	char c;
-    	c = head->magic_number[i];
-    	printf("%c", c);
-    }*/
-
-    // Mapeo el archivo en un puntero, con mmap
-
 
 
     log_info(logs, "Identificador: %s\n", unDisco.header->magic_number);
@@ -169,9 +130,10 @@ disco_osada osada_iniciar() {
 
 
     // Leo el bitmap
-    char *unBitarray = malloc(N * OSADA_BLOCK_SIZE);
-    fread(unBitarray, N * OSADA_BLOCK_SIZE, 1, archivo);
-    unDisco.bitmap = bitarray_create(unBitarray, (N * OSADA_BLOCK_SIZE));
+    size_t tamanioBitmap = unDisco.header->bitmap_blocks * OSADA_BLOCK_SIZE;
+    void *unBitarray = malloc(tamanioBitmap);
+    fread(unBitarray, tamanioBitmap, 1, archivo);
+    unDisco.bitmap = bitarray_create(unBitarray, tamanioBitmap);
 
 
     int h=0; // despues lo cambiamos, sino tira warning
@@ -192,35 +154,14 @@ disco_osada osada_iniciar() {
     fread(unDisco.tablaDeArchivos, sizeof(osada_file), 2048, archivo);
 
 
-    log_info(logs,"\n\n----TABLA----\n\n");
-
-
-/*    int j;
-    for(j=0;j<17;j++){
-    	char a;
-    	a=tablaArchivo->fname[j];
-    	printf("%c",a);
-    } */
-
-
-    int i;
-    for(i=0; i<=171; i++){
-    log_info(logs,"Estado: %c\n",unDisco.tablaDeArchivos[i].state);
-    log_info(logs, "Nombre del archivo: %s \n",unDisco.tablaDeArchivos[i].fname);
-    log_info(logs,"Bloque Padre: %d\n",unDisco.tablaDeArchivos[i].parent_directory);
-    log_info(logs,"Tamaño del Archivo: %d\n",unDisco.tablaDeArchivos[i].file_size);
-    log_info(logs,"Fecha de ultima modificacion: %d\n",unDisco.tablaDeArchivos[i].lastmod);
-    log_info(logs,"Bloque inicial: %d\n\n",unDisco.tablaDeArchivos[i].first_block);
-    }
-
-
     // Leo la tabla de asignaciones
-    unDisco.tablaDeAsignaciones = malloc(A * OSADA_BLOCK_SIZE);
-    fread(unDisco.tablaDeAsignaciones, (A * OSADA_BLOCK_SIZE), 1, archivo);
+    int tamanioTablaAsignaciones = unDisco.cantBloques.bloques_tablaDeAsignaciones * OSADA_BLOCK_SIZE;
+    unDisco.tablaDeAsignaciones = malloc(tamanioTablaAsignaciones);
+    fread(unDisco.tablaDeAsignaciones, tamanioTablaAsignaciones, 1, archivo);
 
     fclose(archivo);
     free(logs);
-    free(unBitarray);
+  //  free(unBitarray);
 	return unDisco;
 
 
