@@ -210,7 +210,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	//free(objetivosMapa);
 	//free(cosasMapa);
 
-	free(horaInicio);
+	//free(horaInicio);
 	free(resultado);
 	free(protocolo);
 	free(protocAManejar);
@@ -321,6 +321,8 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 				//libero los buffer antes de volver
 				free(bufferEspecie);
 				free(bufferNombreMetadata);
+				free(finBloq);
+				free(inicioBloq);
 				//free(bufferNivel);
 				return tiempo;
 
@@ -406,9 +408,6 @@ void* sacarTiempo(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,char*
 		calculoTiempo->sFin = atoi(fin[2]);
 		calculoTiempo->milFin = atoi(fin[3]);
 
-		free(inicio);
-		free(fin);
-
 		int horasAventura = calculoTiempo->hFin - calculoTiempo->hInicio;
 		int minAventura = calculoTiempo->mFin - calculoTiempo-> mInicio;
 		int segAventura = calculoTiempo->sFin - calculoTiempo-> sInicio;
@@ -428,6 +427,9 @@ void* sacarTiempo(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,char*
 			log_info(logs,"Ahora sos un maestro pokemon, lo lograste a las %s \n", horaFin);
 			log_info(logs,"La aventura duró: %d:%d:%d:%d  \n",horasAventura,minAventura,segAventura,milAventura);
 		}
+
+		free(inicio);
+		free(fin);
 
 	return NULL;
 }
