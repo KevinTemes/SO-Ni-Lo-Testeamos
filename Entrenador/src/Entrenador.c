@@ -400,7 +400,7 @@ void terminarAventura(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,c
 	sacarTiempo(calculoTiempo,tiempo,"aventura",horaInicio,horaFin);
 	free(horaFin);
 
-	log_info(logs,"El tiempo total que paso bloqueado en las pokenests fue: %d:%d:%d:%d \n", (tiempo)->horasBloqueado,(tiempo)->minutosBloqueado,(tiempo)->segundosBloqueado,(tiempo)->milesimasBloqueado);
+	log_info(logs,"El tiempo total que paso bloqueado en las pokenests fue: %d horas, %d minutos, %d segundos\n", (tiempo)->horasBloqueado,(tiempo)->minutosBloqueado,(tiempo)->segundosBloqueado);
 	log_info(logs,"La cantidad de deadlocks es: %d \n", posicionesYDeadlocks->cantDeadlocks);
 	log_info(logs,"Cantidad de muertes: %d\n",posicionesYDeadlocks->cantMuertes);
 
@@ -413,20 +413,38 @@ void* sacarTiempo(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,char*
 		char** fin = string_n_split(horaFin,4,":");
 
 		// convierto a enteros los char*
-		calculoTiempo->hInicio = atoi(inicio[0]);
-		calculoTiempo->mInicio = atoi(inicio[1]);
+		calculoTiempo->hInicio = atoi(inicio[0])*3600;
+		calculoTiempo->mInicio = atoi(inicio[1])*60;
 		calculoTiempo->sInicio = atoi(inicio[2]);
-		calculoTiempo->milInicio = atoi(inicio[3]);
+		calculoTiempo->milInicio = atoi(inicio[3])/1000;
 
-		calculoTiempo->hFin = atoi(fin[0]);
-		calculoTiempo->mFin = atoi(fin[1]);
+
+
+		calculoTiempo->hFin = atoi(fin[0])*3600;
+		calculoTiempo->mFin = atoi(fin[1])*60;
 		calculoTiempo->sFin = atoi(fin[2]);
-		calculoTiempo->milFin = atoi(fin[3]);
+		calculoTiempo->milFin = atoi(fin[3])/1000;
 
-		int horasAventura = calculoTiempo->hFin - calculoTiempo->hInicio;
-		int minAventura = calculoTiempo->mFin - calculoTiempo-> mInicio;
-		int segAventura = calculoTiempo->sFin - calculoTiempo-> sInicio;
-		int milAventura = calculoTiempo->milFin - calculoTiempo-> milInicio;
+		int totalSegInicio = calculoTiempo->hInicio + calculoTiempo ->mInicio + calculoTiempo->milInicio + calculoTiempo->sInicio;
+		int totalSegFin = calculoTiempo->hFin + calculoTiempo ->mFin + calculoTiempo->milFin + calculoTiempo->sFin;
+
+		int tiempoQueTardo = totalSegFin - totalSegInicio;
+
+		div_t divHorasCocienteResto;
+		divHorasCocienteResto = div(tiempoQueTardo,3600);
+		int horasAventura = divHorasCocienteResto.quot;
+
+		div_t divMinutosCocienteResto;
+		divMinutosCocienteResto = div(divHorasCocienteResto.rem,60);
+		int minAventura = divMinutosCocienteResto.quot;
+
+
+		double segYMil = divMinutosCocienteResto.rem;
+		double parteDecimal;
+		int segAventura = divMinutosCocienteResto.rem /1;
+
+		parteDecimal = segYMil - segAventura;
+		double milAventura = parteDecimal;
 
 		if(!strcmp(estado,"bloqueado")){
 
@@ -435,17 +453,24 @@ void* sacarTiempo(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,char*
 			(tiempo)->segundosBloqueado = (tiempo)->segundosBloqueado + segAventura;
 			(tiempo)->milesimasBloqueado = (tiempo)->milesimasBloqueado + milAventura;
 
-			log_info(logs,"El tiempo que paso bloqueado en esta pokenest fue: %d:%d:%d:%d  \n",horasAventura,minAventura,segAventura,milAventura);
+			log_info(logs,"El tiempo que paso bloqueado en esta pokenest fue %d horas, %d minutos, %d segundos \n",horasAventura,minAventura,segAventura);
 
 			return tiempo;
 		} else if (!strcmp(estado,"aventura")){
 			log_info(logs,"Ahora sos un maestro pokemon, lo lograste a las %s \n", horaFin);
-			log_info(logs,"La aventura duró: %d:%d:%d:%d  \n",horasAventura,minAventura,segAventura,milAventura);
+			log_info(logs,"La aventura duró %d horas, %d minutos, %d segundos  \n",horasAventura,minAventura,segAventura);
 		}
 
+		/*int i;
+		int j;
 
-		free(inicio);
-		free(fin);
+		for(i=0;inicio!=NULL;i++){
+			free(inicio[i]);
+		}
+
+		for(j=0;fin!=NULL;j++){
+			free(fin[j]);
+		}*/
 
 	return NULL;
 }

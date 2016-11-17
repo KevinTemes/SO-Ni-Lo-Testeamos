@@ -644,9 +644,9 @@ int osada_create(char *ruta){
 		int largoRuta = strlen(ruta);
 		char *dirPadre = string_substring_until(ruta, largoRuta - largo);
 		int parentDir = buscarArchivo(dirPadre);
-		pthread_mutex_lock(&mutexOsada);
+		pthread_mutex_lock(&misMutex[posTablaArchivos]);
 		crearArchivo(nombreArchivo, parentDir, bloqueLibre, posTablaArchivos);
-		pthread_mutex_unlock(&mutexOsada);
+		pthread_mutex_unlock(&misMutex[posTablaArchivos]);
 		exito = 0;
 	}
 
@@ -844,9 +844,9 @@ int osada_unlink(char *ruta){
 	log_info(logUnlink, "recibida solicitud de borrado (.unlink) del archivo %s", ruta);
 	int i = buscarArchivo(ruta);
 	if(i >= -1){
-		pthread_mutex_lock(&mutexOsada);
+		pthread_mutex_lock(&misMutex[i]);
 		borrarArchivo(i);
-		pthread_mutex_unlock(&mutexOsada);
+		pthread_mutex_unlock(&misMutex[i]);
 
 		exito = 0;
 	}
@@ -871,9 +871,9 @@ int osada_mkdir(char *ruta){
 	int largo = strlen(nombreDir);
 	nombreDir[largo] = '\0';
 	if(posTablaArchivos >= 0 && largo <= 17){
-		pthread_mutex_lock(&mutexOsada);
+		pthread_mutex_lock(&misMutex[posTablaArchivos]);
 		crearDirectorio(nombreDir, ruta, posTablaArchivos);
-		pthread_mutex_unlock(&mutexOsada);
+		pthread_mutex_unlock(&misMutex[posTablaArchivos]);
 		exito = 0;
 
 	}
@@ -903,9 +903,9 @@ int osada_rmdir(char *ruta){
 	log_info(logRmdir, "Recibida solicitud de borrado (.rmdir)del directorio %s", ruta);
 
 	int i = buscarArchivo(ruta);
-	pthread_mutex_lock(&mutexOsada);
+	pthread_mutex_lock(&misMutex[i]);
 	borrarDirectorio(i);
-	pthread_mutex_unlock(&mutexOsada);
+	pthread_mutex_unlock(&misMutex[i]);
 	exito = 0; // hay chances de error? validar
 	log_info(logRmdir, "El directorio %s se ha borrado exitosamente", ruta);
 
@@ -924,11 +924,11 @@ int osada_rename(char *ruta, char *nuevoNombre){
 		i = buscarArchivo(ruta);
 
 
-		pthread_mutex_lock(&mutexOsada);
+		pthread_mutex_lock(&misMutex[i]);
 
 		renombrar(nombre, i);
 
-		pthread_mutex_unlock(&mutexOsada);
+		pthread_mutex_unlock(&misMutex[i]);
 
 		exito = 0;
 	}
@@ -964,7 +964,7 @@ int osada_truncate(char *ruta, size_t nuevoTamanio){
 			siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
 
 		}
-
+		pthread_mutex_lock(&misMutex[i]);
 		while(bloquesNecesarios > 0){
 			miDisco.tablaDeAsignaciones[aux] = primerBloqueBitmapLibre();
 			bitarray_set_bit(miDisco.bitmap, miDisco.tablaDeAsignaciones[aux]);
@@ -978,6 +978,7 @@ int osada_truncate(char *ruta, size_t nuevoTamanio){
 		actualizarBitmap();
 		actualizarTablaDeArchivos();
 		actualizarTablaDeAsignaciones();
+		pthread_mutex_unlock(&misMutex[i]);
 		exito = 1;
 
 	}
@@ -989,7 +990,7 @@ int osada_truncate(char *ruta, size_t nuevoTamanio){
 			siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
 			bloquesNecesarios--;
 		}
-
+		pthread_mutex_lock(&misMutex[i]);
 		while(siguienteBloque != -1){
 			aux = miDisco.tablaDeAsignaciones[siguienteBloque];
 			miDisco.tablaDeAsignaciones[siguienteBloque] = -1;
@@ -1001,6 +1002,7 @@ int osada_truncate(char *ruta, size_t nuevoTamanio){
 		actualizarBitmap();
 		actualizarTablaDeArchivos();
 		actualizarTablaDeAsignaciones();
+		pthread_mutex_unlock(&misMutex[i]);
 		exito = 1;
 
 	}

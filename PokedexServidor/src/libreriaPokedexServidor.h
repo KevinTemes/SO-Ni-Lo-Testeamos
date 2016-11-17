@@ -56,6 +56,8 @@ int *discoMapeado;
 
 disco_osada miDisco;
 
+pthread_mutex_t misMutex[2048];
+
 /* Función para obtener el nombre de un archivo desde una tabla de archivos, en formato char * */
 char *getFileName(unsigned char *nombreArchivo);
 
