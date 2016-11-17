@@ -68,10 +68,13 @@ sem_t sem_Listos;
 sem_t sem_Bloqueados;
 sem_t sem_quantum;
 
+int numHilos;
+
 //declara hilos
 pthread_t hiloDePlanificador;
 pthread_t hiloDeadlock;
 pthread_t hiloDeBloqueados;
+pthread_t hiloDeBloque[numHilos];
 pthread_t hiloAtenderConexiones[1024];
 
 //deadlock
