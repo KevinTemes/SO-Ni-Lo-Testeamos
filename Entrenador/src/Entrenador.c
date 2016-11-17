@@ -330,22 +330,25 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 
 				//serializo mi pokemon, mando 5 7 Pikachu 33
 				int tamanioEspecieEnviar = sizeof(char) * strlen(pokePiola->especie);
+				printf("%s \n",pokePiola->especie);
+				printf("tamanio de especie a enviar: %d \n",tamanioEspecieEnviar);
 				//int tamanioNivelEnviar = sizeof(int);
 
-				int tamanioTotal = 3 *sizeof(int) + tamanioEspecieEnviar;
+				int tamanioTotal = sizeof(char) + 2 *sizeof(int) + tamanioEspecieEnviar;
 
 				void* miBuffer = malloc(tamanioTotal);
 				// si molesta, la cambio por un int comun que no sea de esa struct y listo
-				pokePiola->protocolo = 5;
+				//pokePiola->protocolo = 5;
+				char protocolo = '5';
 
 				//cargo los tamanios
-				memcpy(miBuffer, &(pokePiola->protocolo), sizeof(int));
-				memcpy(miBuffer + sizeof(int), &tamanioEspecieEnviar, sizeof(int));
+				memcpy(miBuffer, /*&(pokePiola->protocolo)*/ &protocolo, sizeof(char));
+				memcpy(miBuffer + sizeof(char), &tamanioEspecieEnviar, sizeof(int));
 
 				//cargo lo que voy a mandar
 				pokePiola->nivelPokemon = nivelPokeMasFuerte;
-				memcpy(miBuffer + (3* sizeof(int)), pokePiola->especie, tamanioEspecieEnviar);
-				memcpy(miBuffer + (3* sizeof(int)) + tamanioEspecieEnviar, (void*)pokePiola->nivelPokemon, sizeof(int));
+				memcpy(miBuffer + sizeof(char) +  sizeof(int), pokePiola->especie, tamanioEspecieEnviar);
+				memcpy(miBuffer + sizeof(char) +  sizeof(int) + tamanioEspecieEnviar, &(pokePiola->nivelPokemon), sizeof(int));
 
 				send(servidor,miBuffer,tamanioTotal,0);
 
