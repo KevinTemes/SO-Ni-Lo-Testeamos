@@ -310,7 +310,7 @@ void planificador(void* argu) {
 							|| acto == '8') {
 
 						//usleep(datosMapa->retardoQ);
-						usleep(75000);
+						sleep(1);
 						switch (acto) {
 
 						case '8':

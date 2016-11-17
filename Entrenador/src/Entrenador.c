@@ -278,8 +278,8 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 
 
 	recv(servidor,&(pokePiola->protocolo),sizeof(int),MSG_WAITALL);
-	log_info(logs, "Protocolo recibido: %d",pokePiola->protocolo);
-	//pokePiola->protocolo=1;
+	//pokePiola->protocolo = 3;
+	log_info(logs,"Recibi este protocolo %d",pokePiola->protocolo);
 
 		switch(pokePiola->protocolo){
 			case ATRAPA:
@@ -313,6 +313,9 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 				log_info(logs,"nivel %d", pokePiola->nivelPokemon);
 
 				list_add((ent)->listaNivAtrapados,pokePiola);
+				t_pokemonDeserializado* algo = list_get((ent->listaNivAtrapados),0);
+				log_info(logs,"Agregue el nivel %d",algo->nivelPokemon);
+
 				finBloq = temporal_get_string_time();
 
 				copiarArchivo(mapa,pokePiola->especie,pokePiola->nombreMetadata);
@@ -328,18 +331,19 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 
 			case DEADLOCK:
 				posicionesYDeadlocks->cantDeadlocks++;
-				int nivelPokeMasFuerte = agarrarPokeConMasNivel((ent)->listaNivAtrapados, pokePiola);
+				// sacar la struct de poke piola por parametro
+				t_pokemonDeserializado* elMasFuerte = agarrarPokeConMasNivel((ent)->listaNivAtrapados);
 
 				//serializo mi pokemon, mando 5 7 Pikachu 33
-				int tamanioEspecieEnviar = sizeof(char) * strlen(pokePiola->especie);
-				printf("%s \n",pokePiola->especie);
-				printf("tamanio de especie a enviar: %d \n",tamanioEspecieEnviar);
+				int tamanioEspecieEnviar = sizeof(char) * strlen(elMasFuerte->especie);
+				log_info(logs,"%s",elMasFuerte->especie);
+				log_info(logs,"tamanio de especie a enviar: %d",tamanioEspecieEnviar);
 				//int tamanioNivelEnviar = sizeof(int);
 
 				int tamanioTotal = sizeof(char) + 2 *sizeof(int) + tamanioEspecieEnviar;
 
 				void* miBuffer = malloc(tamanioTotal);
-				// si molesta, la cambio por un int comun que no sea de esa struct y listo
+
 				//pokePiola->protocolo = 5;
 				char protocolo = '5';
 
@@ -348,18 +352,18 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 				memcpy(miBuffer + sizeof(char), &tamanioEspecieEnviar, sizeof(int));
 
 				//cargo lo que voy a mandar
-				pokePiola->nivelPokemon = nivelPokeMasFuerte;
-				memcpy(miBuffer + sizeof(char) +  sizeof(int), pokePiola->especie, tamanioEspecieEnviar);
-				memcpy(miBuffer + sizeof(char) +  sizeof(int) + tamanioEspecieEnviar, &(pokePiola->nivelPokemon), sizeof(int));
+				memcpy(miBuffer + sizeof(char) +  sizeof(int), elMasFuerte->especie, tamanioEspecieEnviar);
+				memcpy(miBuffer + sizeof(char) +  sizeof(int) + tamanioEspecieEnviar, &(elMasFuerte->nivelPokemon), sizeof(int));
 
 				send(servidor,miBuffer,tamanioTotal,0);
 
-				recv(servidor,&(pokePiola->protocolo),sizeof(int),MSG_WAITALL);
-				log_info(logs,"Recibi este protocolo: %d",pokePiola->protocolo);
+				int protocoloRecibido;
+				recv(servidor,&(protocoloRecibido),sizeof(int),MSG_WAITALL);
+				log_info(logs,"Recibi este protocolo: %d \n",protocoloRecibido);
 				//int pokePiola->protocolo = 7;
-				if(pokePiola->protocolo==MORI){
+				if(protocoloRecibido==MORI){
 					morir("deadlock");
-				} else if(pokePiola->protocolo==SOBREVIVI){
+				} else if(protocoloRecibido==SOBREVIVI){
 					log_info(logs,"Sobrevivi al deadlock \n");
 				}
 				free(miBuffer);
@@ -370,7 +374,7 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 }
 
 
-int agarrarPokeConMasNivel(t_list* listaNivAtrapados, t_pokemonDeserializado* pokePiola){
+void* agarrarPokeConMasNivel(t_list* listaNivAtrapados){
 
 	int ordenarDeMayorAMenor(t_pokemonDeserializado* poke1, t_pokemonDeserializado* poke2){
 		return (poke1->nivelPokemon>poke2->nivelPokemon);
@@ -378,8 +382,16 @@ int agarrarPokeConMasNivel(t_list* listaNivAtrapados, t_pokemonDeserializado* po
 
 	list_sort(listaNivAtrapados,(void*)ordenarDeMayorAMenor);
 
-	int nivelPokeDevuelto = (int)list_get(listaNivAtrapados,0);
-	return nivelPokeDevuelto;
+	t_pokemonDeserializado* elMasFuerte	= list_get(listaNivAtrapados,0);
+
+	if(list_size(listaNivAtrapados)==0){
+		log_info(logs,"No hay nada en la lista, chau!");
+		return NULL;
+	}else{
+		log_info(logs, "El mas fuerte es %s y el nivel que tiene es %d", elMasFuerte->nombreMetadata, elMasFuerte->nivelPokemon);
+	}
+
+	return elMasFuerte;
 }
 
 
@@ -430,6 +442,7 @@ void* sacarTiempo(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,char*
 			log_info(logs,"Ahora sos un maestro pokemon, lo lograste a las %s \n", horaFin);
 			log_info(logs,"La aventura duró: %d:%d:%d:%d  \n",horasAventura,minAventura,segAventura,milAventura);
 		}
+
 
 		free(inicio);
 		free(fin);
