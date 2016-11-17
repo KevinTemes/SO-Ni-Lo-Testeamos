@@ -74,7 +74,7 @@ int numHilos;
 pthread_t hiloDePlanificador;
 pthread_t hiloDeadlock;
 pthread_t hiloDeBloqueados;
-pthread_t hiloDeBloque[numHilos];
+
 pthread_t hiloAtenderConexiones[1024];
 
 //deadlock
@@ -320,7 +320,7 @@ void planificador(void* argu) {
 								entre->posy--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-								//nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 								q--;
 								//log_info(logs,"valor de quantum %d",q);
 							}
@@ -333,7 +333,7 @@ void planificador(void* argu) {
 								entre->posy++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-								//nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 								q--;
 								//log_info(logs,"valor de quantum %d",q);
 							}
@@ -346,7 +346,7 @@ void planificador(void* argu) {
 								entre->posx--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-								//nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 								q--;
 								//log_info(logs,"valor de quantum %d",q);
 							}
@@ -358,7 +358,7 @@ void planificador(void* argu) {
 								entre->posx++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-								//nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 
 								q--;
 								//log_info(logs, "valor de quantum %d", q);
@@ -422,7 +422,7 @@ void planificador(void* argu) {
 					int i;
 					for (i = 0; i < tamanioLista; i++) {
 
-						ent = list_get(listaAux, 0);
+						ent = list_get(listaAux, i);
 						queue_push(colaListos, ent);
 					}
 					int bloqueo=0;
@@ -434,11 +434,12 @@ void planificador(void* argu) {
 					int acto2;
 
 
-						acto = (int) queue_pop(ent1->colaAccion);
+						acto = (int) queue_peek(ent1->colaAccion);
 
 						//log_info(logs,"funca3");
 
 						if (isalpha(acto)) {
+							queue_pop(ent1->colaAccion);
 							int ka;
 							for (ka = 0; ka < list_size(pokenests); ka++) {
 								datosPokenest = (metaDataPokeNest*) list_get(pokenests,
@@ -480,7 +481,7 @@ void planificador(void* argu) {
 						//8 es 56, 2 es 50, 4 es 52, 6 es 54
 
 						if (isdigit(acto)) {
-							while(banderin && (!(ent1->fallecio) && queue_size(ent1->colaAccion))){
+							while(banderin && (!(ent1->fallecio)) && queue_size(ent1->colaAccion)){
 							acto = (int) queue_pop(ent1->colaAccion);
 							log_info(logs, "entre como un campeon");
 							if (acto == '2' || acto == '4' || acto == '6'
@@ -560,7 +561,7 @@ void planificador(void* argu) {
 
 					}
 
-					if (!bloqueo && !ent1->fallecio) {
+					if (!bloqueo && !ent1->fallecio && !bloqueo) {
 						usleep(datosMapa->retardoQ);
 						//q = datosMapa->quantum;
 						queue_push(colaListos, ent1);
@@ -685,7 +686,7 @@ void bloqueados() {
 					//log_info(logs, "llego a bloqueados");
 
 					restarRecurso(items, poki->pokinest);
-					//nivel_gui_dibujar(items, nombreMapa);
+					nivel_gui_dibujar(items, nombreMapa);
 
 
 					queue_push(colaListos, ent1);
@@ -795,8 +796,8 @@ int main(int argc, char* argv[]) {
 	log_info(logs,
 			"Los tres archivos de config fueron creados exitosamente!\n");
 
-	//nivel_gui_inicializar();
-	//nivel_gui_get_area_nivel(&rows, &cols);
+	nivel_gui_inicializar();
+	nivel_gui_get_area_nivel(&rows, &cols);
 
 	//POKENESTchar** posPoke;
 	int ka;
@@ -812,7 +813,7 @@ int main(int argc, char* argv[]) {
 				datosPokenest->cantPokemons);
 	}
 
-	//nivel_gui_dibujar(items, argv[1]);
+	nivel_gui_dibujar(items, argv[1]);
 
 	//hilo de planificacion
 
@@ -917,7 +918,7 @@ int main(int argc, char* argv[]) {
 		BorrarItem(items, ide);
 	}
 	close(socketEscucha);
-	//nivel_gui_terminar();
+	nivel_gui_terminar();
 
 	free(datos); //siendo datos una variable global para el almacenamiento de pokenest
 	free(datosMapa);
