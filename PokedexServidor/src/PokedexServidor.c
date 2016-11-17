@@ -26,6 +26,9 @@
 #define PUERTO "7777"
 t_log* logs;
 
+
+
+
 int main(int argc, char **argv) {
 
 
@@ -43,6 +46,14 @@ int main(int argc, char **argv) {
 	 fd_disco = open("/home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/challenge.bin", O_RDWR);
 	 fstat(fd_disco, &discoStat);
 	 miDisco.discoMapeado = mmap(0, discoStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_disco, 0);
+
+	 // Inicio los semáforos
+	 int m;
+	 for (m = 0; m < 2048; m++){
+	 		 pthread_mutex_init(&misMutex[m], NULL);
+	 	 }
+
+
 
 	 //signal(SIGPIPE, SIG_IGN);
 
