@@ -396,31 +396,183 @@ void planificador(void* argu) {
 
 
 		}
-		if (!strcmp(datosMapa->algoritmo, "SDRF")) {
-			sem_wait(&sem_Listos);
-			t_list* listaAux = list_create();
-			while (!queue_is_empty(colaListos)) {
-				entrenador* ent;
-				ent = queue_pop(colaListos);
-				list_add(listaAux, ent);
-			}
-			bool esMasCerca(entrenador *cerca, entrenador *lejos) {
-				if (cerca->flagLeAsignaronPokenest
-						&& lejos->flagLeAsignaronPokenest) {
-					return ((cerca->posx - cerca->posPokex)
-							+ (cerca->posy - cerca->posPokey))
-							< ((lejos->posx - lejos->posPokex)
-									+ (lejos->posy - lejos->posPokey));
-				} else {
-					return -1;
-				}
-			}
-			list_sort(listaAux, (void*) esMasCerca);
 
-		}
+////////////////////////////////////////////////////////EMPIEZA SRDF
+
+		if (!strcmp(datosMapa->algoritmo, "SRDF")) {
+					log_info(logs, "entre a srdf");
+
+
+					t_list* listaAux = list_create();
+
+					entrenador* ent1;
+					entrenador* ent;
+
+
+
+					while (!queue_is_empty(colaListos)) {
+						ent = queue_pop(colaListos);
+						list_add(listaAux, ent);
+					}
+
+					list_sort(listaAux, (void*) esMasCerca);
+
+					int tamanioLista;
+					tamanioLista = list_size(listaAux);
+					int i;
+					for (i = 0; i < tamanioLista; i++) {
+
+						ent = list_get(listaAux, 0);
+						queue_push(colaListos, ent);
+					}
+					int bloqueo=0;
+					int banderin=1;
+					ent1 = (entrenador*) queue_pop(colaListos);
+
+
+					int acto;
+					int acto2;
+
+
+						acto = (int) queue_pop(ent1->colaAccion);
+
+						//log_info(logs,"funca3");
+
+						if (isalpha(acto)) {
+							int ka;
+							for (ka = 0; ka < list_size(pokenests); ka++) {
+								datosPokenest = (metaDataPokeNest*) list_get(pokenests,
+										ka);
+								if (datosPokenest->caracterPokeNest[0] == acto) {
+
+									log_info(logs, "antes del send %s",
+											datosPokenest->posicion);
+									int pedo;
+									pedo =
+											send(
+													(clientesActivos[ent1->numeroCliente]).socket,
+													datosPokenest->posicion, 5, 0);
+
+									log_info(logs, "Se envio coordenadas: %d", pedo);
+
+									char** posicionPoke;
+									posicionPoke = string_split(datosPokenest->posicion,
+											";");
+
+									ent1->posPokex = atoi(posicionPoke[0]);
+									ent1->posPokey = atoi(posicionPoke[1]);
+									ent1->pokenestAsignado =
+											datosPokenest->caracterPokeNest[0];
+									ent1->flagLeAsignaronPokenest = 1;
+
+									ka = list_size(pokenests);
+
+									log_info(logs, "la posicion es  %d y %d",
+											ent1->posPokex, ent1->posPokey);
+									log_info(logs, "el acto es  %d o %c ", acto, acto);
+
+								}
+							}
+
+
+						}
+
+						//8 es 56, 2 es 50, 4 es 52, 6 es 54
+
+						if (isdigit(acto)) {
+							while(banderin && (!(ent1->fallecio) && queue_size(ent1->colaAccion))){
+							acto = (int) queue_pop(ent1->colaAccion);
+							log_info(logs, "entre como un campeon");
+							if (acto == '2' || acto == '4' || acto == '6'
+									|| acto == '8') {
+
+								usleep(70000);
+								switch (acto) {
+
+								case '8':
+									if (ent1->posy > 1 && !ent1->fallecio) {
+										log_info(logs, "mueva arriba");
+
+										ent1->posy--;
+										MoverPersonaje(items, ent1->simbolo, ent1->posx,
+												ent1->posy);
+										nivel_gui_dibujar(items, argument);
+
+									}
+									break;
+
+								case '2':
+									if (ent1->posy < rows && !ent1->fallecio) {
+										log_info(logs, "mueva abajo");
+
+										ent1->posy++;
+										MoverPersonaje(items, ent1->simbolo, ent1->posx,
+												ent1->posy);
+										nivel_gui_dibujar(items, argument);
+
+									}
+									break;
+
+								case '4':
+									if (ent1->posx > 1 && !ent1->fallecio) {
+										log_info(logs, "mueva izquierda");
+
+										ent1->posx--;
+										MoverPersonaje(items, ent1->simbolo, ent1->posx,
+												ent1->posy);
+										nivel_gui_dibujar(items, argument);
+
+									}
+									break;
+								case '6':
+									if (ent1->posx < cols && !ent1->fallecio) {
+										log_info(logs, "mueva derecha");
+
+										ent1->posx++;
+										MoverPersonaje(items, ent1->simbolo, ent1->posx,
+												ent1->posy);
+										nivel_gui_dibujar(items, argument);
+
+									}
+									break;
+
+								}
+
+
+
+							}
+							if (acto == '9' && !ent1->fallecio) {
+								usleep(datosMapa->retardoQ);
+								banderin = 0;
+								bloqueo = 1;
+								queue_push(colaBloqueados, ent1);
+								sem_post(&sem_Bloqueados);
+
+							}
+
+						}
+					}
+
+					if (ent1->fallecio) {
+						log_info(logs, "Ahora lo mata en planificador");
+						matar(ent1);
+						//entre->fallecio=0;
+
+					}
+
+					if (!bloqueo && !ent1->fallecio) {
+						usleep(datosMapa->retardoQ);
+						//q = datosMapa->quantum;
+						queue_push(colaListos, ent1);
+						sem_post(&sem_Listos);
+					}
+
+				}
+
+			}
 
 	}
-}
+
 
 void bloqueados() {
 	while (1) {
