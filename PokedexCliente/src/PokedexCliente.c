@@ -47,106 +47,8 @@ struct stat archivoStat;
 #define PACKAGESIZE 1024
 
 //--------------------------------------------------------------------------------
-void* recibirDatos(int conexion, int tamanio){
-	void* mensaje=(void*)malloc(tamanio);
-	int bytesRecibidos = recv(conexion, mensaje, tamanio, MSG_WAITALL);
-	if (bytesRecibidos != tamanio) {
-		perror("Error al recibir el mensaje\n");
-		free(mensaje);
-		char* adios=string_new();
-		string_append(&adios,"0\0");
-		return adios;}
-	return mensaje;
-}
 
-void solicitarServidor(const char* path, int protocolo){ // Este va para los casos que se envie un path y que el servidor tenga que diferenciar que hay que hacer por un protocolo
 
-	int sizePath = (sizeof (char) * strlen(path));
-	int sizeProtocolo = sizeof(int);
-
-	void *leBuffer = malloc(sizePath + (2 * sizeof(int)));
-
-	// Aca tengo que pasar los sizes para poder saber donde termina al path y donde empieza el protocolo
-	memcpy(leBuffer, &protocolo, sizeof(int));
-	memcpy(leBuffer + sizeof(int), &sizePath, sizeof(int));
-	memcpy(leBuffer + (2 * sizeof(int)), path, sizePath);
-
-	send(pokedexServidor,leBuffer, sizePath + (2 * sizeof(int)), MSG_WAITALL);
-	free(leBuffer); // No se si esto va
-}
-
-void solicitarModificacionServidor(const char* path,const char* objetivo, int protocolo){
-	// Por medio del protocolo el servidor sabe que tiene que modificar
-
-	int sizePath = (sizeof (char) * strlen(path));
-	int sizeObjetivo = (sizeof (char) * strlen(objetivo));
-	int sizeProtocolo = sizeof (int);
-
-	void *leBuffer = malloc (sizePath + sizeObjetivo + sizeProtocolo);
-
-	memcpy(leBuffer, &sizePath, sizeof(int));
-	memcpy(leBuffer + sizeof(int), &sizeObjetivo, sizeof(int));
-	memcpy(leBuffer + (2 * sizeof(int)), &sizeProtocolo, sizeof(int));
-
-	memcpy(leBuffer + (3 * sizeof(int)),&path, sizePath);
-	memcpy(leBuffer + (3 * sizeof(int))+ sizePath, &objetivo, sizeObjetivo);
-	memcpy(leBuffer + (3 * sizeof(int))+ sizePath + sizeObjetivo, &protocolo, sizeProtocolo);
-
-	send(pokedexServidor, leBuffer, sizePath + sizeObjetivo + sizeProtocolo, 0);
-	free(leBuffer);
-}
-
-int recibirTipoFile(){
-	int tipoFile = 0;
-	int sizeTipoFile = sizeof(int);
-
-	recv(pokedexServidor, &sizeTipoFile, sizeof(int), MSG_WAITALL);
-	void*bufferTipoFile = malloc(sizeTipoFile);
-	recv(pokedexServidor, bufferTipoFile, sizeTipoFile, 0);
-	tipoFile = (int) bufferTipoFile;
-
-	free(bufferTipoFile);
-	return tipoFile;
-}
-
-char* recibirListado(){
-	char* listadoConcatenado = NULL;
-	int sizeListadoConcatenado = (sizeof(char)* strlen(listadoConcatenado));
-
-	recv(pokedexServidor, &sizeListadoConcatenado, sizeof(int),MSG_WAITALL );
-	void*bufferListado = malloc(sizeListadoConcatenado);
-	recv(pokedexServidor,bufferListado,sizeListadoConcatenado,0);
-	listadoConcatenado = (char*) bufferListado;
-
-	free(bufferListado);
-	return listadoConcatenado;
-}
-
-char* recibirContenidoArchivo(){ // recibe contenido de archivo en buffer void
-	void* contenido = NULL;
-	int sizeContenido = (sizeof(char)* strlen(contenido));
-
-	recv(pokedexServidor, &sizeContenido, sizeof(int), MSG_WAITALL);
-	void*bufferContenido = malloc(sizeContenido);
-	recv(pokedexServidor,bufferContenido,sizeContenido,0);
-	contenido = bufferContenido;
-
-	free(bufferContenido);
-	return contenido;
-}
-
-int recibirEstadoOperacion(){
-	int resultado = 1;
-	int sizeResultado = (sizeof(int));
-
-	recv(pokedexServidor, &sizeResultado, sizeof(int), MSG_WAITALL);
-	void*bufferResultado = malloc(sizeResultado);
-	recv(pokedexServidor,bufferResultado, sizeResultado,0);
-	resultado = (int) bufferResultado;
-
-	free(bufferResultado);
-	return resultado;
-}
 
 //--------------------------------------------------------------------------------
 
@@ -326,8 +228,18 @@ static int cliente_create(const char* path, mode_t modo, struct fuse_file_info *
 static int cliente_write(const char* path,const char *buf, size_t size, off_t offset, struct fuse_file_info* fi){
 	int res = 1;
 	protocolo = 4;
-	solicitarModificacionServidor(path,buf,protocolo);
-	res = recibirEstadoOperacion();
+	char *ruta = (char *)path;
+	int tamanioRuta = strlen(ruta);
+	void *buffer = malloc((2 * sizeof(int)) + sizeof(size_t)+ tamanioRuta + size + sizeof(off_t));
+	memcpy(buffer, &protocolo, sizeof(int));
+	memcpy(buffer + sizeof(int), &tamanioRuta, sizeof(int));
+	memcpy(buffer + (2 * sizeof(int)), &size, sizeof(size_t));
+	memcpy(buffer + (2 * sizeof(int)) + sizeof(size_t), ruta, tamanioRuta);
+	memcpy(buffer + (2 * sizeof(int)) + sizeof(size_t) + tamanioRuta, buf, size);
+	memcpy(buffer + (2 * sizeof(int)) + sizeof(size_t) + tamanioRuta + size, &offset, sizeof(off_t));
+
+	send(pokedexServidor, buffer, (4 * sizeof(int)) + tamanioRuta + size, MSG_WAITALL);
+
 	if (res==0){
 		printf("Archivo escrito exitosamente\n");
 	}
@@ -437,8 +349,26 @@ static int cliente_rmdir(const char* path){
 }
 
 int cliente_truncate(const char * path, off_t offset) {
-	int res = 0;
-	// "falsa" implementación de truncate para que .write no rompa los quinotos
+	int res;
+	int protocolo = 10;
+	char *ruta = (char *)path;
+	int tamanioRuta = strlen(ruta);
+	void *buffer = malloc((2 * sizeof(int)) + sizeof(off_t) + tamanioRuta);
+	memcpy(buffer, &protocolo, sizeof(int));
+	memcpy(buffer + sizeof(int), &tamanioRuta, sizeof(int));
+	memcpy(buffer + (2 *sizeof(int)), ruta, tamanioRuta);
+	memcpy(buffer + (2 *sizeof(int)) + tamanioRuta, &offset, sizeof(off_t));
+	send(pokedexServidor, buffer, (2 * sizeof(int)) + sizeof(off_t) + tamanioRuta, MSG_WAITALL);
+
+	recv(pokedexServidor, &res, sizeof(int), MSG_WAITALL);
+
+	if(res > 0){
+
+	}
+	else{
+
+	}
+
 	return res;
 }
 

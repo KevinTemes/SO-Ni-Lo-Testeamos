@@ -56,6 +56,8 @@ int *discoMapeado;
 
 disco_osada miDisco;
 
+pthread_mutex_t misMutex[2048];
+
 /* Función para obtener el nombre de un archivo desde una tabla de archivos, en formato char * */
 char *getFileName(unsigned char *nombreArchivo);
 
@@ -65,9 +67,6 @@ char *obtenerNombre(char *unaRuta);
 
 // Función para obtener el nombre de un directorio, dada su ruta
 char *getNombreDirectorio(char *ruta);
-
-/* Función loca para testear rececpción de mensajes a través de un socket. */
-void imprimirGiladas(void *unCliente);
 
 /* Función para imprimir por pantalla el contenido de un archivo de texto */
 void imprimir_archivo(char *rutaDelArchivo);
@@ -90,6 +89,12 @@ void *serializarString(char *unString);
 
 /* Concatenado de strings*/
 char* concat(const char *s1, const char *s2);
+
+/* Obtención de la cantidad de bloques a los que equivale un tamanio X*/
+int calcularBloquesNecesarios(int tamanio);
+
+/* Determinar si hay espacio en el disco para alojar N bloques*/
+int hayEspacioEnDisco(int N);
 
 /*conversión del contenido de un buffer en un string válido */
 char *convertirString(void *buffer, int tamanio);
@@ -144,5 +149,7 @@ int osada_mkdir(char *ruta);
 int osada_rmdir(char *ruta);
 
 int osada_rename(char *ruta, char *nuevoNombre);
+
+int osada_truncate(char *ruta, size_t nuevoTamanio);
 
 #endif /* LIBRERIAPOKEDEXSERVIDOR_H_ */

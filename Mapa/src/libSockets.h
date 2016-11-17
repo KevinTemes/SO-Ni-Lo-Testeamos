@@ -17,9 +17,11 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <semaphore.h>
 #include <commons/config.h>
 #include <commons/log.h>
 #include <commons/collections/list.h>
+#include <commons/collections/queue.h>
 
 //estructura de pokimons
 typedef struct{
@@ -56,6 +58,13 @@ typedef struct {
     int estaOcupado;
 } metaDataPokemon;
 
+typedef struct{
+	pthread_t hilobloq;
+	sem_t sembloq;
+	sem_t sem2;
+	char pokenest;
+	t_queue* colabloq;
+}bloq;
 
 void leerConfiguracion();
 int leerConfigPokenest(char* ruta, t_list *pokenests);
