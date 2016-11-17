@@ -11,6 +11,7 @@
 
 extern t_log* logs;
 extern t_list* disponibles;
+extern t_list* listaContenedora;
 extern char* configMapa;
 metaDataPokeNest *datos; // Variable global
 metaDataComun* datosMapa;
@@ -79,8 +80,11 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 
 		while ((dir = readdir(d)) != NULL ) {
 			tabla* dispo;
+			bloq* strubloq;
 			dispo = malloc(sizeof(tabla));
 			datos = malloc(sizeof(metaDataPokeNest));
+			strubloq = malloc(sizeof(bloq));
+			strubloq->colabloq=queue_create();
 
 			if (dir->d_type == DT_DIR && (strcmp(dir->d_name, ".") != 0) && (strcmp(dir->d_name, "..") != 0)) {
 
@@ -117,6 +121,9 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 										"Identificador"));
 						datos->caracterPokeNest = simbolo;
 						dispo->pokenest=simbolo[0];
+						strubloq->pokenest = simbolo[0];
+						sem_init(&(strubloq->sembloq), 0, 0);
+						sem_init(&(strubloq->sem2),0,0);
 
 						{
 							int file_count = 0;
@@ -139,6 +146,7 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 						list_add(pokenests, (void*) datos);
 						log_info(logs,"Disponible: %c%d",dispo->pokenest,dispo->valor);
 						list_add(disponibles, dispo);
+						list_add(listaContenedora, strubloq);
 
 						config_destroy(archivoConfigPokenest);
 						//free(datos);
@@ -214,6 +222,13 @@ int leerPokemons(char *name, t_list *pokemons) {
 									poke->estaOcupado = 0;
 
 									list_add(po->listaPokemons,poke);
+
+									bool esPokenesti(bloq* t){
+										return t->pokenest == poke->especie[0];
+									}
+									bloq* alfa;
+									alfa = list_find(listaContenedora,(void*)esPokenesti);
+									sem_post(&(alfa->sembloq));
 
 								}
 							}

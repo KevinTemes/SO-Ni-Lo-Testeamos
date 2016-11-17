@@ -50,6 +50,7 @@ typedef struct{
 	int fallecio;
 } entrenador;
 
+
 /* Función loca para testear rececpción de mensajes a través de un socket. */
 void imprimirGiladas(void *unCliente);
 

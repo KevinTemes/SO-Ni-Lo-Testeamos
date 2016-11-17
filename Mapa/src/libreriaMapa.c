@@ -28,6 +28,7 @@ extern t_list* entrenadoresEnCurso;
 extern t_list* pokenests;
 extern t_list* items;
 extern t_list* disponibles;
+extern t_list* listaContenedora;
 
 /////////////////////////////////////////////////////////////////////////////
 void* recibirDatos(int conexion, int tamanio) {
@@ -134,6 +135,16 @@ void notificarCaida() {
 	exit(0);
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void sumarRecurso(t_list* items, char id) {
+    ITEM_NIVEL* item = _search_item_by_id(items, id);
+
+    if (item != NULL) {
+        item->quantity = item->quantity >= 0 ? item->quantity + 1 : 0;
+    } else {
+        printf("WARN: Item %c no existente\n", id);
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void matar(entrenador* entreni) {
@@ -152,6 +163,7 @@ void matar(entrenador* entreni) {
 	int y;
 	for (y = 0; y < list_size(entreni->pokemones); y++) {
 		metaDataPokemon* pok;
+		bloq* bli;
 		tabla* d;
 		pok = list_get(entreni->pokemones, y);
 		bool esLaPokenest3(tabla* a) {
@@ -159,7 +171,16 @@ void matar(entrenador* entreni) {
 			}
 		d = list_find(disponibles,(void*)esLaPokenest3);
 		d->valor++;
+		sumarRecurso(items,d->pokenest);
+		nivel_gui_dibujar(items,nombreMapa);
 		pok->estaOcupado = 0;
+		bool esLad(bloq* ver){
+			return ver->pokenest == pok->especie[0];
+		}
+		bli = list_find(listaContenedora,(void*)esLad);
+		list_remove(entreni->pokemones,y);
+		sem_post(&(bli->sembloq));
+
 	}
 	list_destroy(entreni->pokemones);
 	queue_destroy(entreni->colaAccion);
@@ -194,7 +215,7 @@ void atenderConexion(void *numeroCliente) {
 	while (status != 0) {
 
 		// paquete = recibirDatos(clientesActivos[unCliente].socket,2);
-		status = recv(clientesActivos[unCliente].socket, (void*) paquete,
+		status = recv(clientesActivos[unCliente].socket, &paquete,
 				sizeof(char), MSG_WAITALL);
 		if (status != 0) {
 			//printf("el Entrenador #%d dijo: \n %s", clientesActivos[unCliente].cliente, paquete);
@@ -205,7 +226,7 @@ void atenderConexion(void *numeroCliente) {
 					|| cambio[0] == '8' || cambio[0] == '4'
 					|| cambio[0] == '9') {
 				status = recv(clientesActivos[unCliente].socket,
-						(void*) paquete, sizeof(char), MSG_WAITALL);
+						&paquete, sizeof(char), MSG_WAITALL);
 
 				cambio[1] = paquete[0];
 
@@ -339,30 +360,30 @@ void atenderConexion(void *numeroCliente) {
 
 				//aux = '\0';
 			}
-			if (cambio[0] == 5) {
-				int tamanioUno, tamanioDos;
+			if (cambio[0] == '5') {
+				int tamanioUno;
+				log_info(logi,"llega un poke peleador");
 
 				ent1->pokePeleador = malloc(sizeof(metaDataPokemon));
 
-				recv(clientesActivos[ent1->numeroCliente].socket, &tamanioUno,
-						sizeof(int), MSG_WAITALL);
-				recv(clientesActivos[ent1->numeroCliente].socket, &tamanioDos,
-						sizeof(int), MSG_WAITALL);
+				recv(clientesActivos[ent1->numeroCliente].socket, &tamanioUno, sizeof(int), MSG_WAITALL);
+
+				log_info(logi,"el tamanio de la cosa uno es: %d",tamanioUno);
+			/*	recv(clientesActivos[ent1->numeroCliente].socket, &tamanioDos,
+						sizeof(int), MSG_WAITALL);         */
 
 				void *bufferCosaUno = malloc(tamanioUno);
-				void *bufferCosaDos = malloc(tamanioDos);
+				int nivel;
 
 				recv(clientesActivos[ent1->numeroCliente].socket, bufferCosaUno,
 						tamanioUno, MSG_WAITALL);
-				recv(clientesActivos[ent1->numeroCliente].socket, bufferCosaDos,
-						tamanioDos, MSG_WAITALL);
+				recv(clientesActivos[ent1->numeroCliente].socket, &nivel,sizeof(int), MSG_WAITALL);
 
 				((ent1->pokePeleador)->especie) = (char*) bufferCosaUno;
-				log_info(logs,"poke peleador de %c es %s",ent1->simbolo,(ent1->pokePeleador)->especie);
-				((ent1->pokePeleador)->nivel) = (int) bufferCosaDos;
-                log_info(logs,"nivel del poke peleador de %c es %d",ent1->simbolo,(ent1->pokePeleador)->nivel);
+				log_info(logi,"poke peleador de %c es %s",ent1->simbolo,(ent1->pokePeleador)->especie);
+				((ent1->pokePeleador)->nivel) = nivel;
+                log_info(logi,"nivel del poke peleador de %c es %d",ent1->simbolo,(ent1->pokePeleador)->nivel);
 
-				free(bufferCosaDos);
 				free(bufferCosaUno);
 			}
 
@@ -376,6 +397,30 @@ void atenderConexion(void *numeroCliente) {
 	}
 	ent1->fallecio = 1;
 	queue_clean(ent1->colaAccion);
+	int y;
+		for (y = 0; y < list_size(ent1->pokemones); y++) {
+			metaDataPokemon* pok;
+			bloq* bli;
+			tabla* d;
+			pok = list_get(ent1->pokemones, y);
+			bool esLaPokenest3(tabla* a) {
+					return pok->especie[0] == a->pokenest;
+				}
+			d = list_find(disponibles,(void*)esLaPokenest3);
+
+			if (d!=NULL){
+			d->valor++;
+			sumarRecurso(items,d->pokenest);
+			nivel_gui_dibujar(items,nombreMapa);
+			pok->estaOcupado = 0;
+			bool esLad(bloq* ver){
+				return ver->pokenest == pok->especie[0];
+			}
+			bli = list_find(listaContenedora,(void*)esLad);
+			list_remove(ent1->pokemones,y);
+			sem_post(&(bli->sembloq));
+			}
+		}
     log_info(logi,"entrenador fallece");
 
 }
