@@ -68,10 +68,13 @@ sem_t sem_Listos;
 sem_t sem_Bloqueados;
 sem_t sem_quantum;
 
+int numHilos;
+
 //declara hilos
 pthread_t hiloDePlanificador;
 pthread_t hiloDeadlock;
 pthread_t hiloDeBloqueados;
+
 pthread_t hiloAtenderConexiones[1024];
 
 //deadlock
@@ -154,22 +157,25 @@ void banquero() {
 
 
 			}
-			int pooi;
+			int pokixi;
 			entrenadoresEnDeadlock = list_create();
 			log_info(logs,"crea lista de entrenadores en deadlock");
-			for (pooi = 0; pooi < list_size(entrenadoresEnCurso); pooi++) {
+			for (pokixi = 0; pokixi < list_size(entrenadoresEnCurso); pokixi++) {
+				log_info(logs,"se mete al for pokixi");
 				entrenador* entreneitor;
-				if(!entreneitor->fallecio){
-				entreneitor = list_get(entrenadoresEnCurso, pooi);
+				//if(!(entreneitor->fallecio)){
+				entreneitor = list_get(entrenadoresEnCurso, pokixi);
 				log_info(logs,"entrenador %c esta marcado? %d",entreneitor->simbolo,entreneitor->estaMarcado);
 				if (!(entreneitor->estaMarcado)) {
 					log_info(logs,"entrenador %c en estado de deadlock");
 					int accione = 3;
-					send((clientesActivos[entreneitor->numeroCliente]).socket,
+					int efe;
+					efe = send((clientesActivos[entreneitor->numeroCliente]).socket,
 							(void*) accione, sizeof(int), 0);
+					log_info(logs,"%d",efe);
 					list_add(entrenadoresEnDeadlock, entreneitor);
 				}
-			}
+			//}
 			}
 
 			if (list_size(entrenadoresEnDeadlock)) {
@@ -233,6 +239,7 @@ void banquero() {
 				}
 			}
 			list_destroy_and_destroy_elements(vectorT, (void*) free);
+			list_destroy(entrenadoresEnDeadlock);
 		}
 		int auxi23;
 		for(auxi23=0;auxi23<list_size(entrenadoresEnCurso);auxi23++){
@@ -415,7 +422,7 @@ void planificador(void* argu) {
 					int i;
 					for (i = 0; i < tamanioLista; i++) {
 
-						ent = list_get(listaAux, 0);
+						ent = list_get(listaAux, i);
 						queue_push(colaListos, ent);
 					}
 					int bloqueo=0;
@@ -427,11 +434,12 @@ void planificador(void* argu) {
 					int acto2;
 
 
-						acto = (int) queue_pop(ent1->colaAccion);
+						acto = (int) queue_peek(ent1->colaAccion);
 
 						//log_info(logs,"funca3");
 
 						if (isalpha(acto)) {
+							queue_pop(ent1->colaAccion);
 							int ka;
 							for (ka = 0; ka < list_size(pokenests); ka++) {
 								datosPokenest = (metaDataPokeNest*) list_get(pokenests,
@@ -473,7 +481,7 @@ void planificador(void* argu) {
 						//8 es 56, 2 es 50, 4 es 52, 6 es 54
 
 						if (isdigit(acto)) {
-							while(banderin && (!(ent1->fallecio) && queue_size(ent1->colaAccion))){
+							while(banderin && (!(ent1->fallecio)) && queue_size(ent1->colaAccion)){
 							acto = (int) queue_pop(ent1->colaAccion);
 							log_info(logs, "entre como un campeon");
 							if (acto == '2' || acto == '4' || acto == '6'
@@ -553,7 +561,7 @@ void planificador(void* argu) {
 
 					}
 
-					if (!bloqueo && !ent1->fallecio) {
+					if (!bloqueo && !ent1->fallecio && !bloqueo) {
 						usleep(datosMapa->retardoQ);
 						//q = datosMapa->quantum;
 						queue_push(colaListos, ent1);

@@ -358,7 +358,9 @@ void atenderConexion(void *numeroCliente) {
 						tamanioDos, MSG_WAITALL);
 
 				((ent1->pokePeleador)->especie) = (char*) bufferCosaUno;
+				log_info(logs,"poke peleador de %c es %s",ent1->simbolo,(ent1->pokePeleador)->especie);
 				((ent1->pokePeleador)->nivel) = (int) bufferCosaDos;
+                log_info(logs,"nivel del poke peleador de %c es %d",ent1->simbolo,(ent1->pokePeleador)->nivel);
 
 				free(bufferCosaDos);
 				free(bufferCosaUno);
