@@ -101,7 +101,7 @@ typedef struct Paquete {
 	char *path;
 } t_paquete;
 
-int agarrarPokeConMasNivel(t_list*, t_pokemonDeserializado*);
+void* agarrarPokeConMasNivel(t_list*);
 void terminarAventura(t_calculoTiempo*,t_tiempoBloqueado*,char*);
 char* empezarAventura();
 void copiarMedalla(char*);
