@@ -131,7 +131,7 @@ disco_osada osada_iniciar() {
 
     // Leo el bitmap
     size_t tamanioBitmap = unDisco.header->bitmap_blocks * OSADA_BLOCK_SIZE;
-    void *unBitarray = malloc(tamanioBitmap);
+    char *unBitarray = malloc(tamanioBitmap);
     fread(unBitarray, tamanioBitmap, 1, archivo);
     unDisco.bitmap = bitarray_create(unBitarray, tamanioBitmap);
 
