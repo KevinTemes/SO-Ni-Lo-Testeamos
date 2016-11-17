@@ -148,6 +148,15 @@ void sumarRecurso(t_list* items, char id) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void matar(entrenador* entreni) {
+	/*int peo;
+		for(peo=0;list_size(entreni->asignados);peo++){
+		tabla* a;
+		tabla* b;
+		a=list_get(entreni->asignados,peo);
+		b=list_get(entreni->solicitud,peo);
+		a->valor=0;
+		b->valor=0;
+		}*/
 	log_info(logs,"sale entrenado %c de los que estan en curso",entreni->simbolo);
 	bool esEntrenador(entrenador* entiti){
 		return entreni->simbolo == entiti->simbolo;
@@ -155,6 +164,7 @@ void matar(entrenador* entreni) {
 
 	list_remove_by_condition(entrenadoresEnCurso, (void*)esEntrenador);
 	free(entreni->pokePeleador);
+
 	log_info(logs,"libera pokemon del entrenador %c",entreni->simbolo);
 	list_destroy_and_destroy_elements(entreni->asignados, (void*) free);
 	log_info(logs,"libera lista de asignados de %c",entreni->simbolo);

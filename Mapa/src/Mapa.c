@@ -103,7 +103,7 @@ void banquero() {
 				entrenador* en;
 				tabla* t;
 				en = list_get(entrenadoresEnCurso, iaux);
-				if (!en->fallecio) {
+			//	if (!en->fallecio) {
 					int auxixi;
 					int flago = 0;
 					for (auxixi = 0;
@@ -121,7 +121,7 @@ void banquero() {
 								en->simbolo);
 					}
 
-				}
+			//	}
 			}
 			int auu;
 
@@ -173,7 +173,7 @@ void banquero() {
 					pokixi++) {
 				log_info(logs, "se mete al for pokixi");
 				entrenador* entreneitor;
-				//if(!(entreneitor->fallecio)){
+				if(!(entreneitor->fallecio)){
 				entreneitor = list_get(entrenadoresEnCurso, pokixi);
 				log_info(logs, "entrenador %c esta marcado? %d",
 						entreneitor->simbolo, entreneitor->estaMarcado);
@@ -188,7 +188,7 @@ void banquero() {
 					log_info(logs, "%d", efe);
 					list_add(entrenadoresEnDeadlock, entreneitor);
 				}
-				//}
+				}
 			}
 
 			if (list_size(entrenadoresEnDeadlock)) {
@@ -369,7 +369,8 @@ void planificador(void* argu) {
 							|| acto == '8') {
 
 						//usleep(datosMapa->retardoQ);
-						usleep(datosMapa->retardoQ);
+						//usleep(datosMapa->retardoQ);
+						usleep(50000);
 						switch (acto) {
 
 						case '8':
@@ -1131,7 +1132,7 @@ int main(int argc, char* argv[]) {
 	//pthread_create(&hiloDeBloqueados, NULL, (void*) bloqueados, NULL);
 
 	//hilo deteccion de deadlock
-	pthread_create(&hiloDeadlock, NULL, (void*) banquero, NULL);
+	//pthread_create(&hiloDeadlock, NULL, (void*) banquero, NULL);
 
 	int auxili3;
 	for (auxili3 = 0; auxili3 < list_size(listaContenedora); auxili3++) {
