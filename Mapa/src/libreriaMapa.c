@@ -164,7 +164,7 @@ void matar(entrenador* entreni) {
 	list_destroy(entreni->pokemones);
 	queue_destroy(entreni->colaAccion);
 	BorrarItem(items, entreni->simbolo);
-	nivel_gui_dibujar(items, nombreMapa);
+	//nivel_gui_dibujar(items, nombreMapa);
 	free(entreni);
 	int iiiuax;
 	for(iiiuax=0; iiiuax<list_size(disponibles);iiiuax++){
@@ -275,7 +275,7 @@ void atenderConexion(void *numeroCliente) {
 					CrearPersonaje(items, ent1->simbolo, ent1->posx,
 							ent1->posy); //mete al pj en el mapa
 
-					nivel_gui_dibujar(items, nombreMapa);
+					//nivel_gui_dibujar(items, nombreMapa);
 
 					list_add(entrenadoresEnCurso, ent1);
 
@@ -358,7 +358,9 @@ void atenderConexion(void *numeroCliente) {
 						tamanioDos, MSG_WAITALL);
 
 				((ent1->pokePeleador)->especie) = (char*) bufferCosaUno;
+				log_info(logs,"poke peleador de %c es %s",ent1->simbolo,(ent1->pokePeleador)->especie);
 				((ent1->pokePeleador)->nivel) = (int) bufferCosaDos;
+                log_info(logs,"nivel del poke peleador de %c es %d",ent1->simbolo,(ent1->pokePeleador)->nivel);
 
 				free(bufferCosaDos);
 				free(bufferCosaUno);

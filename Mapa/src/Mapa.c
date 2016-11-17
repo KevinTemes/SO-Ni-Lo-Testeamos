@@ -154,22 +154,25 @@ void banquero() {
 
 
 			}
-			int pooi;
+			int pokixi;
 			entrenadoresEnDeadlock = list_create();
 			log_info(logs,"crea lista de entrenadores en deadlock");
-			for (pooi = 0; pooi < list_size(entrenadoresEnCurso); pooi++) {
+			for (pokixi = 0; pokixi < list_size(entrenadoresEnCurso); pokixi++) {
+				log_info(logs,"se mete al for pokixi");
 				entrenador* entreneitor;
-				if(!entreneitor->fallecio){
-				entreneitor = list_get(entrenadoresEnCurso, pooi);
+				//if(!(entreneitor->fallecio)){
+				entreneitor = list_get(entrenadoresEnCurso, pokixi);
 				log_info(logs,"entrenador %c esta marcado? %d",entreneitor->simbolo,entreneitor->estaMarcado);
 				if (!(entreneitor->estaMarcado)) {
 					log_info(logs,"entrenador %c en estado de deadlock");
 					int accione = 3;
-					send((clientesActivos[entreneitor->numeroCliente]).socket,
+					int efe;
+					efe = send((clientesActivos[entreneitor->numeroCliente]).socket,
 							(void*) accione, sizeof(int), 0);
+					log_info(logs,"%d",efe);
 					list_add(entrenadoresEnDeadlock, entreneitor);
 				}
-			}
+			//}
 			}
 
 			if (list_size(entrenadoresEnDeadlock)) {
@@ -233,6 +236,7 @@ void banquero() {
 				}
 			}
 			list_destroy_and_destroy_elements(vectorT, (void*) free);
+			list_destroy(entrenadoresEnDeadlock);
 		}
 		int auxi23;
 		for(auxi23=0;auxi23<list_size(entrenadoresEnCurso);auxi23++){
@@ -313,7 +317,7 @@ void planificador(void* argu) {
 								entre->posy--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-								nivel_gui_dibujar(items, argument);
+								//nivel_gui_dibujar(items, argument);
 								q--;
 								//log_info(logs,"valor de quantum %d",q);
 							}
@@ -326,7 +330,7 @@ void planificador(void* argu) {
 								entre->posy++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-								nivel_gui_dibujar(items, argument);
+								//nivel_gui_dibujar(items, argument);
 								q--;
 								//log_info(logs,"valor de quantum %d",q);
 							}
@@ -339,7 +343,7 @@ void planificador(void* argu) {
 								entre->posx--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-								nivel_gui_dibujar(items, argument);
+								//nivel_gui_dibujar(items, argument);
 								q--;
 								//log_info(logs,"valor de quantum %d",q);
 							}
@@ -351,7 +355,7 @@ void planificador(void* argu) {
 								entre->posx++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-								nivel_gui_dibujar(items, argument);
+								//nivel_gui_dibujar(items, argument);
 
 								q--;
 								//log_info(logs, "valor de quantum %d", q);
@@ -526,7 +530,7 @@ void bloqueados() {
 					//log_info(logs, "llego a bloqueados");
 
 					restarRecurso(items, poki->pokinest);
-					nivel_gui_dibujar(items, nombreMapa);
+					//nivel_gui_dibujar(items, nombreMapa);
 
 
 					queue_push(colaListos, ent1);
@@ -636,8 +640,8 @@ int main(int argc, char* argv[]) {
 	log_info(logs,
 			"Los tres archivos de config fueron creados exitosamente!\n");
 
-	nivel_gui_inicializar();
-	nivel_gui_get_area_nivel(&rows, &cols);
+	//nivel_gui_inicializar();
+	//nivel_gui_get_area_nivel(&rows, &cols);
 
 	//POKENESTchar** posPoke;
 	int ka;
@@ -653,7 +657,7 @@ int main(int argc, char* argv[]) {
 				datosPokenest->cantPokemons);
 	}
 
-	nivel_gui_dibujar(items, argv[1]);
+	//nivel_gui_dibujar(items, argv[1]);
 
 	//hilo de planificacion
 
@@ -758,7 +762,7 @@ int main(int argc, char* argv[]) {
 		BorrarItem(items, ide);
 	}
 	close(socketEscucha);
-	nivel_gui_terminar();
+	//nivel_gui_terminar();
 
 	free(datos); //siendo datos una variable global para el almacenamiento de pokenest
 	free(datosMapa);
