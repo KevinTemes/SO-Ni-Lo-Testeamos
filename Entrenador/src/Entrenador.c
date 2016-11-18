@@ -182,6 +182,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 							if (posicionesYDeadlocks->cargarDeNuevoObjetivo== 0){
 								list_add((ent)->pokemonsPorMapaCapturados,caracterPoke);
+								log_info(logs,"Capture en el mapa %s a %s", mapa,caracterPoke);
 								dictionary_remove(pokesDeCadaMapa,mapa);
 							}else{
 								dictionary_put(pokesDeCadaMapa,mapa,(ent)->pokemonsPorMapaCapturados); // vuelvo a meter todos los pokemons de ese mapa
@@ -314,7 +315,9 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 
 				list_add((ent)->listaNivAtrapados,pokePiola);
 				t_pokemonDeserializado* algo = list_get((ent->listaNivAtrapados),0);
-				log_info(logs,"Agregue el nivel %d",algo->nivelPokemon);
+				log_info(logs, "Especie agregada a la lista %s",algo->especie);
+				log_info(logs, "Especifico agregado a la lista %s", algo->nombreMetadata);
+				log_info(logs,"Agregue el nivel a la lista %d",algo->nivelPokemon);
 
 				finBloq = temporal_get_string_time();
 
@@ -334,11 +337,10 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 				// sacar la struct de poke piola por parametro
 				t_pokemonDeserializado* elMasFuerte = agarrarPokeConMasNivel((ent)->listaNivAtrapados);
 
+				//int tamanioNivelEnviar = sizeof(int);
 				//serializo mi pokemon, mando 5 7 Pikachu 33
 				int tamanioEspecieEnviar = sizeof(char) * strlen(elMasFuerte->especie);
-				log_info(logs,"%s",elMasFuerte->especie);
-				log_info(logs,"tamanio de especie a enviar: %d",tamanioEspecieEnviar);
-				//int tamanioNivelEnviar = sizeof(int);
+
 
 				int tamanioTotal = sizeof(char) + 2 *sizeof(int) + tamanioEspecieEnviar;
 
@@ -348,12 +350,17 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 				char protocolo = '5';
 
 				//cargo los tamanios
-				memcpy(miBuffer, /*&(pokePiola->protocolo)*/ &protocolo, sizeof(char));
+				memcpy(miBuffer, &protocolo, sizeof(char));
 				memcpy(miBuffer + sizeof(char), &tamanioEspecieEnviar, sizeof(int));
 
 				//cargo lo que voy a mandar
 				memcpy(miBuffer + sizeof(char) +  sizeof(int), elMasFuerte->especie, tamanioEspecieEnviar);
 				memcpy(miBuffer + sizeof(char) +  sizeof(int) + tamanioEspecieEnviar, &(elMasFuerte->nivelPokemon), sizeof(int));
+
+				log_info(logs,"Protocolo que mando %c",protocolo);
+				log_info(logs,"tamanio de especie a enviar: %d",tamanioEspecieEnviar);
+				log_info(logs,"especie del mas fuerte %s",elMasFuerte->especie);
+				log_info(logs, "nivel del mas fuerte %d",elMasFuerte->nivelPokemon);
 
 				send(servidor,miBuffer,tamanioTotal,0);
 
@@ -376,8 +383,8 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 
 void* agarrarPokeConMasNivel(t_list* listaNivAtrapados){
 
-	int ordenarDeMayorAMenor(t_pokemonDeserializado* poke1, t_pokemonDeserializado* poke2){
-		return (poke1->nivelPokemon>poke2->nivelPokemon);
+	bool ordenarDeMayorAMenor(t_pokemonDeserializado* poke1, t_pokemonDeserializado* poke2){
+		return (poke1->nivelPokemon<poke2->nivelPokemon);
 	}
 
 	list_sort(listaNivAtrapados,(void*)ordenarDeMayorAMenor);

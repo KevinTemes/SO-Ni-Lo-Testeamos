@@ -77,4 +77,7 @@ void atenderConexion(void *numeroCliente);
 //mata un entrenador
 void matar(entrenador* en);
 
+//liberar recursos
+void terminarMapa();
+
 #endif /* LIBRERIAPOKEDEXSERVIDOR_H_ */
