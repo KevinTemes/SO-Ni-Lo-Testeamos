@@ -30,6 +30,8 @@
 #include <sys/stat.h>
 #include <assert.h>
 
+t_log* logPS;
+
 typedef struct{
 	int cliente;
 	int socket;

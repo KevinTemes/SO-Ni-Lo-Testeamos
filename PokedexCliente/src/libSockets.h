@@ -19,6 +19,7 @@
 #include <commons/log.h>
 #include <commons/string.h>
 
+t_log* logPC;
 
 /* setup_listen(IP,PORT) *
  * Devuelve el socket que se consiguió para escuchar
