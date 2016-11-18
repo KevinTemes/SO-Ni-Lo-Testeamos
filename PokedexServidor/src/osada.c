@@ -14,7 +14,6 @@
 #include "osada.h"
 #include <commons/log.h>
 #include <commons/string.h>
-#include <commons/bitarray.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -75,6 +74,7 @@ void seekBloques(FILE* archivo,int cantidad){
 	fseek(archivo,cantidad*(OSADA_BLOCK_SIZE),SEEK_CUR);
 }
 
+
 disco_osada osada_iniciar() {
 
 // Antes esto tiraba error de tipos, cambie el osada.h para que reciba punteros
@@ -83,11 +83,8 @@ disco_osada osada_iniciar() {
 	disco_osada unDisco;
 	unDisco.header = malloc(sizeof(osada_header));
 
-	FILE* archivo;
-/*	if ((archivo = fopen("../challenge.bin" , "r")) == NULL) {
-		log_error(logs,"No se pudo abrir archivo\n");
-		exit(0);
-			} */
+	  FILE* archivo;
+	//int archivo;
 
 	// Este fopen lo hago con la ruta completa para debugear en eclipse. hay que usar el de arriba!
 	if ((archivo = fopen("/home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/challenge.bin" , "r")) == NULL) {
@@ -95,6 +92,9 @@ disco_osada osada_iniciar() {
 
 		exit(0);
 			}
+
+
+
 
 	//leo el header
     fread(unDisco.header,sizeof(osada_header),1,archivo);
@@ -130,19 +130,15 @@ disco_osada osada_iniciar() {
 
 
     // Leo el bitmap
-    size_t tamanioBitmap = unDisco.header->bitmap_blocks * OSADA_BLOCK_SIZE;
+    int tamanioBitmap = unDisco.header->fs_blocks / 8;
+
     char *unBitarray = malloc(tamanioBitmap);
+    //unDisco.bitmap = malloc(tamanioBitmap);
     fread(unBitarray, tamanioBitmap, 1, archivo);
     unDisco.bitmap = bitarray_create(unBitarray, tamanioBitmap);
 
 
     int h=0; // despues lo cambiamos, sino tira warning
-
-    //multiplico N bytes del bitmap por el tamaño de un bloque para desplazarme esa cantidad y saltear el bitmap
-    //h = fseek(archivo,(N*OSADA_BLOCK_SIZE),SEEK_CUR); seria la funcion equivalente al seekBloques
-    //ahorra tiempo, que se yo
-
- //   seekBloques(archivo,N);
 
     if(h!=0){
     	perror("Error con el seek");
@@ -161,8 +157,8 @@ disco_osada osada_iniciar() {
 
     fclose(archivo);
     free(logs);
-  //  free(unBitarray);
 	return unDisco;
 
 
 }
+

@@ -107,6 +107,8 @@ int buscarArchivo(char *unaRuta);
 /* Búsqueda de la primera posición libre en la tabla de archivos*/
 int buscarPosicionLibre();
 
+int inicioDeDatos();
+
 /* copiado de un bloque de datos en un buffer */
 void copiarBloque(void *buffer, int bloque, int offset);
 
