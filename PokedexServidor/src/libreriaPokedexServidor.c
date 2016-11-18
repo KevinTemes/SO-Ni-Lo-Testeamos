@@ -7,18 +7,6 @@
 
 #include "libreriaPokedexServidor.h"
 
-#define MAX_LEN 128
-
-#define KNORMAL "\x1B[0m"
-#define KROJO "\x1B[31m"
-#define KVERDE "\x1B[32m"
-#define KAMARILLO "\x1B[33m"
-#define KAZUL "\x1B[34m"
-#define KMAGENTA "\x1B[35m"
-#define KCYAN "\x1B[36m"
-#define KBLANCO "\x1B[37m"
-
-pthread_mutex_t mutexOsada=PTHREAD_MUTEX_INITIALIZER;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void *serializarString(char *unString){
@@ -34,7 +22,6 @@ void *serializarString(char *unString){
 
 int buscarArchivo(char *unaRuta){
 	int parentDir = 65535;
-//	int existeArchivo = 0;
 	if(strlen(unaRuta) == 1){
 		goto terminar;
 	}
@@ -83,16 +70,10 @@ int recorrerDirectorio(char *nombre, int parentDir){
 
 				}
 			}
-
-			//*fname = '\0';
-			//  memset(fname, 0, strlen(fname) * sizeof(fname[0]));
-			//free(fname);
-
 		}
 
 	}
 
-	//free(fname);
 	finalizar:
 	return posicion;
 }
@@ -114,39 +95,6 @@ char *obtenerNombre(char *unaRuta){
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-void copiarBloque(void *buffer, int bloque, int offset){
-
-	int inicioDatos = (miDisco.cantBloques.bloques_header + miDisco.cantBloques.bloques_bitmap
-			+ miDisco.cantBloques.bloques_tablaDeArchivos
-			+ miDisco.cantBloques.bloques_tablaDeAsignaciones) * 64;
-	memcpy(buffer + offset, &miDisco.discoMapeado[inicioDatos + (bloque * 64)], 64);
-
-}
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-void copiarBloqueIncompleto(void *buffer, int bloque, int offset, int tamanio){
-
-	int inicioDatos = (miDisco.cantBloques.bloques_header + miDisco.cantBloques.bloques_bitmap
-				+ miDisco.cantBloques.bloques_tablaDeArchivos
-				+ miDisco.cantBloques.bloques_tablaDeAsignaciones) * 64;
-	memcpy(buffer + offset, &miDisco.discoMapeado[inicioDatos + (bloque * 64)], tamanio);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-void *serializarArchivo(void* buffer, void* contenidoArchivo, int tamanioArchivo){
-	memcpy(buffer, &tamanioArchivo, sizeof(int));
-	memcpy(buffer + sizeof(int), &contenidoArchivo, tamanioArchivo);
-
-	return buffer;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-int obtenerTamanioArchivo(char* ruta){
-	int posicionArchivo = buscarArchivo(ruta);
-	int tamanio = miDisco.tablaDeArchivos[posicionArchivo].file_size;
-	return tamanio;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////
 uint32_t consultarTiempo(){
 	time_t ahora = time(NULL);
 	struct tm tiem;
@@ -163,40 +111,6 @@ uint32_t consultarTiempo(){
 	return stamp;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-void iterarNombre(char* origen, unsigned char respuesta[17]){
-	int i;
-		for (i = 0; i <= 17; i++ ){
-			respuesta[i] = origen[i];
-			if (i == 17){
-				respuesta[i] = '\0';
-			}
-		}
-}
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-void iterarNombreAlReves(char* origen, unsigned char respuesta[17]){
-	int i;
-		for (i = 0; i <= 17; i++ ){
-			origen[i] = respuesta[i];
-			if (i == 17){
-				respuesta[i] = '\0';
-			}
-		}
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-void llenarEstructuraNuevo(osada_file archivo, char* ruta, int bloqueTablaAsignacionesLibre){ // revisar lo del char[17]
-
-//	t_infoDirectorio directorio = getInfoDirectorio(ruta); // Ver que onda con esta estructura
-	uint32_t tiempo = consultarTiempo();
-
-	archivo.state = '\1'; // Regular
-//	iterarNombre(directorio.nombre,archivo.fname); // Hay que buscar una solucion mas copada a esto
-//	archivo.parent_directory = directorio.padre;
-	archivo.file_size = 0 ; // Se crean vacios
-	archivo.lastmod = tiempo;
-	archivo.first_block = bloqueTablaAsignacionesLibre;
-}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 char *convertirString(void *buffer, int tamanioRuta){
 	char *nuevaRuta = string_new();
@@ -1128,6 +1042,4 @@ int inicioDeDatos(){
 
 return inicio;
 }
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
