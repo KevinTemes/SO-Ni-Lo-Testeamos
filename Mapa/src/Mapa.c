@@ -35,16 +35,16 @@
 pokimons pic;
 
 //variables globales
-extern metaDataPokeNest *datos;
+extern metaDataPokeNest *datos; //MATADO
 extern t_infoCliente clientesActivos[1024];
 char* nombreMapa;
 char* configMapa;
 
 //variables del mapa
 int nE = 0; //numero entrenador
-metaDataComun* datosMapa;
+metaDataComun* datosMapa; //MATADO
 metaDataPokeNest* datosPokenest;
-metaDataPokemon* datosPokemon;
+//metaDataPokemon* datosPokemon;
 int rows; // nro de filas
 int cols; // nro de columnas
 
@@ -52,14 +52,14 @@ int cols; // nro de columnas
 t_log* logs;
 
 //listas
-t_list* pokemons;
-t_list* pokenests;
-t_list* disponibles;
+t_list* pokemons;//MATADO
+t_list* pokenests;//MATADO
+t_list* disponibles;//MATADO
 t_list* items;
-t_list* entrenadoresEnCurso;
-t_list* entrenadoresEnDeadlock;
-t_list* listaContenedora;
-t_list* deadlocks;
+t_list* entrenadoresEnCurso;//MATADO
+t_list* entrenadoresEnDeadlock;//MATADO
+t_list* listaContenedora; //MATADO
+t_list* deadlocks;//MATADO
 //colas
 t_queue* colaListos;
 t_queue* colaBloqueados;
@@ -67,7 +67,6 @@ t_queue* colaBloqueados;
 //semaforos
 sem_t sem_Listos;
 sem_t sem_Bloqueados;
-sem_t sem_quantum;
 
 int numHilos;
 
@@ -76,10 +75,12 @@ pthread_t hiloDePlanificador;
 pthread_t hiloDeadlock;
 pthread_t hiloDeBloqueados;
 pthread_t hiloAtenderConexiones[1024];
+pthread_attr_t attr;
 
 pthread_mutex_t mu = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexEnvio = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexMuerte = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutexMuertee = PTHREAD_MUTEX_INITIALIZER;
 
 //deadlock
 void banquero() {
@@ -88,7 +89,7 @@ void banquero() {
 		usleep(datosMapa->tiempoChequeoDeadlock);
 		//sleep(2);
 		//log_info(logs,"chequeo de la existencia de deadlock");
-
+//if(!SIGINT){
 		if (list_size(entrenadoresEnCurso)) {
 			t_list* vectorT = list_create();
 			int auxiliar;
@@ -309,7 +310,7 @@ void banquero() {
 					int accion = 7;
 					send(clientesActivos[muerto->numeroCliente].socket, &accion,sizeof(int), 0);
 					log_info(logs, "entrenador %c sera eliminado",muerto->simbolo);
-					int y;
+				/*	int y;
 					for (y = 0; y < list_size(muerto->pokemones); y++) {
 						metaDataPokemon* pok;
 						bloq* bli;
@@ -321,7 +322,7 @@ void banquero() {
 						d = list_find(disponibles, (void*) esLaPokenest3);
 						d->valor++;
 						sumarRecurso(items, d->pokenest);
-						nivel_gui_dibujar(items, nombreMapa);
+						//nivel_gui_dibujar(items, nombreMapa);
 						pok->estaOcupado = 0;
 						bool esLad(bloq* ver) {
 							return ver->pokenest == pok->especie[0];
@@ -329,8 +330,7 @@ void banquero() {
 						bli = list_find(listaContenedora, (void*) esLad);
 						sem_post(&(bli->sembloq));
 
-					}
-					muerto->fallecio = 1;
+					}*/
 
 				}
 			}
@@ -350,6 +350,7 @@ void banquero() {
 		}
 	}
 }
+	//}
 }
 
 //arranque de planificacion
@@ -547,18 +548,23 @@ void planificador(void* argu) {
 				}
 			}
 
+			pthread_mutex_lock(&mutexMuertee);
 			if (entre->fallecio) {
 				log_info(logs, "Ahora lo mata en planificador");
 				matar(entre);
 				//entre->fallecio=0;
 
 			}
+			pthread_mutex_unlock(&mutexMuertee);
 
 			if (!bloqueo && !entre->fallecio) {
 				usleep(datosMapa->retardoQ);
 				//q = datosMapa->quantum;
+
+				if(!(entre->fallecio)){
 				queue_push(colaListos, entre);
 				sem_post(&sem_Listos);
+				}
 			}
 
 		}
@@ -794,11 +800,21 @@ void bloqui(void* stru) {
 	while (1) {
 
 		sem_wait(&strub->sem2);
+
 		sem_wait(&strub->sembloq);
+		/*int ew;
+				for(ew=0;ew<queue_size(strub->colabloq);ew++){
+					entrenador* ex;
+					ex = queue_pop(strub->colabloq);
+					if(ex->fallecio){
+						matar(ex);
+					}
+					queue_push(strub->colabloq,ex);
+				}*/
 		entrenador* ent1;
 		pokimons* poki;
 		ent1 = queue_pop(strub->colabloq);
-		if (!ent1->fallecio) {
+		if (ent1->fallecio == 0) {
 
 			//log_info(logs, "Extrajo un bloqueado");
 			bool esLaPokenest(pokimons *parametro1) {
@@ -955,7 +971,11 @@ int main(int argc, char* argv[]) {
 	//inicializo semaforos
 	sem_init(&sem_Listos, 0, 0);
 	sem_init(&sem_Bloqueados, 0, 0);
-	sem_init(&sem_quantum, 0, 0);
+
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
+
+
 
 	remove("Mapa.log");
 	logs = log_create("Mapa.log", "Mapa", false, log_level_from_string("INFO"));
@@ -1023,8 +1043,7 @@ int main(int argc, char* argv[]) {
 		char ide;
 		ide = datosPokenest->caracterPokeNest[0];
 
-		CrearCaja(items, ide, atoi(posPoke[0]), atoi(posPoke[1]),
-				datosPokenest->cantPokemons);
+		CrearCaja(items, ide, atoi(posPoke[0]), atoi(posPoke[1]),datosPokenest->cantPokemons);
 	}
 
 	nivel_gui_dibujar(items, argv[1]);
@@ -1039,7 +1058,7 @@ int main(int argc, char* argv[]) {
 	for (auxili3 = 0; auxili3 < list_size(listaContenedora); auxili3++) {
 		bloq* stru;
 		stru = list_get(listaContenedora, auxili3);
-		pthread_create(&(stru->hilobloq), NULL, (void*) bloqui, (void*) stru);
+		pthread_create(&(stru->hilobloq), &attr, (void*) bloqui, (void*) stru);
 	}
 
 	//hilo deteccion de deadlock
@@ -1049,7 +1068,7 @@ int main(int argc, char* argv[]) {
 	log_info(logs,
 			"iniciado el servidor principal del Mapa. Aguardando conexiones...\n\n");
 
-	signal(SIGINT, notificarCaida);
+
 
 	signal(SIGUSR2, leerConfiguracion);
 
@@ -1138,16 +1157,19 @@ int main(int argc, char* argv[]) {
 	close(socketEscucha);
 	nivel_gui_terminar();
 
-	free(datos); //siendo datos una variable global para el almacenamiento de pokenest
-	free(datosMapa);
-	free(datosPokenest);
-	free(datosPokemon);
-	/*	list_destroy_and_destroy_elements(pokenests,free);
-	 list_destroy_and_destroy_elements(items,free);
-	 list_destroy_and_destroy_elements(listaDeColasAccion,free);
-	 queue_destroy_and_destroy_elements(colaListos,free);
-	 queue_destroy_and_destroy_elements(colaBloqueados,free);
-	 */
+/*	list_destroy_and_destroy_elements(pokenests,(void*)free);
+		list_destroy_and_destroy_elements(disponibles,(void*)free);
+		int auxie;
+		void destruir(bloq* self){
+			queue_destroy(self->colabloq);
+			free(self);
+		}
+		list_destroy(listaContenedora);
+		list_destroy(entrenadoresEnCurso);
+		list_destroy(pokemons);
+		free(datosMapa);
+*/
+	signal(SIGINT, terminarMapa);
 	return EXIT_SUCCESS;
 
 }

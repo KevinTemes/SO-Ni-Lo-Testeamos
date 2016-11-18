@@ -81,8 +81,8 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 		while ((dir = readdir(d)) != NULL ) {
 			tabla* dispo;
 			bloq* strubloq;
-			dispo = malloc(sizeof(tabla));
-			datos = malloc(sizeof(metaDataPokeNest));
+			dispo = malloc(sizeof(tabla)); //MATADO
+			datos = malloc(sizeof(metaDataPokeNest)); //MATADO
 			strubloq = malloc(sizeof(bloq));
 			strubloq->colabloq=queue_create();
 
@@ -91,6 +91,7 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 				char* ruta = string_new();
 				string_append(&ruta,string_from_format("%s/%s/metadata", name,dir->d_name));
 				t_config* archivoConfigPokenest = config_create(ruta);
+				free(ruta);
 
 				printf("%s\n", dir->d_name);
 
@@ -114,6 +115,7 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 								config_get_string_value(archivoConfigPokenest,
 										"Posicion"));
 						datos->posicion = posicion;
+						printf("%s\n",datos->posicion);
 
 						char* simbolo = string_new();
 						string_append(&simbolo,
@@ -205,6 +207,7 @@ int leerPokemons(char *name, t_list *pokemons) {
 								    char* ruta = string_new();
 								    string_append(&ruta,string_from_format("%s/%s/%s", name,dir->d_name,entry->d_name));
 									t_config* archivoConfigPokenest = config_create(ruta);
+									free(ruta);
 
 									poke->nivel = config_get_int_value(archivoConfigPokenest,"Nivel");
 									//printf("nivel: %d\n",poke->nivel);
@@ -230,7 +233,9 @@ int leerPokemons(char *name, t_list *pokemons) {
 									alfa = list_find(listaContenedora,(void*)esPokenesti);
 									sem_post(&(alfa->sembloq));
 
+									config_destroy(archivoConfigPokenest);
 								}
+
 							}
 
 							closedir(dirp);

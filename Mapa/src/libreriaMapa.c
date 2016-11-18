@@ -21,6 +21,8 @@ int numEntrenador;
 
 t_infoCliente clientesActivos[2048];
 
+extern t_list* entrenadoresEnCurso;
+extern t_list* pokemons;
 extern sem_t sem_Listos;
 extern char* nombreMapa;
 extern metaDataComun* datosMapa;
@@ -137,6 +139,24 @@ void notificarCaida() {
 	exit(0);
 }
 
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void terminarMapa(){
+	list_destroy_and_destroy_elements(pokenests,(void*)free);
+	list_destroy_and_destroy_elements(disponibles,(void*)free);
+	int auxie;
+	void destruir(bloq* self){
+		queue_destroy(self->colabloq);
+		free(self);
+	}
+	list_destroy(listaContenedora);
+	list_destroy(entrenadoresEnCurso);
+	list_destroy(pokemons);
+	free(datosMapa);
+
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void sumarRecurso(t_list* items, char id) {
     ITEM_NIVEL* item = _search_item_by_id(items, id);
@@ -215,9 +235,10 @@ void atenderConexion(void *numeroCliente) {
 	char paquete[1024];
 	char cambio[2];
 	int status = 1;
+	int estaLista = 0;
 
 	entrenador* ent1 = malloc(sizeof(entrenador));
-	ent1->flagEstaEnLista = 0; //al ser nuevo no esta registrado en la lista
+
 
 	t_log* logi;
 	//remove("Mapi.log");
@@ -263,7 +284,7 @@ void atenderConexion(void *numeroCliente) {
 				//ent1->accion = cambio[0]; //almaceno que hacer en entrenador paqueton global
 
 				//si el entrenador no esta registrado
-				if (!ent1->flagEstaEnLista) {
+				if (!estaLista) {
 
 
 					ent1->simbolo = cambio[1]; //almaceno simbolo en entrenador (paqueton [0] es variable global
@@ -271,7 +292,7 @@ void atenderConexion(void *numeroCliente) {
 					ent1->flagLeAsignaronPokenest = 0;
 					ent1->numeroLlegada = (clientesActivos[unCliente].cliente
 							- 1); //numero del entrenador
-					ent1->flagEstaEnLista = 1; //ahora este entrenador nuevo esta en la lista
+					estaLista = 1;
 					ent1->estaMarcado = 0;
 					ent1->entroBloqueados = 0;
 					ent1->fallecio = 0;
@@ -395,6 +416,8 @@ void atenderConexion(void *numeroCliente) {
 						tamanioUno, MSG_WAITALL);
 				recv(clientesActivos[ent1->numeroCliente].socket, &nivel,sizeof(int), MSG_WAITALL);
 
+
+
 				((ent1->pokePeleador)->especie) = (char*) bufferCosaUno;
 				log_info(logs,"poke peleador de %c es %s",ent1->simbolo,(ent1->pokePeleador)->especie);
 				((ent1->pokePeleador)->nivel) = nivel;
@@ -416,29 +439,26 @@ void atenderConexion(void *numeroCliente) {
 	ent1->fallecio = 1;
 	queue_clean(ent1->colaAccion);
 	int y;
-		for (y = 0; y < list_size(ent1->pokemones); y++) {
-			metaDataPokemon* pok;
-			bloq* bli;
-			tabla* d;
-			pok = list_get(ent1->pokemones, y);
-			bool esLaPokenest3(tabla* a) {
-					return pok->especie[0] == a->pokenest;
-				}
-			d = list_find(disponibles,(void*)esLaPokenest3);
+	for (y = 0; y < list_size(ent1->pokemones); y++) {
+							metaDataPokemon* pok;
+							bloq* bli;
+							tabla* d;
+							pok = list_get(ent1->pokemones, y);
+							bool esLaPokenest3(tabla* a) {
+								return pok->especie[0] == a->pokenest;
+							}
+							d = list_find(disponibles, (void*) esLaPokenest3);
+							d->valor++;
+							sumarRecurso(items, d->pokenest);
+							nivel_gui_dibujar(items, nombreMapa);
+							pok->estaOcupado = 0;
+							bool esLad(bloq* ver) {
+								return ver->pokenest == pok->especie[0];
+							}
+							bli = list_find(listaContenedora, (void*) esLad);
+							sem_post(&(bli->sembloq));
 
-			if (d!=NULL){
-			d->valor++;
-			sumarRecurso(items,d->pokenest);
-			nivel_gui_dibujar(items,nombreMapa);
-			pok->estaOcupado = 0;
-			bool esLad(bloq* ver){
-				return ver->pokenest == pok->especie[0];
-			}
-			bli = list_find(listaContenedora,(void*)esLad);
-			list_remove(ent1->pokemones,y);
-			sem_post(&(bli->sembloq));
-			}
-		}
+						}
     log_info(logi,"entrenador fallece");
     pthread_mutex_unlock(&mutexMortenAtend);
 }
