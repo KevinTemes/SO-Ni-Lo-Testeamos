@@ -19,14 +19,7 @@
 #include <commons/log.h>
 #include <commons/string.h>
 
-typedef struct Paquete {
-	int codigoOperacion;
-	int programCounter;
-	int pid;
-	int quantum;
-	int tamanio;
-	char *path;
-} Paquete;
+t_log* logPC;
 
 /* setup_listen(IP,PORT) *
  * Devuelve el socket que se consiguió para escuchar
@@ -69,21 +62,6 @@ int conectarCliente(char *IP, char* Port);
  * LOGGER = Log para escribir
  */
 int conectarCliente_con_log(char *IP, char* Port, t_log *);
-
-/* esperarConexionEntrante(SocketEscucha,Backlog,LOGGER)
- * Devuelve el socket para mandar datos
- *
- * LOGGER = Log para escribir
- */
-int esperarConexionEntrante(int, int, t_log *);
-
-int conectarServidor(char* IP, char* Port, int backlog);
-Paquete *generarPaquete(int codigoOperacion, int tamMessage, char *message,
-		int programCounter, int quantum, int pid);
-char *serializar(Paquete *unPaquete);
-Paquete *deserializar_header(char *buffer);
-void deserializar_data(Paquete *unPaquete, char *buffer);
-void destruirPaquete(Paquete * unPaquete);
 
 
 #endif /* LIBSOCKETS_H_ */

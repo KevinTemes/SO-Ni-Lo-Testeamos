@@ -15,7 +15,7 @@ int leerConfigEnt(char *ruta, t_entrenador **datos, char* puntoMontaje){
 		return 0;
 	} else {
 		int cantidadKeys = config_keys_amount(archivoConfiguracion);
-			if (cantidadKeys < 8) {
+			if (cantidadKeys < 6) {
 				return 0;
 			} else {
 

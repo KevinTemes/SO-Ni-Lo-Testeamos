@@ -76,12 +76,7 @@ int conectarCliente(char *IP, char* Port) {
 		printf("Error en la creacion del socket\n");
 		return -1;
 	}
-/*	if (connect(serverSocket, serverInfo->ai_addr, serverInfo->ai_addrlen)
-			== -1) {
-		printf("No se pudo conectar con el socket servidor\n");
-		close(serverSocket);
-		exit(-1);
-	} */
+
 	while (connect(serverSocket, serverInfo->ai_addr, serverInfo->ai_addrlen)
 			== -1){
 		connect(serverSocket, serverInfo->ai_addr, serverInfo->ai_addrlen);
@@ -120,102 +115,4 @@ int conectarCliente_con_log(char *IP, char* Port, t_log * logger) {
 	freeaddrinfo(serverInfo);
 	return serverSocket;
 }
-
-int esperarConexionEntrante(int socketEscucha, int BACKLOG, t_log * logger) {
-
-	listen(socketEscucha, BACKLOG);
-	struct sockaddr_in addr;
-	socklen_t addrlen = sizeof(addr);
-	int socketCliente = accept(socketEscucha, (struct sockaddr *) &addr,
-			&addrlen);
-	log_info(logger,
-			string_from_format("Se asigno el socket %d para el cliente",
-					socketCliente));
-	return socketCliente;
-
-}
-
-int conectarServidor(char* IP, char* Port, int backlog) {
-	struct addrinfo* serverInfo = cargarInfoSocket(IP, Port);
-	if (serverInfo == NULL)
-		return -1;
-	int socketEscucha;
-	socketEscucha = socket(serverInfo->ai_family, serverInfo->ai_socktype,
-			serverInfo->ai_protocol);
-	if (bind(socketEscucha, serverInfo->ai_addr, serverInfo->ai_addrlen)
-			== -1) {
-		printf("Error en el Bind \n");
-	}
-	freeaddrinfo(serverInfo);
-	if (listen(socketEscucha, backlog) == -1) {
-		printf("error en la escucha de un cliente");
-		return -5;
-	}
-
-	struct sockaddr_in addr;
-	socklen_t addrlen = sizeof(addr);
-
-	int socketCliente = accept(socketEscucha, (struct sockaddr *) &addr,
-			&addrlen);
-	if (socketCliente == -1) {
-		printf("Error en la conexion, en la funcion accept\n");
-		return -2;
-	}
-	return socketCliente;
-}
-
-/* Funcion que serializa una estructura paquete */
-char *serializar(Paquete *unPaquete) {
-	void *buffer = malloc(
-			sizeof(int)/*CodOp*/+ sizeof(int)/*ProgCounter*/+ sizeof(int)/*PidProceso*/
-			+ sizeof(int)/*quantum*/+ sizeof(int)/*Tamañopath*/
-			+ sizeof(char) * unPaquete->tamanio);
-	memcpy(buffer, &unPaquete->codigoOperacion, sizeof(int));
-	memcpy(buffer + sizeof(int), &unPaquete->programCounter, sizeof(int));
-	memcpy(buffer + (sizeof(int) * 2), &unPaquete->pid, sizeof(int));
-	memcpy(buffer + (sizeof(int) * 3), &unPaquete->quantum, sizeof(int));
-	memcpy(buffer + (sizeof(int) * 4), &unPaquete->tamanio, sizeof(int));
-	memcpy(buffer + (sizeof(int) * 5), &unPaquete->path, unPaquete->tamanio);
-	return buffer;
-}
-/* deserializar elheader del buffer a la estructura paquete
- *  devuelve la direccion a la estructura Paquete */
-
-Paquete *deserializar_header(char *buffer) {
-	Paquete *contexto_ejecucion = malloc(sizeof(Paquete));
-	memcpy(&contexto_ejecucion->codigoOperacion, buffer, sizeof(int));
-	memcpy(&contexto_ejecucion->programCounter, buffer + sizeof(int),
-			sizeof(int));
-	memcpy(&contexto_ejecucion->tamanio, buffer + sizeof(int) + sizeof(int),
-			sizeof(int));
-
-	return contexto_ejecucion;
-}
-/* deserializa la data del buffer con los datos recibidos en el deserializar_header */
-void deserializar_data(Paquete *unPaquete, char *buffer) {
-	unPaquete->path = malloc(unPaquete->tamanio);
-	memcpy(unPaquete->path, buffer, unPaquete->tamanio);
-}
-/* Funcion que genera un paquete. agarra los valores correspondientes y
- * los coloca dentro de la estructura Paquete */
-
-Paquete *generarPaquete(int codigoOperacion, int tamMessage, char *message,
-		int programCounter, int quantum, int pid) {
-	Paquete * paquete = malloc(sizeof(Paquete));
-
-	paquete->codigoOperacion = codigoOperacion;
-	paquete->programCounter = programCounter;
-	paquete->pid = pid;
-	paquete->quantum = quantum;
-	paquete->tamanio = tamMessage;
-	paquete->path = malloc(tamMessage);
-	memcpy(paquete->path, message, paquete->tamanio);
-	return paquete;
-}
-/* funcion para destruir paquete */
-void destruirPaquete(Paquete * unPaquete) {
-	free(unPaquete->path);
-	free(unPaquete);
-}
-
 

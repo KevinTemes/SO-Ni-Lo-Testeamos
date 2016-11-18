@@ -24,9 +24,8 @@
 /* para testear sockets */
 #define PACKAGESIZE 1024
 #define PUERTO "7777"
+
 t_log* logs;
-
-
 
 
 int main(int argc, char **argv) {
@@ -47,30 +46,12 @@ int main(int argc, char **argv) {
 	 fstat(fd_disco, &discoStat);
 	 miDisco.discoMapeado = mmap(0, discoStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_disco, 0);
 
+
 	 // Inicio los semáforos
 	 int m;
 	 for (m = 0; m < 2048; m++){
 	 		 pthread_mutex_init(&misMutex[m], NULL);
 	 	 }
-
-
-
-	 //signal(SIGPIPE, SIG_IGN);
-
-		// ZONA DE TESTEO
-/*		printf("ingrese la accion a testear, o escriba 'ayuda' para ver comandos disponibles:\n");
-		char *accion = malloc(sizeof(char) * 32);
-		scanf("%[^\n]%*c", accion);
-		char *algo = accion;
-		while(strcmp(algo,"exit")!=0){
-		test_funcionalidad(algo);
-		printf("ingrese la accion a testear, o escriba 'ayuda' para ver comandos disponibles:\n");
-		scanf("%[^\n]%*c", accion);
-		};
-		// FIN ZONA DE TESTEO
-*/
-
-
 
 
 	int socketEscucha, retornoPoll;

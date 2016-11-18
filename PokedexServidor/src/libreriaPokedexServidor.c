@@ -7,18 +7,6 @@
 
 #include "libreriaPokedexServidor.h"
 
-#define MAX_LEN 128
-
-#define KNORMAL "\x1B[0m"
-#define KROJO "\x1B[31m"
-#define KVERDE "\x1B[32m"
-#define KAMARILLO "\x1B[33m"
-#define KAZUL "\x1B[34m"
-#define KMAGENTA "\x1B[35m"
-#define KCYAN "\x1B[36m"
-#define KBLANCO "\x1B[37m"
-
-pthread_mutex_t mutexOsada=PTHREAD_MUTEX_INITIALIZER;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void *serializarString(char *unString){
@@ -34,7 +22,6 @@ void *serializarString(char *unString){
 
 int buscarArchivo(char *unaRuta){
 	int parentDir = 65535;
-//	int existeArchivo = 0;
 	if(strlen(unaRuta) == 1){
 		goto terminar;
 	}
@@ -83,16 +70,10 @@ int recorrerDirectorio(char *nombre, int parentDir){
 
 				}
 			}
-
-			//*fname = '\0';
-			//  memset(fname, 0, strlen(fname) * sizeof(fname[0]));
-			//free(fname);
-
 		}
 
 	}
 
-	//free(fname);
 	finalizar:
 	return posicion;
 }
@@ -114,39 +95,6 @@ char *obtenerNombre(char *unaRuta){
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-void copiarBloque(void *buffer, int bloque, int offset){
-
-	int inicioDatos = (miDisco.cantBloques.bloques_header + miDisco.cantBloques.bloques_bitmap
-			+ miDisco.cantBloques.bloques_tablaDeArchivos
-			+ miDisco.cantBloques.bloques_tablaDeAsignaciones) * 64;
-	memcpy(buffer + offset, &miDisco.discoMapeado[inicioDatos + (bloque * 64)], 64);
-
-}
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-void copiarBloqueIncompleto(void *buffer, int bloque, int offset, int tamanio){
-
-	int inicioDatos = (miDisco.cantBloques.bloques_header + miDisco.cantBloques.bloques_bitmap
-				+ miDisco.cantBloques.bloques_tablaDeArchivos
-				+ miDisco.cantBloques.bloques_tablaDeAsignaciones) * 64;
-	memcpy(buffer + offset, &miDisco.discoMapeado[inicioDatos + (bloque * 64)], tamanio);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-void *serializarArchivo(void* buffer, void* contenidoArchivo, int tamanioArchivo){
-	memcpy(buffer, &tamanioArchivo, sizeof(int));
-	memcpy(buffer + sizeof(int), &contenidoArchivo, tamanioArchivo);
-
-	return buffer;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-int obtenerTamanioArchivo(char* ruta){
-	int posicionArchivo = buscarArchivo(ruta);
-	int tamanio = miDisco.tablaDeArchivos[posicionArchivo].file_size;
-	return tamanio;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////
 uint32_t consultarTiempo(){
 	time_t ahora = time(NULL);
 	struct tm tiem;
@@ -163,40 +111,6 @@ uint32_t consultarTiempo(){
 	return stamp;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-void iterarNombre(char* origen, unsigned char respuesta[17]){
-	int i;
-		for (i = 0; i <= 17; i++ ){
-			respuesta[i] = origen[i];
-			if (i == 17){
-				respuesta[i] = '\0';
-			}
-		}
-}
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-void iterarNombreAlReves(char* origen, unsigned char respuesta[17]){
-	int i;
-		for (i = 0; i <= 17; i++ ){
-			origen[i] = respuesta[i];
-			if (i == 17){
-				respuesta[i] = '\0';
-			}
-		}
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-void llenarEstructuraNuevo(osada_file archivo, char* ruta, int bloqueTablaAsignacionesLibre){ // revisar lo del char[17]
-
-//	t_infoDirectorio directorio = getInfoDirectorio(ruta); // Ver que onda con esta estructura
-	uint32_t tiempo = consultarTiempo();
-
-	archivo.state = '\1'; // Regular
-//	iterarNombre(directorio.nombre,archivo.fname); // Hay que buscar una solucion mas copada a esto
-//	archivo.parent_directory = directorio.padre;
-	archivo.file_size = 0 ; // Se crean vacios
-	archivo.lastmod = tiempo;
-	archivo.first_block = bloqueTablaAsignacionesLibre;
-}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 char *convertirString(void *buffer, int tamanioRuta){
 	char *nuevaRuta = string_new();
@@ -222,21 +136,24 @@ void atenderConexion(void *numeroCliente){
 	void *buffer, *bufferDir, *nuevoContenido;
 	void *respuesta;
 
+	remove("Servidor.log");
+	logPS = log_create("Servidor.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
+
 	printf("PokeCliente #%d conectado! esperando solicitudes... \n",
 			clientesActivos[unCliente].cliente);
 
 	while(status !=0){
 
 		if (status != 0) {
-			recv(clientesActivos[unCliente].socket, &codOp, sizeof(int), MSG_WAITALL);
+			status = recv(clientesActivos[unCliente].socket, &codOp, sizeof(int), MSG_WAITALL);
 
 			switch(codOp){
 
 			case 0: // .getAttr
 
-				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
-				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				t_getattr archivo = osada_getattr(ruta);
 				respuesta = malloc(2 * sizeof(int));
@@ -250,9 +167,9 @@ void atenderConexion(void *numeroCliente){
 
 			case 1: // .readdir (- ls)
 
-				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
-				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				contenidoDir = osada_readdir(ruta);
 				int tamanio = strlen(contenidoDir);
@@ -275,9 +192,9 @@ void atenderConexion(void *numeroCliente){
 
 			case 2: // .read
 
-				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
-				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				int j = buscarArchivo(ruta);
 				int tamanioArchivo = (int)miDisco.tablaDeArchivos[j].file_size;
@@ -300,9 +217,9 @@ void atenderConexion(void *numeroCliente){
 
 			case 3: // .create (por ahora supongo que el nombre ya viene en la ruta)
 
-				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
-				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_create(ruta);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
@@ -313,13 +230,13 @@ void atenderConexion(void *numeroCliente){
 			case 4: // .write
 
 
-				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
-				recv(clientesActivos[unCliente].socket, &tamanioNuevoContenido, sizeof(size_t), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &tamanioNuevoContenido, sizeof(size_t), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
 				nuevoContenido = malloc(tamanioNuevoContenido);
-				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
-				recv(clientesActivos[unCliente].socket, nuevoContenido, tamanioNuevoContenido, MSG_WAITALL);
-				recv(clientesActivos[unCliente].socket, &offset, sizeof(off_t), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, nuevoContenido, tamanioNuevoContenido, MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &offset, sizeof(off_t), MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_write(ruta, nuevoContenido, tamanioNuevoContenido, offset);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
@@ -328,9 +245,9 @@ void atenderConexion(void *numeroCliente){
 
 			case 5: // .unlink
 
-				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
-				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_unlink(ruta);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
@@ -340,9 +257,9 @@ void atenderConexion(void *numeroCliente){
 
 			case 6: // .mkdir
 
-				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
-				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_mkdir(ruta);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
@@ -352,9 +269,9 @@ void atenderConexion(void *numeroCliente){
 
 			case 7: // .rmdir
 
-				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
-				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_rmdir(ruta);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
@@ -364,12 +281,12 @@ void atenderConexion(void *numeroCliente){
 
 			case 8: // .rename
 
-				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
-				recv(clientesActivos[unCliente].socket, &tamanioNombre, sizeof(int), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &tamanioNombre, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
 				void *bufferNombre = malloc(tamanioNombre);
-				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
-				recv(clientesActivos[unCliente].socket, bufferNombre, tamanioNombre, MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, bufferNombre, tamanioNombre, MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				nombre = convertirString(bufferNombre, tamanioNombre);
 				exito = osada_rename(ruta, nombre);
@@ -381,9 +298,9 @@ void atenderConexion(void *numeroCliente){
 
 			case 9: // .open
 
-				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
-				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_open(ruta);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
@@ -393,12 +310,13 @@ void atenderConexion(void *numeroCliente){
 
 			case 10: // .truncate
 
-				recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
-				recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
-				recv(clientesActivos[unCliente].socket, &nuevoTamanio, sizeof(size_t), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &nuevoTamanio, sizeof(size_t), MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_truncate(ruta, nuevoTamanio);
+				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
 
 
 
@@ -407,9 +325,9 @@ void atenderConexion(void *numeroCliente){
 		}
 
 	}
-	free(contenido);
-	free(nuevoContenido);
-	free(bufferDir);
+	//free(contenido);
+	//free(nuevoContenido);
+	//free(bufferDir);
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -561,7 +479,7 @@ return contenidoDir;
 int osada_open(char *ruta){
 	int exito = 0;
 	t_getattr archivo = osada_getattr(ruta);
-
+	log_info(logPS, "Se intento efectuar un open del archivo %s", ruta);
 	if(archivo.tipo_archivo != 0){
 		exito = 1;
 	}
@@ -571,12 +489,8 @@ int osada_open(char *ruta){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void *osada_read(char *ruta){
 
-	t_log* logRead;
-	remove("osada_read.log");
-	logRead = log_create("osada_read.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
-
 	int i = buscarArchivo(ruta);
-	log_info(logRead, "Recibida solicitud de lectura (.read) del archivo %s", ruta);
+	log_info(logPS, "Recibida solicitud de lectura (.read) del archivo %s", ruta);
 	int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
 	if(miDisco.tablaDeArchivos[i].file_size == 0){
 		goto terminar;
@@ -619,7 +533,7 @@ void *osada_read(char *ruta){
 		}
 	}
 
-	//log_info(logRead, "Cantidad de bytes leidos: %d", tamanioActualBuffer);
+	log_info(logPS, "Cantidad de bytes leidos: %d", tamanioActualBuffer);
 	//char *epifania = buffer;
 	//printf("%s\n", epifania);
 
@@ -630,10 +544,7 @@ void *osada_read(char *ruta){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int osada_create(char *ruta){
 
-	t_log* logCreate;
-	remove("osada_create.log");
-	logCreate = log_create("osada_create.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
-	log_info(logCreate, "recibida solicitud de creación (.create) del archivo %s", ruta);
+	log_info(logPS, "Recibida solicitud de creación (.create) del archivo %s", ruta);
 	int exito = 1;
 
 	unsigned int bloqueLibre = primerBloqueBitmapLibre();
@@ -651,197 +562,96 @@ int osada_create(char *ruta){
 	}
 
 	if(exito == 0){
-	log_info(logCreate, "El archivo %s se creo exitosamente", ruta);
+		log_info(logPS, "El archivo %s se creo exitosamente", ruta);
 	}
 	else{
 		if(bloqueLibre < 0){
-			log_error(logCreate, "error al crear el archivo %s: espacio en disco insuficiente", ruta);
+			log_error(logPS, "Error al crear el archivo %s: espacio en disco insuficiente", ruta);
 		}
 		if(posTablaArchivos < 0){
-			log_error(logCreate, "error al crear el archivo %s: se ha alcanzado el número máximo de"
+			log_error(logPS, "Error al crear el archivo %s: se ha alcanzado el número máximo de"
 					"archivos soportados por el sistema", ruta);
 		}
 		if(largo > 17){
-			log_error(logCreate, "error al crear el archivo %s: el nombre del archivo no es válido"
+			log_error(logPS, "Error al crear el archivo %s: el nombre del archivo no es válido"
 					"(longitud superior a 17 caracteres)", ruta);
 		}
-		log_error(logCreate, "No se pudo crear el archivo");
+		log_error(logPS, "No se pudo crear el archivo");
 	}
 	return exito;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int osada_write(char *ruta, void *nuevoContenido, size_t sizeAgregado, off_t offset){
 
-	t_log* logWrite;
-	remove("osada_write.log");
-	logWrite = log_create("osada_write.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
-	log_info(logWrite, "Comienza el write sobre el archivo %s", ruta);
-    int exito;
-    exito = 0;
+	int exito = 1;
+	log_info(logPS, "Recibida solicitud de escritura (.write) sobre archivo %s", ruta);
 
-    int posicionArchivo = buscarArchivo(ruta);
-    osada_file archivo = miDisco.tablaDeArchivos[posicionArchivo];
-    int sizeOriginal = archivo.file_size;
-    int siguienteBloque = archivo.first_block;
-    void *contenidoOriginal = osada_read(ruta);
-    int sizeFinal = offset + sizeAgregado;
-    div_t bloquesOriginal = div(sizeOriginal,64);
-    div_t bloquesAgregado = div(sizeAgregado, 64);
-    div_t bloquesNecesarios = div(sizeFinal,64);
-    int bloquesRestantesEnt = bloquesNecesarios.quot - bloquesAgregado.quot;
-    int bloquesRestantesRem = bloquesNecesarios.rem - bloquesAgregado.rem;
+	int sizeNuevo = offset + sizeAgregado;
+	int bloquesEscritos = 0;
+	int bloquesAEscribir = calcularBloquesNecesarios(sizeNuevo);
+	int discoLibre = hayEspacioEnDisco(bloquesAEscribir);
 
-	int inicioDatos = (miDisco.cantBloques.bloques_header
-				+ miDisco.cantBloques.bloques_bitmap
-				+ miDisco.cantBloques.bloques_tablaDeArchivos
-				+ miDisco.cantBloques.bloques_tablaDeAsignaciones) * 64;
+	if(discoLibre){
 
-	void *desplazamiento;
-    int tamanioBuffer = 0;
-    int bloquesCopiados = 0;
+		int posicionArchivo = buscarArchivo(ruta);
+	  	int inicioDatos = (miDisco.cantBloques.bloques_header
+	    				+ miDisco.cantBloques.bloques_bitmap
+	    				+ miDisco.cantBloques.bloques_tablaDeArchivos
+	    				+ miDisco.cantBloques.bloques_tablaDeAsignaciones) * 64;
 
-    if(sizeOriginal == sizeFinal){ // Tienen el mismo tamanio
-    	log_info(logWrite,"El archivo final tiene el mismo tamanio que el original");
-    	void* buffer = malloc(sizeFinal);
-    	memcpy(buffer,nuevoContenido, sizeFinal); // Copiamos nuevo contenido al buffer (nada mas porque si no son = nos dariamos cuenta
-    	while(bloquesCopiados <= bloquesOriginal.quot){ // Va copiando el contenido original por bloques
+	   	void *desplazamiento;
+	   	int tamanioBuffer = 0;
+	   	void* contenidoOriginal = osada_read(ruta);
+	   	void *bufferSalvaje = malloc(sizeNuevo);
+	   	memcpy(bufferSalvaje,contenidoOriginal,offset);// Copiamos el contenido original hasta el offset
+	   	memcpy(bufferSalvaje + offset ,nuevoContenido, sizeNuevo);// Le agregamos el contenido nuevo desde donde se termino de copiar lo original
 
-    		while(miDisco.tablaDeAsignaciones[siguienteBloque] != -1){
-    			desplazamiento = &miDisco.discoMapeado[(inicioDatos) + (siguienteBloque * 64)];
-    			memcpy(desplazamiento, buffer + tamanioBuffer, 64);
-    			tamanioBuffer += 64;
-    			siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
+    	int siguienteBloque = miDisco.tablaDeArchivos[posicionArchivo].first_block;
+	    div_t manejoOffset;
+	   	manejoOffset.quot = offset / 64;
+	   	manejoOffset.rem = offset % 64;
+	   	int bytesParaCompletarBloque = 64 - manejoOffset.rem;
 
-    			if (bloquesOriginal.rem  != 0){ // Si queda algun remainder
-    				float bloqueAux = bloquesOriginal.rem/10; // Si vos tenes 4.5, .rem te devuelve 5 => 5/10 es 0.5
-    				desplazamiento = &miDisco.discoMapeado[(inicioDatos) + (siguienteBloque * 64)];
-    				memcpy(desplazamiento, buffer + tamanioBuffer, bloqueAux*64); // si bloqueAux es 0.5 (medio bloque) => *64 serian 32
-    				tamanioBuffer += bloqueAux*64;								   // bytes, que seria lo que falta escribir
-    				siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
-    			}
-    		}
-				bloquesCopiados++;
-    	}
+	   	if(manejoOffset.rem != 0){
+	   		desplazamiento = &miDisco.discoMapeado[(inicioDatos) + offset];
+	    	memcpy(desplazamiento, bufferSalvaje + tamanioBuffer, 64 - bytesParaCompletarBloque);
+	   		tamanioBuffer += bytesParaCompletarBloque;
+	   		siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
+	   		//desplazamiento = &miDisco.discoMapeado[(inicioDatos) + manejoOffset.rem];
+	   		//memcpy(desplazamiento, buffer + tamanioBuffer, manejoOffset.rem);
+    		//tamanioBuffer += manejoOffset.rem;	    		//siguienteBloque = miDisco.tablaDeAsignaciones[];
+	    	}
+	    	else{
 
-    	log_info(logWrite, "Cantidad de bytes escritos: %d", sizeAgregado);
-    	log_info(logWrite, "Tamanio final archivo: %d", sizeFinal);
-    	exito = archivo.file_size == sizeFinal; // Revisar esta linea merquera
-    }
+	    		while(miDisco.tablaDeAsignaciones[siguienteBloque] != -1){
+
+	    			while(bloquesEscritos <= bloquesAEscribir){
+	    				desplazamiento = &miDisco.discoMapeado[(inicioDatos) + (siguienteBloque * 64)]; // Se desplazaria bloque por bloque desde el inicio
+	    				memcpy(desplazamiento, bufferSalvaje + tamanioBuffer, 64);
+	    				tamanioBuffer += 64;
+	    				siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
+	    				bloquesEscritos++;
+
+	    			}
+	    			free(bufferSalvaje);
+	    		}
+	    	}
+	   	exito = 0;
+	    log_info(logPS, "Cantidad de bytes escritos (tamanio final) por operacion (.write) sobre archivo %s: %d", ruta, tamanioBuffer);
+	    }
+	    else{
+	    	exito = 1;
+	    	log_error(logPS, "No queda espacio en el disco para realizar la operacion (.write) sobre el archivo %s", ruta);
+	    }
 
 
-    if(sizeFinal > sizeOriginal){ // Se agrego contenido
-    	 int progresoBuffer = 0;
-    	log_info(logWrite,"El archivo final es de mayor tamanio que el original");
-    	void* buffer = malloc(sizeFinal);
-    	char* truncarAFinal = string_from_format("truncate -s %d %s", sizeFinal, ruta);
-    	system(truncarAFinal);
-	    memcpy(buffer,contenidoOriginal,offset);
-	    progresoBuffer += offset;
-	    memcpy(buffer + progresoBuffer, nuevoContenido, sizeFinal);
-	    //progresoBuffer += sizeAgregado;
-		//memcpy(buffer + progresoBuffer, contenidoOriginal, sizeFinal);
-
-    	if(1 >= bloquesNecesarios.quot){ // Si hay espacio en bitmap
-    		while(bloquesCopiados <= bloquesOriginal.quot){ // Va copiando el contenido original por bloques
-
-    			while(miDisco.tablaDeAsignaciones[siguienteBloque] != -1){
-    				desplazamiento = &miDisco.discoMapeado[(inicioDatos) + (siguienteBloque * 64)];
-            		memcpy(desplazamiento, buffer + tamanioBuffer, 64);
-            		tamanioBuffer += 64;
-            		siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
-
-            		if (bloquesOriginal.rem  != 0){ // Si queda algun remainder
-            			float bloqueAux = bloquesOriginal.rem/10;
-            			desplazamiento = &miDisco.discoMapeado[(inicioDatos) + (siguienteBloque * 64)];
-            			memcpy(desplazamiento, buffer + tamanioBuffer, bloqueAux*64); // si bloqueAux es 0.5 (medio bloque) => *64 serian 32
-            			tamanioBuffer += bloqueAux*64;								   // bytes, que seria lo que falta escribir
-            			siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
-
-            					// Aca como contabilizariamos el bloque?
-            				}
-        					bloquesCopiados++;
-    					}
-    				}
-
-               bloquesCopiados = 0;
-
-                while(bloquesCopiados <= bloquesRestantesEnt){ // Va copiando el contenido nuevo en bloques
-                	unsigned int bloqueBitmap = primerBloqueBitmapLibre();
-   					siguienteBloque = bloqueBitmap;
-   					desplazamiento = &miDisco.discoMapeado[(inicioDatos) + (siguienteBloque * 64)];
-            		memcpy(desplazamiento, buffer + tamanioBuffer, 64);
-            		tamanioBuffer += 64;
-
-            		if (bloquesRestantesRem  != 0){ // Si queda algun remainder
-            			float bloqueAux = bloquesOriginal.rem/10;
-            			desplazamiento = &miDisco.discoMapeado[(inicioDatos) + (siguienteBloque * 64)];
-            			memcpy(desplazamiento, buffer + tamanioBuffer, bloqueAux*64); // si bloqueAux es 0.5 (medio bloque) => *64 serian 32
-            			tamanioBuffer += bloqueAux*64;								   // bytes, que seria lo que falta escribir
-
-            					// Aca como contabilizariamos el bloque?
-           			}
-   					bloquesCopiados++;
-                    actualizarTablaDeAsignaciones();
-                    actualizarBitmap();
-                }
-    	}
-
-    	log_info(logWrite, "Cantidad de bytes escritos: %d", sizeAgregado);
-    	log_info(logWrite, "Tamanio final archivo: %d", sizeFinal);
-    	exito = archivo.file_size == sizeFinal; // Revisar esta linea merquera
-    }
-
-    int progresoBuffer = 0;
-    if(sizeFinal < sizeOriginal){ // truncar a 0 y volver a escribirlo
-    	log_info(logWrite,"El archivo final es de menor tamanio que el original");
-    	char* truncarA0 = string_from_format("truncate -s 0 %s", ruta);
-    	system(truncarA0);
-    	void* buffer = malloc(sizeFinal);
-    	memcpy(buffer,contenidoOriginal,offset);
-    	progresoBuffer += offset;
-    	memcpy(buffer + progresoBuffer, nuevoContenido, sizeFinal);
-
-        //modificoLosBloquesQueMeQuedaron();
-		while(miDisco.tablaDeAsignaciones[siguienteBloque] != -1){
-			int bloquesEscritos;
-	        //marcoElUltimoBloqueEnLaTablaAsignaciones();
-			for(bloquesEscritos = 0;bloquesEscritos <= redondearDivision(sizeFinal,64); bloquesEscritos++){ // Revisar esto a ver que onda
-				desplazamiento = &miDisco.discoMapeado[(inicioDatos) + (siguienteBloque * 64)];
-				memcpy(desplazamiento, buffer + tamanioBuffer, 64);
-				tamanioBuffer += 64;
-				siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
-
-				if(bloquesOriginal.rem  != 0){ // Si queda algun remainder
-					float bloqueAux = bloquesOriginal.rem/10;
-					desplazamiento = &miDisco.discoMapeado[(inicioDatos) + (siguienteBloque * 64)];
-					memcpy(desplazamiento, buffer + tamanioBuffer, bloqueAux*64); // si bloqueAux es 0.5 (medio bloque) => *64 serian 32
-					tamanioBuffer += bloqueAux*64;								   // bytes, que seria lo que falta escribir
-					siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
-				}
-			}
-	        //liberoLosOtrosBloques();
-			int bloqueActual = siguienteBloque;
-			miDisco.tablaDeAsignaciones[siguienteBloque] = -1;
-			actualizarBitmap();
-			actualizarTablaDeAsignaciones(); // estos 2 iran aca?
-			siguienteBloque = miDisco.tablaDeAsignaciones[bloqueActual];
-		}
-			bloquesCopiados++;
-			log_info(logWrite, "Cantidad de bytes escritos: %d", sizeAgregado);
-			log_info(logWrite, "Tamanio final archivo: %d", sizeFinal);
-			exito = archivo.file_size == sizeFinal; // Revisar esta linea merquera
-    }
-
-    return exito;
-}
+		return exito;
+	}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int osada_unlink(char *ruta){
 
-	t_log* logUnlink;
-	remove("osada_unlink.log");
-	logUnlink = log_create("osada_unlink.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
 	int exito = -1;
-	log_info(logUnlink, "recibida solicitud de borrado (.unlink) del archivo %s", ruta);
+	log_info(logPS, "Recibida solicitud de borrado (.unlink) del archivo %s", ruta);
 	int i = buscarArchivo(ruta);
 	if(i >= -1){
 		pthread_mutex_lock(&misMutex[i]);
@@ -852,20 +662,18 @@ int osada_unlink(char *ruta){
 	}
 
 	if(exito == 0){
-		log_info(logUnlink, "El archivo %s se ha borrado exitosamente", ruta);
+		log_info(logPS, "El archivo %s se ha borrado exitosamente", ruta);
 	}
 	else{
-		log_error(logUnlink, "Error al borrar el archivo %s", ruta);
+		log_error(logPS, "Error al borrar el archivo %s", ruta);
 	}
 	return exito;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int osada_mkdir(char *ruta){
-	t_log* logMkdir;
-	remove("osada_Mkdir.log");
-	logMkdir = log_create("osada_Mkdir.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
+
 	int exito = -1;
-	log_info(logMkdir, "Solicitud de creación de directorio (.mkdir): %s", ruta);
+	log_info(logPS, "Solicitud de creación de directorio (.mkdir): %s", ruta);
 	int posTablaArchivos = buscarPosicionLibre();
 	char *nombreDir = obtenerNombre(ruta);
 	int largo = strlen(nombreDir);
@@ -879,15 +687,15 @@ int osada_mkdir(char *ruta){
 	}
 
 	if(exito == 0){
-		log_info(logMkdir, "El directorio  %s se creo exitosamente", ruta);
+		log_info(logPS, "El directorio  %s se creo exitosamente", ruta);
 	}
 	else{
 		if(posTablaArchivos < 0){
-			log_info(logMkdir, "Error al crear el directorio: espacio insuficiente en la tabla de"
+			log_info(logPS, "Error al crear el directorio: espacio insuficiente en la tabla de"
 					"archivos");
 		}
 		if(largo > 17){
-			log_info(logMkdir, "Error al crear el directorio: nombre de directorio inválido"
+			log_info(logPS, "Error al crear el directorio: nombre de directorio inválido"
 					" (supera los 17 caracteres)");
 		}
 	}
@@ -896,29 +704,25 @@ int osada_mkdir(char *ruta){
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int osada_rmdir(char *ruta){
-	t_log* logRmdir;
-	remove("osada_rmdir.log");
-	logRmdir = log_create("osada_rmdir.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
+
 	int exito;
-	log_info(logRmdir, "Recibida solicitud de borrado (.rmdir)del directorio %s", ruta);
+	log_info(logPS, "Recibida solicitud de borrado (.rmdir)del directorio %s", ruta);
 
 	int i = buscarArchivo(ruta);
 	pthread_mutex_lock(&misMutex[i]);
 	borrarDirectorio(i);
 	pthread_mutex_unlock(&misMutex[i]);
 	exito = 0; // hay chances de error? validar
-	log_info(logRmdir, "El directorio %s se ha borrado exitosamente", ruta);
+	log_info(logPS, "El directorio %s se ha borrado exitosamente", ruta);
 
 	return exito;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int osada_rename(char *ruta, char *nuevoNombre){
-	t_log* logRename;
+
 	int i;
-	remove("osada_rename.log");
-	logRename = log_create("osada_rename.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
 	int exito = 1;
-	log_info(logRename, "Recibida solicitud de cambio de nombre (.rename) en la ruta %s", ruta);
+	log_info(logPS, "Recibida solicitud de cambio de nombre (.rename) en la ruta %s", ruta);
 	char *nombre = obtenerNombre(nuevoNombre);
 	if(strlen(nombre) <= 17){
 		i = buscarArchivo(ruta);
@@ -934,11 +738,11 @@ int osada_rename(char *ruta, char *nuevoNombre){
 	}
 
 	if(exito == 0){
-		log_info(logRename, "El archivo  %s se ha renombrado exitosamente. "
+		log_info(logPS, "El archivo  %s se ha renombrado exitosamente. "
 			"Nuevo nombre:%s", ruta, miDisco.tablaDeArchivos[i].fname);
 	}
 	else{
-		log_error(logRename, "error al renombrar el archivo %s: el nombre solicitado es inválido.",
+		log_error(logPS, "Error al renombrar el archivo %s: el nombre solicitado es inválido.",
 				ruta);
 	}
 	return exito;
@@ -950,6 +754,8 @@ int osada_truncate(char *ruta, size_t nuevoTamanio){
 	int tamanioActual = miDisco.tablaDeArchivos[i].file_size;
 	int siguienteBloque;
 	int aux, aux2;
+
+	log_info(logPS, "Se inicio la operacion (.truncate) sobre el archivo %s", ruta);
 
 	if(nuevoTamanio > tamanioActual){ //Agregamos bloques!
 		int diferencia = nuevoTamanio - tamanioActual;
@@ -979,7 +785,7 @@ int osada_truncate(char *ruta, size_t nuevoTamanio){
 		actualizarTablaDeArchivos();
 		actualizarTablaDeAsignaciones();
 		pthread_mutex_unlock(&misMutex[i]);
-		exito = 1;
+		exito = 0;
 
 	}
 	else if(nuevoTamanio < tamanioActual){ // Desvinculamos bloques!
@@ -1118,4 +924,14 @@ int hayEspacioEnDisco(int unaCantidad){
 
 return exito;
 }
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+int inicioDeDatos(){
+	int inicio = (miDisco.cantBloques.bloques_header
+			+ miDisco.cantBloques.bloques_bitmap
+			+ miDisco.cantBloques.bloques_tablaDeArchivos
+			+ miDisco.cantBloques.bloques_tablaDeAsignaciones) * 64;
+
+return inicio;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////

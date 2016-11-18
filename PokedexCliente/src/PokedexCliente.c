@@ -147,7 +147,6 @@ static int cliente_readdir(const char *path, void *buf, fuse_fill_dir_t filler,o
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int cliente_open(const char *path, struct fuse_file_info *file){
 	int res = 0;
 	int protocolo = 9;
@@ -169,10 +168,10 @@ static int cliente_open(const char *path, struct fuse_file_info *file){
 
 	return res;
 }
+//////////////////////////////////////////////////////////////////////////////
+static int cliente_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-
-static int cliente_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) { // Fijarse bien esta
+	log_info(logPC, "Peticion de lectura de archivo %s", path);
 	protocolo = 2;
 	char* ruta = string_new();
 	ruta =(char*) path;
@@ -198,12 +197,15 @@ static int cliente_read(const char *path, char *buf, size_t size, off_t offset, 
 	free(contenido);
 	terminar:
 	free(leBuffer);
+	log_info(logPC,"Cantidad de bytes leidos: %d", tamanioRespuesta);
 	return tamanioRespuesta;
 }
-
+//////////////////////////////////////////////////////////////////////////////
 /* Crea un archivo vacio*/
 static int cliente_create(const char* path, mode_t modo, struct fuse_file_info * fi){ //Por ahora asumimos que el nombre del archivo esta en el path
+
 	int res; // 0 para exito y 1 para error
+	log_info(logPC, "Peticion de creacion de archivo %s", path);
 	protocolo = 3;
 	char *ruta = (char *)path;
 	int tamanioRuta = strlen(ruta);
@@ -216,17 +218,19 @@ static int cliente_create(const char* path, mode_t modo, struct fuse_file_info *
 	recv(pokedexServidor, &res, sizeof(int), MSG_WAITALL);
 
 	if (res==0){
-		printf("Archivo creado exitosamente\n");
+		log_info(logPC, "El archivo %s fue creado exitosamente", path);
 	}
 	else{
-		printf("No se pudo crear el archivo\n");
+		log_error(logPC, "No se pudo crear el archivo %s", path);
 	}
 	return res;
 }
-
+//////////////////////////////////////////////////////////////////////////////
 /* Implementacion de la operacion write sobre un archivo*/
 static int cliente_write(const char* path,const char *buf, size_t size, off_t offset, struct fuse_file_info* fi){
+
 	int res = 1;
+	log_info(logPC, "Peticion de escritura sobre archivo %s", path);
 	protocolo = 4;
 	char *ruta = (char *)path;
 	int tamanioRuta = strlen(ruta);
@@ -240,17 +244,21 @@ static int cliente_write(const char* path,const char *buf, size_t size, off_t of
 
 	send(pokedexServidor, buffer, (4 * sizeof(int)) + tamanioRuta + size, MSG_WAITALL);
 
+	recv(pokedexServidor,&res,sizeof(int),MSG_WAITALL);
+
 	if (res==0){
-		printf("Archivo escrito exitosamente\n");
+		log_info(logPC, "Archivo %s escrito exitosamente", path);
 	}
 	else{
-		printf("No se pudo escribir el archivo\n");
+		log_error(logPC, "No se pudo escribir el archivo %s", path);
 	}
 	return res;
 }
-
+//////////////////////////////////////////////////////////////////////////////
 static int cliente_unlink(const char* path){
+
 	int res;
+	log_info(logPC, "Peticion de operacion borrado de archivo %s", path);
 	protocolo = 5;
 	char *ruta = (char *)path;
 	int tamanioRuta = strlen(ruta);
@@ -264,16 +272,18 @@ static int cliente_unlink(const char* path){
 	recv(pokedexServidor, &res, sizeof(int), MSG_WAITALL);
 
 	if (res==0){
-		printf("Archivo borrado exitosamente\n");
+		log_info(logPC, "Archivo %s borrado exitosamente", path);
 	}
 	else{
-		printf("No se pudo borrar el archivo\n");
+		log_error(logPC, "No se pudo borrar el archivo %s", path);
 	}
 	return res;
 }
-
+//////////////////////////////////////////////////////////////////////////////
 static int cliente_rename(const char* path, const char* nuevoNombre){
+
 	int res;
+	log_info(logPC, "Peticion de operacion (.rename) de archivo %s", path);
 	protocolo = 8;
 	char *ruta = (char *)path;
 	char *nombre = (char *)nuevoNombre;
@@ -292,19 +302,20 @@ static int cliente_rename(const char* path, const char* nuevoNombre){
 	recv(pokedexServidor, &res, sizeof(int), MSG_WAITALL);
 
 	if (res==0){
-		printf("El archivo fue renombrado exitosamente\n");
+		log_info(logPC, "El archivo %s fue renombrado exitosamente", path);
 	}
 	else{
-		printf("No se pudo renombrar el archivo\n");
+		log_info(logPC, "No se pudo renombrar el archivo %s", path);
 	}
 	return res;
 }
 
-
 // char *ipServidor = getenv("IP_SERVIDOR");
-
+//////////////////////////////////////////////////////////////////////////////
 static int cliente_mkdir(const char* path, mode_t mode){
+
 	int res;
+	log_info(logPC, "Peticion de creacion de directorio %s", path);
 	protocolo = 6;
 	char *ruta = (char *)path;
 	int tamanioRuta = strlen(ruta);
@@ -317,18 +328,20 @@ static int cliente_mkdir(const char* path, mode_t mode){
 	recv(pokedexServidor, &res, sizeof(int), MSG_WAITALL);
 
 	if (res==0){
-		printf("El archivo fue creado exitosamente\n");
+		log_info(logPC, "El directorio %s fue creado exitosamente", path);
 	}
 	else{
-		printf("No se pudo crear el archivo\n");
+		log_error(logPC, "No se pudo crear el directorio %s", path);
 	}
 	free(buffer);
 	return res;
 
 }
-
+//////////////////////////////////////////////////////////////////////////////
 static int cliente_rmdir(const char* path){
+
 	int res;
+	log_info(logPC, "Peticion de borrado de directorio %s", path);
 	protocolo = 7;
 	char *ruta = (char *)path;
 	int tamanioRuta = strlen(ruta);
@@ -339,17 +352,20 @@ static int cliente_rmdir(const char* path){
 	send(pokedexServidor, buffer, (2 * sizeof(int)) + tamanioRuta, MSG_WAITALL);
 
 	recv(pokedexServidor, &res, sizeof(int), MSG_WAITALL);
-		if (res==0){
-			printf("Directorio borrado exitosamente\n");
-		}
-		else{
-			printf("No se pudo borrar el directorio\n");
-		}
-		return res;
-}
 
+	if (res==0){
+		printf("Directorio borrado exitosamente\n");
+	}
+	else{
+		printf("No se pudo borrar el directorio\n");
+	}
+	return res;
+}
+//////////////////////////////////////////////////////////////////////////////
 int cliente_truncate(const char * path, off_t offset) {
+
 	int res;
+	log_info(logPC, "Peticion de truncado de archivo %s", path);
 	int protocolo = 10;
 	char *ruta = (char *)path;
 	int tamanioRuta = strlen(ruta);
@@ -362,6 +378,7 @@ int cliente_truncate(const char * path, off_t offset) {
 
 	recv(pokedexServidor, &res, sizeof(int), MSG_WAITALL);
 
+
 	if(res > 0){
 
 	}
@@ -373,7 +390,6 @@ int cliente_truncate(const char * path, off_t offset) {
 }
 
 //--------------------------------------------------------------------------------
-
 
 static struct fuse_operations cliente_oper = {
 		.getattr = cliente_getattr,
@@ -391,6 +407,9 @@ static struct fuse_operations cliente_oper = {
 
 
 int main(int argc, char *argv[]) {
+
+	remove("Cliente.log");
+	logPC = log_create("Cliente.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
 
 	pokedexServidor = conectarCliente(IP, PUERTO);
 
