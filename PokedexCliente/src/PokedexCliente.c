@@ -373,6 +373,19 @@ int cliente_truncate(const char * path, off_t offset) {
 	return res;
 }
 
+static int cliente_chmod (const char *path, mode_t mode){
+	int res = 0;
+	// Nada que ver por aquí...
+	return res;
+}
+
+static int cliente_chown(const char *path, uid_t user, gid_t group){
+	int res = 0;
+	// Nada que ver por aquí...
+	return res;
+}
+
+
 //--------------------------------------------------------------------------------
 
 
@@ -388,6 +401,8 @@ static struct fuse_operations cliente_oper = {
 		.rmdir = cliente_rmdir,
 		.rename = cliente_rename,
 		.truncate = cliente_truncate,
+		.chmod = cliente_chmod,
+		.chown = cliente_chown,
 };
 
 
