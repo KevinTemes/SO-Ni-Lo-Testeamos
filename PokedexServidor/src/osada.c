@@ -14,7 +14,6 @@
 #include "osada.h"
 #include <commons/log.h>
 #include <commons/string.h>
-#include <commons/bitarray.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -131,12 +130,12 @@ disco_osada osada_iniciar() {
 
 
     // Leo el bitmap
-    size_t tamanioBitmap = unDisco.header->bitmap_blocks * OSADA_BLOCK_SIZE;
+    int tamanioBitmap = unDisco.header->fs_blocks * OSADA_BLOCK_SIZE;
 
-    //char *unBitarray = malloc(tamanioBitmap);
-    unDisco.bitmap = malloc(tamanioBitmap);
-    fread(unDisco.bitmap, tamanioBitmap, 1, archivo);
-    //unDisco.bitmap = bitarray_create(unBitarray, tamanioBitmap);
+    char *unBitarray = malloc(tamanioBitmap);
+    //unDisco.bitmap = malloc(tamanioBitmap);
+    fread(unBitarray, tamanioBitmap, 1, archivo);
+    unDisco.bitmap = bitarray_create(unBitarray, tamanioBitmap / 8);
 
 
     int h=0; // despues lo cambiamos, sino tira warning
