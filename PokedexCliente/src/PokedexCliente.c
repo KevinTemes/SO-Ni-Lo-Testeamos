@@ -362,6 +362,7 @@ int cliente_truncate(const char * path, off_t offset) {
 
 	recv(pokedexServidor, &res, sizeof(int), MSG_WAITALL);
 
+
 	if(res > 0){
 
 	}

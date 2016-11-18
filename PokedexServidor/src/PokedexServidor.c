@@ -27,8 +27,6 @@
 t_log* logs;
 
 
-
-
 int main(int argc, char **argv) {
 
 
