@@ -13,6 +13,8 @@
 
 pthread_mutex_t mutexPaqueton = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexRegistro = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutexMorten = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutexMortenAtend = PTHREAD_MUTEX_INITIALIZER;
 
 
 int numEntrenador;
@@ -157,6 +159,7 @@ void matar(entrenador* entreni) {
 		a->valor=0;
 		b->valor=0;
 		}*/
+	pthread_mutex_lock(&mutexMorten);
 	log_info(logs,"sale entrenado %c de los que estan en curso",entreni->simbolo);
 	bool esEntrenador(entrenador* entiti){
 		return entreni->simbolo == entiti->simbolo;
@@ -203,6 +206,7 @@ void matar(entrenador* entreni) {
 		e = list_get(disponibles,iiiuax);
 		log_info(logs,"Disponible de %c es %d",e->pokenest,e->valor);
 	}
+	pthread_mutex_unlock(&mutexMorten);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -216,7 +220,7 @@ void atenderConexion(void *numeroCliente) {
 	ent1->flagEstaEnLista = 0; //al ser nuevo no esta registrado en la lista
 
 	t_log* logi;
-	remove("Mapi.log");
+	//remove("Mapi.log");
 
 	logi = log_create("Mapi.log", "Mapa", false, log_level_from_string("INFO"));
 
@@ -303,14 +307,16 @@ void atenderConexion(void *numeroCliente) {
 					//list_add_in_index(listaDeColasAccion,ent1->numeroLlegada,coli);
 
 
-					CrearPersonaje(items, ent1->simbolo, ent1->posx,
-							ent1->posy); //mete al pj en el mapa
 
 					nivel_gui_dibujar(items, nombreMapa);
 
-					list_add(entrenadoresEnCurso, ent1);
 
 					pthread_mutex_lock(&mutexPaqueton);
+					CrearPersonaje(items, ent1->simbolo, ent1->posx,
+												ent1->posy); //mete al pj en el mapa
+
+					list_add(entrenadoresEnCurso, ent1);
+
 
 					usleep(datosMapa->retardoQ);
 					queue_push(colaListos, ent1); //llego un entrenador entonces lo meto en la cola de listos
@@ -390,9 +396,9 @@ void atenderConexion(void *numeroCliente) {
 				recv(clientesActivos[ent1->numeroCliente].socket, &nivel,sizeof(int), MSG_WAITALL);
 
 				((ent1->pokePeleador)->especie) = (char*) bufferCosaUno;
-				log_info(logi,"poke peleador de %c es %s",ent1->simbolo,(ent1->pokePeleador)->especie);
+				log_info(logs,"poke peleador de %c es %s",ent1->simbolo,(ent1->pokePeleador)->especie);
 				((ent1->pokePeleador)->nivel) = nivel;
-                log_info(logi,"nivel del poke peleador de %c es %d",ent1->simbolo,(ent1->pokePeleador)->nivel);
+                log_info(logs,"nivel del poke peleador de %c es %d",ent1->simbolo,(ent1->pokePeleador)->nivel);
 
 				free(bufferCosaUno);
 			}
@@ -405,6 +411,8 @@ void atenderConexion(void *numeroCliente) {
 		}
 
 	}
+	//usleep(10000);
+	pthread_mutex_lock(&mutexMortenAtend);
 	ent1->fallecio = 1;
 	queue_clean(ent1->colaAccion);
 	int y;
@@ -432,5 +440,5 @@ void atenderConexion(void *numeroCliente) {
 			}
 		}
     log_info(logi,"entrenador fallece");
-
+    pthread_mutex_unlock(&mutexMortenAtend);
 }
