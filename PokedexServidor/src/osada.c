@@ -130,20 +130,13 @@ disco_osada osada_iniciar() {
 
 
     // Leo el bitmap
-    int tamanioBitmap = unDisco.header->fs_blocks / 8;
+    int tamanioBitmap = unDisco.header->bitmap_blocks * 64;
 
     char *unBitarray = malloc(tamanioBitmap);
     //unDisco.bitmap = malloc(tamanioBitmap);
     fread(unBitarray, tamanioBitmap, 1, archivo);
     unDisco.bitmap = bitarray_create(unBitarray, tamanioBitmap);
 
-
-    int h=0; // despues lo cambiamos, sino tira warning
-
-    if(h!=0){
-    	perror("Error con el seek");
-    	exit(1);
-    }
 
     // Leo la tabla de Archivos
  //   fread(tablaArchivo, sizeof(osada_file), 2048, archivo);

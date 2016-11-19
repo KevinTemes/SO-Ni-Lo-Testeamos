@@ -33,22 +33,12 @@ typedef struct{
 //-----------------------------------------------------
 int pokedexServidor;
 int protocolo;
-int* pmap_arch;
-struct stat archivoStat;
-//-----------------------------------------------------
-
-#define DEFAULT_FILE_CONTENT "Hello World!\n"
-
 //-----------------------------------------------------
 
 /* defines para testear sockets */
 #define IP "127.0.0.1"
 #define PUERTO "7777"
 #define PACKAGESIZE 1024
-
-//--------------------------------------------------------------------------------
-
-
 
 //--------------------------------------------------------------------------------
 
@@ -79,6 +69,7 @@ int cliente_getattr(const char *path, struct stat *stbuf) {
 	if (respuesta->tipo_archivo == 2){ // Es un directorio
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
+
 	}
 	else if (respuesta->tipo_archivo == 1){ // Es un archivo regular
 		stbuf->st_mode = S_IFREG | 0444;
@@ -148,7 +139,7 @@ static int cliente_readdir(const char *path, void *buf, fuse_fill_dir_t filler,o
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 static int cliente_open(const char *path, struct fuse_file_info *file){
-	int res = 0;
+	int res = 1;
 	int protocolo = 9;
 	char *ruta = (char *)path;
 	int tamanio = strlen(ruta);
@@ -162,8 +153,11 @@ static int cliente_open(const char *path, struct fuse_file_info *file){
 
 	recv(pokedexServidor, &exito, sizeof(int), MSG_WAITALL);
 
-	if(exito == 0){
+	if(exito != 0){
 		res = -ENOENT;
+	}
+	else{
+		res = exito;
 	}
 
 	return res;
@@ -354,10 +348,10 @@ static int cliente_rmdir(const char* path){
 	recv(pokedexServidor, &res, sizeof(int), MSG_WAITALL);
 
 	if (res==0){
-		printf("Directorio borrado exitosamente\n");
+		log_info(logPC, "Directorio %s borrador correctamente", path);
 	}
 	else{
-		printf("No se pudo borrar el directorio\n");
+		log_error(logPC, "No se pudo borrar el directorio %s", path);
 	}
 	return res;
 }
@@ -379,12 +373,13 @@ int cliente_truncate(const char * path, off_t offset) {
 	recv(pokedexServidor, &res, sizeof(int), MSG_WAITALL);
 
 
-	if(res > 0){
-
+	if(res == 0){
+		log_info(logPC, "Truncado exitoso del archivo %s", path);
 	}
 	else{
-
+		log_error(logPC, "Error al truncar el archivo %s", path);
 	}
+
 
 	return res;
 }
@@ -427,6 +422,8 @@ int main(int argc, char *argv[]) {
 	logPC = log_create("Cliente.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
 
 	pokedexServidor = conectarCliente(IP, PUERTO);
+
+
 
 	return fuse_main(argc, argv, &cliente_oper, NULL );
 

@@ -96,7 +96,7 @@ char* concat(const char *s1, const char *s2);
 int calcularBloquesNecesarios(int tamanio);
 
 /* Determinar si hay espacio en el disco para alojar N bloques*/
-int hayEspacioEnDisco(int N);
+int hayBloquesLibres(int N);
 
 /*conversión del contenido de un buffer en un string válido */
 char *convertirString(void *buffer, int tamanio);
@@ -110,6 +110,14 @@ int buscarArchivo(char *unaRuta);
 int buscarPosicionLibre();
 
 int inicioDeDatos();
+
+int hayLugarEnElUltimoBloque(int unTamanio);
+
+int hayBloquesLibres(int unaCantidad);
+
+int hayEspacioEnDisco(int tamanioActualArchivo, size_t tamanioAgregado, off_t offset);
+
+int ultimoBloqueAsignado(int filePos);
 
 /* copiado de un bloque de datos en un buffer */
 void copiarBloque(void *buffer, int bloque, int offset);
@@ -154,6 +162,6 @@ int osada_rmdir(char *ruta);
 
 int osada_rename(char *ruta, char *nuevoNombre);
 
-int osada_truncate(char *ruta, size_t nuevoTamanio);
+int osada_truncate(char *ruta, off_t nuevoTamanio);
 
 #endif /* LIBRERIAPOKEDEXSERVIDOR_H_ */
