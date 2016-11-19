@@ -165,30 +165,21 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 							protocAManejar[0]='9';
 							send(servidor,protocAManejar,2,0);
 							solicitarAtraparPokemon(calculoTiempo,tiempo,mapa);
-							/*
-							// por si se cae
-							recv(servidor, (void *)resultado, sizeof(int), 0);
-							resultadoEnvio = *((int *)resultado);
 
-							if(resultadoEnvio == 9){
-								log_info(logs,"Servidor caído! imposible reconectar. Cerrando...\n");
-								exit(0);
-							} */
 
-							if (posicionesYDeadlocks->cargarDeNuevoObjetivo== 0){
+							if (posicionesYDeadlocks->cargarDeNuevoObjetivo== 0){ // solo si resetea y tiene vidas lo hace
 								list_add((ent)->pokemonsPorMapaCapturados,caracterPoke);
 								log_info(logs,"Capture en el mapa %s a %s", mapa,caracterPoke);
 								dictionary_remove(pokesDeCadaMapa,mapa);
 							}else{
 								int i;
-								if(!dictionary_is_empty(pokesDeCadaMapa)){
-									do{
-										char* losQueQuedaron = dictionary_get(pokesDeCadaMapa,mapa);
-										list_add(ent->pokemonsPorMapaCapturados, losQueQuedaron);
-										log_info(logs,"Agrego al final de la lista este que estaba en el dictionary %s",losQueQuedaron);
-										dictionary_remove(pokesDeCadaMapa,mapa);
-									}while(dictionary_get(pokesDeCadaMapa,mapa)!=NULL);
-								}
+								do{
+									char* losQueQuedaron = dictionary_get(pokesDeCadaMapa,mapa);
+									list_add(ent->pokemonsPorMapaCapturados, losQueQuedaron);
+									log_info(logs,"Agrego al final de la lista este que estaba en el dictionary %s",losQueQuedaron);
+									dictionary_remove(pokesDeCadaMapa,mapa);
+								}while(dictionary_get(pokesDeCadaMapa,mapa)!=NULL);
+
 								for(i=0;i<list_size(ent->pokemonsPorMapaCapturados);i++){
 									char* pokeAMeter = list_get(ent->pokemonsPorMapaCapturados,i);
 									log_info(logs,"Agrego este pokemon al diccionario %s",pokeAMeter);
@@ -623,9 +614,6 @@ void* morir(char* motivo){
 				posicionesYDeadlocks->reintentosActualizados++;
 				ent->reintentos = posicionesYDeadlocks->reintentosActualizados;
 				log_info(logs,"Numero de reintentos realizados: %d \n",ent->reintentos);
-				/*aviso al mapa que reinicio desde cero
-				protocAManejar[0]='1';
-				send(servidor, protocAManejar, 2, 0); */
 				close(servidor);
 				return posicionesYDeadlocks;
 			}else if(string_equals_ignore_case(respuesta,"no")) {
