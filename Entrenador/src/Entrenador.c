@@ -180,7 +180,20 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 								log_info(logs,"Capture en el mapa %s a %s", mapa,caracterPoke);
 								dictionary_remove(pokesDeCadaMapa,mapa);
 							}else{
-								dictionary_put(pokesDeCadaMapa,mapa,(ent)->pokemonsPorMapaCapturados); // vuelvo a meter todos los pokemons de ese mapa
+								int i;
+								if(!dictionary_is_empty(pokesDeCadaMapa)){
+									do{
+										char* losQueQuedaron = dictionary_get(pokesDeCadaMapa,mapa);
+										list_add(ent->pokemonsPorMapaCapturados, losQueQuedaron);
+										log_info(logs,"Agrego al final de la lista este que estaba en el dictionary %s",losQueQuedaron);
+										dictionary_remove(pokesDeCadaMapa,mapa);
+									}while(dictionary_get(pokesDeCadaMapa,mapa)!=NULL);
+								}
+								for(i=0;i<list_size(ent->pokemonsPorMapaCapturados);i++){
+									char* pokeAMeter = list_get(ent->pokemonsPorMapaCapturados,i);
+									log_info(logs,"Agrego este pokemon al diccionario %s",pokeAMeter);
+									dictionary_put(pokesDeCadaMapa,mapa,pokeAMeter); // vuelvo a meter todos los pokemons de ese mapa
+								}
 							}
 
 						} // cierro el for de los objetivos
