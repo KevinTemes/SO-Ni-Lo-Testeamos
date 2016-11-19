@@ -48,10 +48,6 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 //STRUCTS
 	 ent = malloc(sizeof(t_entrenador));
 
-	 //si rompe, meterlo adentro del for de cada pokemon
-	 t_pokemonDeserializado* pokePiola;
-	 pokePiola =malloc(sizeof(t_pokemonDeserializado));
-
 	 t_tiempoBloqueado* tiempo;
 	 tiempo= malloc(sizeof(t_tiempoBloqueado));
 
@@ -91,7 +87,6 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 tiempo->horasBloqueado = 0;
 	 tiempo->minutosBloqueado = 0;
 	 tiempo->segundosBloqueado = 0;
-	 tiempo->milesimasBloqueado = 0;
 
 	 char* protocolo = string_new();
 	 char* numConcatenado="1";
@@ -169,7 +164,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 							protocAManejar[0]='9';
 							send(servidor,protocAManejar,2,0);
-							solicitarAtraparPokemon(calculoTiempo,tiempo,pokePiola,mapa);
+							solicitarAtraparPokemon(calculoTiempo,tiempo,mapa);
 							/*
 							// por si se cae
 							recv(servidor, (void *)resultado, sizeof(int), 0);
@@ -235,7 +230,6 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	//libero punteros y struct de pokePiola
 	//free(pokePiola->especie);
 	//free(pokePiola->nombreMetadata);
-	free(pokePiola);
 
 	//libero structs de int
 	free(calculoTiempo);
@@ -272,19 +266,25 @@ void pierdoUnaVida(){
 	sleep(1);
 }
 
-void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,t_pokemonDeserializado* pokePiola, char* mapa){
+void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo, char* mapa){
 
 	char* inicioBloq = temporal_get_string_time();
 	char* finBloq;
 
+	int protocoloRec;
+	recv(servidor,&(protocoloRec),sizeof(int),MSG_WAITALL);
 
-	recv(servidor,&(pokePiola->protocolo),sizeof(int),MSG_WAITALL);
-	//pokePiola->protocolo = 3;
-	log_info(logs,"Recibi este protocolo %d",pokePiola->protocolo);
+	log_info(logs,"Recibi este protocolo %d",protocoloRec);
 
-		switch(pokePiola->protocolo){
+		switch(protocoloRec){
 			case ATRAPA:
 				usleep(1000);
+
+				//reservo memoria para mi struct cada vez que entra, sino lo pisaria
+				t_pokemonDeserializado* pokePiola;
+				pokePiola =malloc(sizeof(t_pokemonDeserializado));
+
+
 				// deserializo el pokemon, recibo 7 10 Pikachu Pikachu001 33
 				int tamanioEspecie,tamanioNombreMetadata;
 
@@ -293,13 +293,10 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 
 				void* bufferEspecie  = malloc(tamanioEspecie+1);
 				void* bufferNombreMetadata  = malloc(tamanioNombreMetadata+1);
-				//void* bufferNivel  = malloc(sizeof(int));
 
 				recv(servidor,bufferEspecie,tamanioEspecie, MSG_WAITALL);
 				recv(servidor,bufferNombreMetadata,tamanioNombreMetadata, MSG_WAITALL);
-				//recv(servidor,bufferNivel,sizeof(int), MSG_WAITALL);
 
-				//guardo lo que recibi en mi struct
 				pokePiola->especie = (char*)bufferEspecie;
 				pokePiola->especie[tamanioEspecie] = '\0';
 
@@ -308,16 +305,17 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 
 				recv(servidor, &pokePiola->nivelPokemon,sizeof(int),MSG_WAITALL);
 
-				// para saber si los recibo bien
-				log_info(logs,"especie %s",pokePiola->especie);
-				log_info(logs,"nombre metadata %s", pokePiola->nombreMetadata);
-				log_info(logs,"nivel %d", pokePiola->nivelPokemon);
+				log_info(logs, "Especie %s",pokePiola->especie);
+				log_info(logs, "Especifico %s", pokePiola->nombreMetadata);
+				log_info(logs,"Agregue el nivel %d \n", pokePiola->nivelPokemon);
 
 				list_add((ent)->listaNivAtrapados,pokePiola);
-				t_pokemonDeserializado* algo = list_get((ent->listaNivAtrapados),0);
-				log_info(logs, "Especie agregada a la lista %s",algo->especie);
-				log_info(logs, "Especifico agregado a la lista %s", algo->nombreMetadata);
-				log_info(logs,"Agregue el nivel a la lista %d",algo->nivelPokemon);
+				int posicion = list_size(ent->listaNivAtrapados);
+				t_pokemonDeserializado* meteEnLaLista = list_get((ent->listaNivAtrapados),posicion-1);
+
+				log_info(logs, "Especie agregada a la lista %s",meteEnLaLista->especie);
+				log_info(logs, "Especifico agregado a la lista %s", meteEnLaLista->nombreMetadata);
+				log_info(logs,"Agregue el nivel a la lista %d \n",meteEnLaLista->nivelPokemon);
 
 				finBloq = temporal_get_string_time();
 
@@ -325,29 +323,23 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 				tiempo = sacarTiempo(calculoTiempo,tiempo,"bloqueado",inicioBloq,finBloq);
 
 				//libero los buffer antes de volver
-				free(bufferEspecie);
-				free(bufferNombreMetadata);
+				//free(bufferEspecie);
+				//free(bufferNombreMetadata);
 				free(finBloq);
 				free(inicioBloq);
-				//free(bufferNivel);
 				return tiempo;
 
 			case DEADLOCK:
 				posicionesYDeadlocks->cantDeadlocks++;
-				// sacar la struct de poke piola por parametro
-				t_pokemonDeserializado* elMasFuerte = agarrarPokeConMasNivel((ent)->listaNivAtrapados);
 
-				//int tamanioNivelEnviar = sizeof(int);
+				t_pokemonDeserializado* elMasFuerte = (t_pokemonDeserializado*)agarrarPokeConMasNivel((ent)->listaNivAtrapados);
+
 				//serializo mi pokemon, mando 5 7 Pikachu 33
-				int tamanioEspecieEnviar = sizeof(char) * strlen(elMasFuerte->especie);
-
-
+				char protocolo = '5';
+				int tamanioEspecieEnviar = strlen(elMasFuerte->especie);
 				int tamanioTotal = sizeof(char) + 2 *sizeof(int) + tamanioEspecieEnviar;
 
 				void* miBuffer = malloc(tamanioTotal);
-
-				//pokePiola->protocolo = 5;
-				char protocolo = '5';
 
 				//cargo los tamanios
 				memcpy(miBuffer, &protocolo, sizeof(char));
@@ -360,19 +352,19 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 				log_info(logs,"Protocolo que mando %c",protocolo);
 				log_info(logs,"tamanio de especie a enviar: %d",tamanioEspecieEnviar);
 				log_info(logs,"especie del mas fuerte %s",elMasFuerte->especie);
-				log_info(logs, "nivel del mas fuerte %d",elMasFuerte->nivelPokemon);
+				log_info(logs, "nivel del mas fuerte %d \n",elMasFuerte->nivelPokemon);
 
 				send(servidor,miBuffer,tamanioTotal,0);
 
 				int protocoloRecibido;
 				recv(servidor,&(protocoloRecibido),sizeof(int),MSG_WAITALL);
-				log_info(logs,"Recibi este protocolo: %d \n",protocoloRecibido);
-				//int pokePiola->protocolo = 7;
+				log_info(logs,"Recibi este protocolo: %d",protocoloRecibido);
 				if(protocoloRecibido==MORI){
 					morir("deadlock");
 				} else if(protocoloRecibido==SOBREVIVI){
 					log_info(logs,"Sobrevivi al deadlock \n");
 				}
+				// revisar este free
 				free(miBuffer);
 				return posicionesYDeadlocks;
 		}
@@ -383,19 +375,20 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 
 void* agarrarPokeConMasNivel(t_list* listaNivAtrapados){
 
-	bool ordenarDeMayorAMenor(t_pokemonDeserializado* poke1, t_pokemonDeserializado* poke2){
-		return (poke1->nivelPokemon<poke2->nivelPokemon);
+	int ordenarDeMayorAMenor(t_pokemonDeserializado* poke1, t_pokemonDeserializado* poke2){
+		return (poke1->nivelPokemon>poke2->nivelPokemon);
 	}
 
 	list_sort(listaNivAtrapados,(void*)ordenarDeMayorAMenor);
 
 	t_pokemonDeserializado* elMasFuerte	= list_get(listaNivAtrapados,0);
+	log_info(logs,"especie mas fuerte %s",elMasFuerte->especie);
 
 	if(list_size(listaNivAtrapados)==0){
 		log_info(logs,"No hay nada en la lista, chau!");
 		return NULL;
 	}else{
-		log_info(logs, "El mas fuerte es %s y el nivel que tiene es %d", elMasFuerte->nombreMetadata, elMasFuerte->nivelPokemon);
+		log_info(logs, "El mas fuerte es %s y el nivel que tiene es %d \n", elMasFuerte->nombreMetadata, elMasFuerte->nivelPokemon);
 	}
 
 	return elMasFuerte;
@@ -425,8 +418,6 @@ void* sacarTiempo(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,char*
 		calculoTiempo->sInicio = atoi(inicio[2]);
 		calculoTiempo->milInicio = atoi(inicio[3])/1000;
 
-
-
 		calculoTiempo->hFin = atoi(fin[0])*3600;
 		calculoTiempo->mFin = atoi(fin[1])*60;
 		calculoTiempo->sFin = atoi(fin[2]);
@@ -445,20 +436,13 @@ void* sacarTiempo(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,char*
 		divMinutosCocienteResto = div(divHorasCocienteResto.rem,60);
 		int minAventura = divMinutosCocienteResto.quot;
 
-
-		double segYMil = divMinutosCocienteResto.rem;
-		double parteDecimal;
 		int segAventura = divMinutosCocienteResto.rem /1;
-
-		parteDecimal = segYMil - segAventura;
-		double milAventura = parteDecimal;
 
 		if(!strcmp(estado,"bloqueado")){
 
 			(tiempo)->horasBloqueado=(tiempo)->horasBloqueado+horasAventura;
 			(tiempo)->minutosBloqueado = (tiempo)->minutosBloqueado + minAventura;
 			(tiempo)->segundosBloqueado = (tiempo)->segundosBloqueado + segAventura;
-			(tiempo)->milesimasBloqueado = (tiempo)->milesimasBloqueado + milAventura;
 
 			log_info(logs,"El tiempo que paso bloqueado en esta pokenest fue %d horas, %d minutos, %d segundos \n",horasAventura,minAventura,segAventura);
 
@@ -468,16 +452,11 @@ void* sacarTiempo(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo,char*
 			log_info(logs,"La aventura duró %d horas, %d minutos, %d segundos  \n",horasAventura,minAventura,segAventura);
 		}
 
-		/*int i;
-		int j;
+		string_iterate_lines(inicio, (void*) free);
+		string_iterate_lines(fin, (void*)free);
 
-		for(i=0;inicio!=NULL;i++){
-			free(inicio[i]);
-		}
-
-		for(j=0;fin!=NULL;j++){
-			free(fin[j]);
-		}*/
+		free(inicio);
+		free(fin);
 
 	return NULL;
 }
@@ -582,11 +561,11 @@ void* morir(char* motivo){
 	posicionesYDeadlocks->cantMuertes = posicionesYDeadlocks->cantMuertes+1;
 	if (ent->cantidadInicialVidas>0){
 		if(!strcmp(motivo,"deadlock")){
-			log_info(logs,"Moriste por deadlock, vidas restantes: %d\n", ent->cantidadInicialVidas);
+			log_info(logs,"Moriste por deadlock, vidas restantes: %d", ent->cantidadInicialVidas);
 			borrarArchivosBill();
-			log_info(logs,"Borrados archivos de pokemones del Dir de Bill exitosamente!\n");
+			log_info(logs,"Borrados archivos de pokemones del Dir de Bill exitosamente!");
 			//reconecto al mismo mapa, y reinicio el objetivo siempre desde cero
-			log_info(logs,"Reconectandose al mismo mapa que se encontraba \n");
+			log_info(logs,"Reconectandose al mismo mapa que se encontraba");
 			// empiezo del mapa anterior
 			posicionesYDeadlocks->pos = posicionesYDeadlocks->pos -1;
 			// no dejo que siga iterando los objetivos
@@ -600,19 +579,19 @@ void* morir(char* motivo){
 			}
 	} else if(ent->cantidadInicialVidas==0){
 		if(!strcmp(motivo,"deadlock")){
-			log_info(logs,"Perdiste tu ultima vida, fue por deadlock \n");
+			log_info(logs,"Perdiste tu ultima vida, fue por deadlock");
 		} else if (!strcmp(motivo,"senial")){
-			log_info(logs,"Perdiste tu ultima vida, fue por SIGTERM \n");
+			log_info(logs,"Perdiste tu ultima vida, fue por SIGTERM");
 		}
 		char respuesta[3];
-		log_info(logs,"Numero de reintentos realizados hasta el momento: %d\n", ent->reintentos);
+		log_info(logs,"Numero de reintentos realizados hasta el momento: %d", ent->reintentos);
 		do{
-			log_info(logs,"Desea reiniciar juego?\n");
+			log_info(logs,"Desea reiniciar juego?");
 			fgets(respuesta, 3, stdin);
 			if (string_equals_ignore_case(respuesta,"si")){
 				log_info(logs,"Reseteando...\n");
 				resetear();
-				log_info(logs,"Borradas todas las medallas y todos los pokemons, empezando nueva aventura\n");
+				log_info(logs,"Borradas todas las medallas y todos los pokemons, empezando nueva aventura");
 				posicionesYDeadlocks->pos = -1;
 				posicionesYDeadlocks->salirDeObjetivos = 1;
 
@@ -625,12 +604,12 @@ void* morir(char* motivo){
 				dictionary_destroy_and_destroy_elements(pokesDeCadaMapa,free);
 
 				if (!leerConfigEnt(configEntrenador,&ent, puntoMontaje)) {
-					log_error(logs,"Error al leer el archivo de configuracion de Metadata Entrenador\n");
+					log_error(logs,"Error al leer el archivo de configuracion de Metadata Entrenador");
 					return NULL;
 				}
 				posicionesYDeadlocks->reintentosActualizados++;
 				ent->reintentos = posicionesYDeadlocks->reintentosActualizados;
-				log_info(logs,"Numero de reintentos realizados: %d",ent->reintentos);
+				log_info(logs,"Numero de reintentos realizados: %d \n",ent->reintentos);
 				/*aviso al mapa que reinicio desde cero
 				protocAManejar[0]='1';
 				send(servidor, protocAManejar, 2, 0); */

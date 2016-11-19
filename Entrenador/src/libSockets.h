@@ -66,11 +66,9 @@ typedef struct{
 	int horasBloqueado;
 	int minutosBloqueado;
 	int segundosBloqueado;
-	int milesimasBloqueado;
 }t_tiempoBloqueado;
 
 typedef struct{
-	int protocolo;
 	char* especie;
 	char* nombreMetadata;
 	int nivelPokemon;
@@ -108,7 +106,7 @@ void copiarMedalla(char*);
 void copiarArchivo(char*, char*, char*);
 void* recibirDatos(int, int);
 void* moverseEnUnaDireccion(t_actualizarPos*,int,int);
-void* solicitarAtraparPokemon(t_calculoTiempo*,t_tiempoBloqueado*,t_pokemonDeserializado*,char*);
+void* solicitarAtraparPokemon(t_calculoTiempo*,t_tiempoBloqueado*,char*);
 void* sacarTiempo(t_calculoTiempo*,t_tiempoBloqueado*,char*,char*,char*);
 void borrarArchivosBill();
 void borrarMedallas();
