@@ -320,7 +320,7 @@ void banquero() {
 						d = list_find(disponibles, (void*) esLaPokenest3);
 						d->valor++;
 						sumarRecurso(items, d->pokenest);
-						//nivel_gui_dibujar(items, nombreMapa);
+						nivel_gui_dibujar(items, nombreMapa);
 						pok->estaOcupado = 0;
 						bool esLad(bloq* ver) {
 							return ver->pokenest == pok->especie[0];
@@ -428,7 +428,7 @@ void planificador(void* argu) {
 								entre->posy--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-			//					nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 								q--;
 								//log_info(logs,"valor de quantum %d",q);
 							}
@@ -441,7 +441,7 @@ void planificador(void* argu) {
 								entre->posy++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-			//					nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 								q--;
 								//log_info(logs,"valor de quantum %d",q);
 							}
@@ -454,7 +454,7 @@ void planificador(void* argu) {
 								entre->posx--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-			//					nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 								q--;
 								//log_info(logs,"valor de quantum %d",q);
 							}
@@ -466,7 +466,7 @@ void planificador(void* argu) {
 								entre->posx++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-		//						nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 
 								q--;
 								//log_info(logs, "valor de quantum %d", q);
@@ -661,7 +661,7 @@ void planificador(void* argu) {
 								ent1->posy--;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
-					//			nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 
 							}
 							break;
@@ -673,7 +673,7 @@ void planificador(void* argu) {
 								ent1->posy++;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
-				//				nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 
 							}
 							break;
@@ -685,7 +685,7 @@ void planificador(void* argu) {
 								ent1->posx--;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
-				//				nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 
 							}
 							break;
@@ -696,7 +696,7 @@ void planificador(void* argu) {
 								ent1->posx++;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
-			//					nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 
 							}
 							break;
@@ -926,7 +926,7 @@ void bloqui(void* stru) {
 					//log_info(logs, "llego a bloqueados");
 
 					restarRecurso(items, poki->pokinest);
-		//			nivel_gui_dibujar(items, nombreMapa);
+					nivel_gui_dibujar(items, nombreMapa);
 
 					log_info(logs,"entrenador %c sale de la cola de %c y entra a listos",ent1->simbolo,strub->pokenest);
 					queue_push(colaListos, ent1);
@@ -1040,8 +1040,8 @@ int main(int argc, char* argv[]) {
 	log_info(logs,
 			"Los tres archivos de config fueron creados exitosamente!\n");
 
-//	nivel_gui_inicializar();
-//	nivel_gui_get_area_nivel(&rows, &cols);
+	nivel_gui_inicializar();
+	nivel_gui_get_area_nivel(&rows, &cols);
 
 	//POKENESTchar** posPoke;
 	int ka;
@@ -1056,7 +1056,7 @@ int main(int argc, char* argv[]) {
 		CrearCaja(items, ide, atoi(posPoke[0]), atoi(posPoke[1]),datosPokenest->cantPokemons);
 	}
 
-//	nivel_gui_dibujar(items, argv[1]);
+	nivel_gui_dibujar(items, argv[1]);
 
 	//hilo de planificacion
 
@@ -1165,7 +1165,7 @@ int main(int argc, char* argv[]) {
 		BorrarItem(items, ide);
 	}
 	close(socketEscucha);
- //   nivel_gui_terminar();
+	nivel_gui_terminar();
 
 /*	list_destroy_and_destroy_elements(pokenests,(void*)free);
 		list_destroy_and_destroy_elements(disponibles,(void*)free);
