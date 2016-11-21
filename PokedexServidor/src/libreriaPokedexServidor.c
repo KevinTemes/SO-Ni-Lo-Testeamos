@@ -335,7 +335,7 @@ void atenderConexion(void *numeroCliente){
 void actualizarBitmap(){
 	int inicioBitmap = miDisco.cantBloques.bloques_header * 64;
 	int tamanioBitmap = miDisco.cantBloques.bloques_bitmap * 64;
-	memcpy(miDisco.discoMapeado + inicioBitmap, miDisco.bitmap, tamanioBitmap);
+	memcpy(&miDisco.discoMapeado[inicioBitmap], &miDisco.bitmap, tamanioBitmap);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void actualizarTablaDeArchivos(){
@@ -378,7 +378,7 @@ unsigned int primerBloqueBitmapLibre(){
 
 unsigned int primerBloqueTablaAsignacionesLibre(){
 	unsigned int nroBloque = 0;
-	while(miDisco.tablaDeAsignaciones[nroBloque] != NULL){ // revisar
+	while(miDisco.tablaDeAsignaciones[nroBloque] != -1){ // revisar
 		nroBloque++;
 	}
 	return nroBloque;
@@ -962,11 +962,20 @@ return flag;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 int hayLugarEnElUltimoBloque(int unTamanio){
-	div_t tamanioEnBloques = div(unTamanio, 64);
-	int res = (64 - tamanioEnBloques.rem);
-	if(res == 64){
-		res = 0;
+	int res;
+	if(unTamanio == 0){ // El archivo está vacío
+		res = 64;
 	}
+	else{
+		div_t tamanioEnBloques = div(unTamanio, 64);
+		if(tamanioEnBloques.rem == 0){ // El último bloque del archivo está completo
+			res = 0;
+		}
+		else{ // El último bloque del archivo está incompleto
+			res = (64 - tamanioEnBloques.rem);
+		}
+	}
+
 	return res;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////

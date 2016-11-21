@@ -28,6 +28,58 @@
 t_log* logs;
 
 
+void osada_iniciar(){
+
+	// MAPEO EL DISCO
+	int fd_disco;
+	struct stat discoStat;
+	fd_disco = open("/home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/challenge.bin", O_RDWR);
+	fstat(fd_disco, &discoStat);
+	miDisco.discoMapeado = mmap(0, discoStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_disco, 0);
+
+	// CARGO EL HEADER
+	miDisco.header = malloc(sizeof(osada_header));
+	memcpy(miDisco.header, miDisco.discoMapeado, sizeof(osada_header));
+
+	// CARGO LOS TAMAÑOS CORRESPONDIENTES A CADA ESTRUCTURA
+	miDisco.cantBloques.bloques_header = 1;
+		miDisco.cantBloques.bloques_bitmap = miDisco.header->bitmap_blocks;
+		miDisco.cantBloques.bloques_tablaDeArchivos = 1024;
+
+		int tablaAsignacionesEnBytes = (miDisco.header->fs_blocks - 1 -1024 - miDisco.header->bitmap_blocks)
+		    		* 4;
+		    div_t bloquesTablaAsignacion = div(tablaAsignacionesEnBytes, 64);
+
+		if(bloquesTablaAsignacion.rem != 0){
+		    miDisco.cantBloques.bloques_tablaDeAsignaciones = bloquesTablaAsignacion.quot + 1;
+		}
+		else{
+			miDisco.cantBloques.bloques_tablaDeAsignaciones = bloquesTablaAsignacion.quot;
+		}
+		miDisco.cantBloques.bloques_datos = miDisco.header->fs_blocks - miDisco.header->bitmap_blocks
+				- 1 - 1024 - miDisco.cantBloques.bloques_tablaDeAsignaciones;
+
+	// CARGO EL BITMAP
+	int inicioBitmap = 64;
+	int tamanioBitmap = miDisco.header->fs_blocks / 8;
+	char *miBitArray = malloc(tamanioBitmap);
+	memcpy(miBitArray, &miDisco.discoMapeado[inicioBitmap], tamanioBitmap);
+	miDisco.bitmap = bitarray_create(miBitArray, tamanioBitmap);
+
+	// CARGO LA TABLA DE ARCHIVOS
+	int inicioTablaArchivos = (1 + miDisco.header->bitmap_blocks) * 64;
+	memcpy(miDisco.tablaDeArchivos, &miDisco.discoMapeado[inicioTablaArchivos],
+			(2048 * sizeof(osada_file)));
+
+	// CARGO LA TABLA DE ASIGNACIONES
+	int inicioTablaAsignaciones = (1 + 1024 + miDisco.header->bitmap_blocks) * 64;
+	int tamanioTablaDeAsignaciones = (miDisco.header->fs_blocks - 1 - 1024 -
+			miDisco.header->bitmap_blocks) * 64;
+	miDisco.tablaDeAsignaciones = malloc(tamanioTablaDeAsignaciones);
+	memcpy(miDisco.tablaDeAsignaciones, &miDisco.discoMapeado[inicioTablaAsignaciones], tamanioTablaDeAsignaciones);
+
+}
+
 int main(int argc, char **argv) {
 
 
@@ -39,13 +91,15 @@ int main(int argc, char **argv) {
 	puts("Log Pokedex Servidor creado exitosamente \n");
 
 	//Levanto el disco Osada
+	 osada_iniciar();
+	 /*
 	 miDisco = osada_iniciar();
 	 int fd_disco;
 	 struct stat discoStat;
 	 fd_disco = open("/home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/challenge.bin", O_RDWR);
 	 fstat(fd_disco, &discoStat);
 	 miDisco.discoMapeado = mmap(0, discoStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_disco, 0);
-
+	*/
 
 	 // Inicio los semáforos
 	 int m;

@@ -91,7 +91,7 @@ void seekBloques(FILE*,int);
 
 //METE DATOS DEL ARCHIVO EN VARIABLES DE ESTRUCTURA, HAY QUE PASARLE LOS VALORES POR REFERENCIA
 //TAMBIEN LOS IMPRIME
-disco_osada osada_iniciar();
+//disco_osada osada_iniciar();
 
 
  #pragma pack(pop)

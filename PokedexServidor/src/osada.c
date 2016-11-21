@@ -74,7 +74,7 @@ void seekBloques(FILE* archivo,int cantidad){
 	fseek(archivo,cantidad*(OSADA_BLOCK_SIZE),SEEK_CUR);
 }
 
-
+/*
 disco_osada osada_iniciar() {
 
 // Antes esto tiraba error de tipos, cambie el osada.h para que reciba punteros
@@ -155,3 +155,4 @@ disco_osada osada_iniciar() {
 
 }
 
+*/
