@@ -111,6 +111,8 @@ int buscarPosicionLibre();
 
 int inicioDeDatos();
 
+int inicioDeDatosEnBloques();
+
 int hayLugarEnElUltimoBloque(int unTamanio);
 
 int hayBloquesLibres(int unaCantidad);

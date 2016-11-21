@@ -361,7 +361,7 @@ unsigned int primerBloqueBitmapLibre(){
 	int pos = -1;
 
 	int bloquesDeDatos = miDisco.header->fs_blocks;
-	int inicio = inicioDeDatos();
+	int inicio = inicioDeDatosEnBloques();
 
 	int i;
 	for(i = inicio; i <= bloquesDeDatos; i++){
@@ -413,6 +413,7 @@ int buscarPosicionLibre(){
 t_getattr osada_getattr(char *unaRuta){
 	t_getattr atributos;
 	int posicion = buscarArchivo(unaRuta);
+
 	if (posicion == 65535){
 		atributos.tipo_archivo = 2;
 		atributos.size = 0;
@@ -432,7 +433,7 @@ t_getattr osada_getattr(char *unaRuta){
 		}
 	}
 
-	return atributos;
+return atributos;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -450,6 +451,8 @@ char *osada_readdir(char *unaRuta){
 		printf("no existe el directorio o subdirectorio especificado\n");
 		exit(0);
 	}
+
+
 	// Busco todos los archivos hijos de ese directorio padre, y me copio el nombre de cada uno
 	for (i = 0; i <= 2047; i++){
 
@@ -473,6 +476,7 @@ char *osada_readdir(char *unaRuta){
 		string_append(&contenidoDir, nullChar);
 	}
 
+
 return contenidoDir;
 
 }
@@ -492,11 +496,15 @@ int osada_open(char *ruta){
 void *osada_read(char *ruta){
 
 	int i = buscarArchivo(ruta);
+
 	//log_info(logPS, "Recibida solicitud de lectura (.read) del archivo %s", ruta);
 	int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
 	if(miDisco.tablaDeArchivos[i].file_size == 0){
 		goto terminar;
 	}
+
+	pthread_mutex_lock(&misMutex[i]);
+
 	void *buffer = malloc(miDisco.tablaDeArchivos[i].file_size);
 	div_t bloquesOcupados = div(miDisco.tablaDeArchivos[i].file_size, 64);
 	int tamanioActualBuffer = 0;
@@ -534,6 +542,8 @@ void *osada_read(char *ruta){
 
 		}
 	}
+
+	pthread_mutex_unlock(&misMutex[i]);
 
 	terminar:
 	return(buffer);
@@ -989,3 +999,10 @@ int ultimoBloqueAsignado(int filePos){
 return aux;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
+int inicioDeDatosEnBloques(){
+	int inicio = miDisco.cantBloques.bloques_header + miDisco.cantBloques.bloques_bitmap
+			+ miDisco.cantBloques.bloques_tablaDeArchivos
+			+ miDisco.cantBloques.bloques_tablaDeAsignaciones;
+
+return inicio;
+}
