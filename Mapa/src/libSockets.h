@@ -67,6 +67,7 @@ typedef struct{
 }bloq;
 
 void leerConfiguracion();
+void leerConfiguracion2();
 int leerConfigPokenest(char* ruta, t_list *pokenests);
 int leerPokemons(char* ruta, t_list *datos);
 

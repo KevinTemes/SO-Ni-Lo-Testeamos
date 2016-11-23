@@ -174,11 +174,7 @@ void matar(entrenador* entreni) {
 		b->valor = 0;
 	}
     log_info(logs,"sale entrenado %c de los que estan en curso",entreni->simbolo);
-	bool esEntrenador(entrenador* entiti) {
-		return entreni->simbolo == entiti->simbolo;
-	}
 
-	list_remove_by_condition(entrenadoresEnCurso, (void*) esEntrenador);
 	free(entreni->pokePeleador);
 	log_info(logs,"libera pokemon (si se le asigno para el deadlock) del entrenador %c",entreni->simbolo);
 	list_destroy_and_destroy_elements(entreni->asignados, (void*) free);
@@ -417,6 +413,11 @@ void atenderConexion(void *numeroCliente) {
 
 	ent1->fallecio = 1;
 	queue_clean(ent1->colaAccion);
+	bool esEntrenador(entrenador* entiti) {
+			return ent1->simbolo == entiti->simbolo;
+		}
+
+		list_remove_by_condition(entrenadoresEnCurso, (void*) esEntrenador);
 
 
 	while (list_size(ent1->pokemones)) {
@@ -434,6 +435,21 @@ void atenderConexion(void *numeroCliente) {
 		sumarRecurso2(items, d->pokenest);
     	nivel_gui_dibujar(items, nombreMapa);
 		pok->estaOcupado = 0;
+
+
+		int ultimoAux;
+		for(ultimoAux=0;ultimoAux<list_size(entrenadoresEnCurso);ultimoAux++){
+			entrenador* e;
+			tabla* ate;
+			e = list_get(entrenadoresEnCurso,ultimoAux);
+			ate = list_find(e->solicitud,(void*)esLaPokenest3);
+			if(ate->valor > 0){
+				ate->valor--;
+			}
+			log_info(logs,"Ahora la solicitudo del pokemon %c de %c es %d",ate->pokenest,e->simbolo,ate->valor);
+		}
+
+
 		bool esLad(bloq* ver) {
 			return ver->pokenest == pok->especie[0];
 		}

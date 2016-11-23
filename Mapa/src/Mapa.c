@@ -88,6 +88,8 @@ void banquero() {
 
 	while (1) {
 		usleep(datosMapa->tiempoChequeoDeadlock);
+
+
 		if (list_size(entrenadoresEnCurso)) {
 			t_list* vectorT = list_create();
 			int auxiliar;
@@ -154,6 +156,7 @@ void banquero() {
 							for (x = 0; x < list_size(an->asignados); x++) {
 								fa = list_get(an->asignados, x);
 								fe = list_get(vectorT, x);
+								log_info(logs,"suma %c de %c con %c asignados",an->simbolo,fa->pokenest,fe->pokenest);
 								fe->valor = fa->valor + fe->valor;
 								auu = 0;
 							}
@@ -326,6 +329,7 @@ void banquero() {
 				entri->estaMarcado = 0;
 			}
 			list_destroy_and_destroy_elements(vectorT, (void*) free);
+			log_info(logs,"se elimina vector auxiliar");
 		}
 	}
 
@@ -342,7 +346,8 @@ void planificador(void* argu) {
 		int q = datosMapa->quantum;
 
 		//log_info(logs,"se mete a planificador");
-		//caso roun robin
+/////////////////////////////////////////ROUND ROBIN/////////////////////////////////////////////////////////////
+
 		if (!strcmp(datosMapa->algoritmo, "RR")) {
 
 			int acto;
@@ -422,7 +427,8 @@ void planificador(void* argu) {
 								entre->posy++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-		     					nivel_gui_dibujar(items, argument);
+
+								nivel_gui_dibujar(items, argument);
 								q--;
 								//log_info(logs,"valor de quantum %d",q);
 							}
@@ -468,15 +474,14 @@ void planificador(void* argu) {
 						//bool(poki*)
 						//log_info(logs, "Extrajo un bloqueado");
 						bool esLaPokenest(pokimons *parametro1) {
-							return entre->pokenestAsignado
-									== parametro1->pokinest;
+							return entre->pokenestAsignado == parametro1->pokinest;
 						}
 						//log_info(logs, "Ahora busca un poki");
 						p = list_find(pokemons, (void*) esLaPokenest);
 
 						int saux;
 						int captu = 0;
-						for (saux = 0; saux < list_size(p->listaPokemons);
+						for (saux = 0; saux < list_size(p->listaPokemons) && captu == 0;
 								saux++) {
 							metaDataPokemon* pokem;
 							//log_info(logs,"Extrae lista de pokemon");
@@ -552,7 +557,7 @@ void planificador(void* argu) {
 
 		}
 
-////////////////////////////////////////////////////////EMPIEZA SRDF
+////////////////////////////////////////////////////////EMPIEZA SRDF////////////////////////////
 
 		if (!strcmp(datosMapa->algoritmo, "SRDF")) {
 
@@ -692,8 +697,7 @@ void planificador(void* argu) {
 
 						int saux;
 						int captu = 0;
-						for (saux = 0; saux < list_size(p->listaPokemons);
-								saux++) {
+						for (saux = 0; saux < list_size(p->listaPokemons) && captu == 0;saux++) {
 							metaDataPokemon* pokem;
 							pokem = list_get(p->listaPokemons, saux);
 							if (!pokem->estaOcupado) {
@@ -915,7 +919,7 @@ void bloqui(void* stru) {
 
 		} else {
 
-			log_info(logs, "mata a entrenador en bloqueados");
+			log_info(logs, "mata a entrenador %c en bloqueados",ent1->simbolo);
 			matar(ent1);
 		}
 	}
@@ -1040,7 +1044,7 @@ int main(int argc, char* argv[]) {
 	log_info(logs,
 			"iniciado el servidor principal del Mapa. Aguardando conexiones...\n\n");
 
-	signal(SIGUSR2, leerConfiguracion);
+	signal(SIGUSR2, leerConfiguracion2);
 
 	int socketEscucha, retornoPoll;
 	int fd_index = 0;

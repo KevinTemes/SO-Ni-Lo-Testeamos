@@ -16,6 +16,49 @@ extern char* configMapa;
 metaDataPokeNest *datos; // Variable global
 metaDataComun* datosMapa;
 
+
+
+void leerConfiguracion2() {
+	t_config* archivoConfiguracion = config_create(configMapa); //Crea struct de configuracion
+	if (archivoConfiguracion == NULL) {
+
+		log_error(logs,"Error al leer metadata Mapa");
+		perror("Error leer config");
+	} else {
+		int cantidadKeys = config_keys_amount(archivoConfiguracion);
+		if (cantidadKeys < 7) {
+			log_error(logs,"Error al leer metadata Mapa"); // sale, 0 es false
+			perror("Error leer config");
+		} else {
+
+			datosMapa->tiempoChequeoDeadlock = config_get_int_value(
+					archivoConfiguracion, "TiempoChequeoDeadlock");
+			//printf("TiempoChequeo %d\n",(*datos)->tiempoChequeoDeadlock);
+
+			datosMapa->batalla = config_get_int_value(archivoConfiguracion,
+					"Batalla");
+			//printf("batalla %d\n",(*datos)->batalla);
+
+			char* algoritmo = string_new();
+			string_append(&algoritmo,
+					config_get_string_value(archivoConfiguracion, "algoritmo"));
+			datosMapa->algoritmo = algoritmo;
+			//printf("algoritmo  %s\n",(*datos)->algoritmo);
+
+			datosMapa->quantum = config_get_int_value(archivoConfiguracion,
+					"quantum");
+			//printf("quantum  %d\n",(*datos)->quantum);
+
+			datosMapa->retardoQ = config_get_int_value(archivoConfiguracion,
+					"retardo");
+
+
+			config_destroy(archivoConfiguracion);
+		}
+	}
+}
+
+
 void leerConfiguracion() {
 	t_config* archivoConfiguracion = config_create(configMapa); //Crea struct de configuracion
 	if (archivoConfiguracion == NULL) {
