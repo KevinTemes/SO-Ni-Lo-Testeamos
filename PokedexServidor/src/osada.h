@@ -70,7 +70,7 @@ typedef struct{
 	osada_header *header;
 	t_bitarray *bitmap;
 	osada_file tablaDeArchivos[2048];
-	int *tablaDeAsignaciones;
+	osada_block_pointer *tablaDeAsignaciones;
 	char *discoMapeado;
 	tamanio_osada cantBloques;
 }disco_osada;

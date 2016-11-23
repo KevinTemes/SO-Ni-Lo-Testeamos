@@ -132,7 +132,7 @@ void atenderConexion(void *numeroCliente){
 	char *contenidoDir = string_new();
 	char *nombre = string_new();
 	void *contenido;
-	void *buffer, *bufferDir, *nuevoContenido;
+	void *buffer, *bufferDir, *nuevoContenido, 	*bufferContenido;;
 	void *respuesta;
 
 	remove("Servidor.log");
@@ -181,7 +181,7 @@ void atenderConexion(void *numeroCliente){
 					bufferDir = malloc(tamanio + sizeof(int));
 					memcpy(bufferDir, &tamanio, sizeof(int));
 					memcpy(bufferDir + sizeof(int), contenidoDir, tamanio);
-					send(clientesActivos[unCliente].socket, bufferDir, sizeof(int) + tamanio, 0);
+					send(clientesActivos[unCliente].socket, bufferDir, sizeof(int) + tamanio, MSG_WAITALL);
 				}
 				*ruta = '\0';
 				free(buffer);
@@ -197,19 +197,18 @@ void atenderConexion(void *numeroCliente){
 				ruta = convertirString(buffer, tamanioRuta);
 				int j = buscarArchivo(ruta);
 				int tamanioArchivo = (int)miDisco.tablaDeArchivos[j].file_size;
+
 				if(tamanioArchivo == 0){
-					void * bufferContenido = malloc(sizeof(int));
+					bufferContenido = malloc(sizeof(int));
 					memcpy(bufferContenido, &tamanioArchivo, sizeof(int));
-					send(clientesActivos[unCliente].socket, bufferContenido, sizeof(int), 0);
-					free(bufferContenido);
+					send(clientesActivos[unCliente].socket, bufferContenido, sizeof(int), MSG_WAITALL);
 				}
 				else{
 					void *contenidoArchivo = osada_read(ruta);
-					void *bufferContenido = malloc(tamanioArchivo + sizeof(int));
+					bufferContenido = malloc(tamanioArchivo + sizeof(int));
 					memcpy(bufferContenido, &tamanioArchivo, sizeof(int));
 					memcpy(bufferContenido + sizeof(int), contenidoArchivo, tamanioArchivo);
-					send(clientesActivos[unCliente].socket, bufferContenido, sizeof(int) + tamanioArchivo, 0);
-					free(contenidoArchivo);
+					send(clientesActivos[unCliente].socket, bufferContenido, sizeof(int) + tamanioArchivo, MSG_WAITALL);
 				}
 				*ruta = '\0';
 			//	free(buffer);
@@ -222,7 +221,7 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_create(ruta);
-				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
+				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
 				free(buffer);
 
 			break;
@@ -239,7 +238,7 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, &offset, sizeof(int), MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_write(ruta, nuevoContenido, tamanioNuevoContenido, offset);
-				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
+				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
 
 			break;
 
@@ -250,7 +249,7 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_unlink(ruta);
-				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
+				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
 				free(buffer);
 
 			break;
@@ -262,7 +261,7 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_mkdir(ruta);
-				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
+				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
 				free(buffer);
 
 			break;
@@ -274,7 +273,7 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_rmdir(ruta);
-				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
+				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
 				free(buffer);
 
 			break;
@@ -290,7 +289,7 @@ void atenderConexion(void *numeroCliente){
 				ruta = convertirString(buffer, tamanioRuta);
 				nombre = convertirString(bufferNombre, tamanioNombre);
 				exito = osada_rename(ruta, nombre);
-				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
+				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
 				free(buffer);
 				free(bufferNombre);
 
@@ -303,7 +302,7 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_open(ruta);
-				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
+				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
 				free(buffer);
 
 			break;
@@ -325,21 +324,22 @@ void atenderConexion(void *numeroCliente){
 		}
 
 	}
+	free(bufferContenido);
 	//free(contenido);
 	//free(nuevoContenido);
-	//free(bufferDir);
+	free(bufferDir);
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void actualizarBitmap(){
 	int inicioBitmap = miDisco.cantBloques.bloques_header * 64;
 	int tamanioBitmap = miDisco.cantBloques.bloques_bitmap * 64;
-	memcpy(&miDisco.discoMapeado[inicioBitmap], &miDisco.bitmap, tamanioBitmap);
+	memmove(miDisco.discoMapeado + inicioBitmap, miDisco.bitmap, tamanioBitmap);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void actualizarTablaDeArchivos(){
 	int inicioTabla = ((miDisco.cantBloques.bloques_header + miDisco.cantBloques.bloques_bitmap) * 64);
-	memcpy(miDisco.discoMapeado + inicioTabla, &miDisco.tablaDeArchivos, sizeof(osada_file) * 2047);
+	memcpy(miDisco.discoMapeado + inicioTabla, &miDisco.tablaDeArchivos, sizeof(osada_file) * 2048);
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -554,6 +554,11 @@ int osada_create(char *ruta){
 	//log_info(logPS, "Recibida solicitud de creación (.create) del archivo %s", ruta);
 	int exito = 1;
 
+	int existe = buscarArchivo(ruta);
+	if(existe != -1){
+		goto terminar;
+	}
+
 	unsigned int bloqueLibre = primerBloqueBitmapLibre();
 	char *nombreArchivo = obtenerNombre(ruta);
 	int largo = strlen(nombreArchivo);
@@ -585,7 +590,9 @@ int osada_create(char *ruta){
 		}
 		log_error(logPS, "No se pudo crear el archivo");
 	}
-	return exito;
+
+terminar:
+return exito;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
@@ -617,7 +624,7 @@ int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
 
 		if(espacioEnUltimoBloque > 0){
 			desplazamiento = nuevoContenido + datosCopiados;
-			memcpy(&miDisco.discoMapeado[inicio + (siguienteBloque * 64)], desplazamiento, espacioEnUltimoBloque);
+			memcpy(&miDisco.discoMapeado[inicio + (siguienteBloque * 64) + (64 - espacioEnUltimoBloque)], desplazamiento, espacioEnUltimoBloque);
 			datosCopiados += espacioEnUltimoBloque;
 			datosPendientes -= espacioEnUltimoBloque;
 		}
@@ -687,9 +694,9 @@ int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
 	}
 
 	miDisco.tablaDeArchivos[i].lastmod = consultarTiempo();
-	actualizarBitmap();
+//	actualizarBitmap();
 	actualizarTablaDeArchivos();
-	actualizarTablaDeAsignaciones();
+//	actualizarTablaDeAsignaciones();
 	exito = sizeAgregado;
 
 	pthread_mutex_unlock(&misMutex[i]);
@@ -826,9 +833,9 @@ int osada_truncate(char *ruta, int nuevoTamanio){
 	}
 	miDisco.tablaDeArchivos[i].file_size = nuevoTamanio;
 	miDisco.tablaDeArchivos[i].lastmod = consultarTiempo();
-	actualizarBitmap();
+	//actualizarBitmap();
 	actualizarTablaDeArchivos();
-	actualizarTablaDeAsignaciones();
+	//actualizarTablaDeAsignaciones();
 
 	pthread_mutex_unlock(&misMutex[i]);
 
@@ -888,7 +895,7 @@ void crearArchivo(char *nombreArchivo, int parentDir, int bloqueInicial, int pos
 	miDisco.tablaDeArchivos[posTablaArchivos] = nuevoArchivo;
 	bitarray_set_bit(miDisco.bitmap, bloqueInicial);
 	actualizarTablaDeArchivos();
-	actualizarBitmap();
+//	actualizarBitmap();
 }
 
 
@@ -904,8 +911,8 @@ void borrarArchivo(int posicion){
 			siguienteBloque = aux;
 		}
 	actualizarTablaDeArchivos();
-	actualizarBitmap();
-	actualizarTablaDeAsignaciones();
+//	actualizarBitmap();
+//	actualizarTablaDeAsignaciones();
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////

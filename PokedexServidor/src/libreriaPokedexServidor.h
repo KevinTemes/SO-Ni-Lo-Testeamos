@@ -52,10 +52,6 @@ typedef struct{
 }t_getattr;
 
 
-osada_header mainHeader;
-osada_file tablaDeArchivos[2048];
-int *discoMapeado;
-
 disco_osada miDisco;
 
 pthread_mutex_t misMutex[2048];
