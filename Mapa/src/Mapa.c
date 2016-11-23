@@ -36,7 +36,7 @@ pokimons pic;
 
 //variables globales
 extern metaDataPokeNest *datos; //MATADO
-extern t_infoCliente clientesActivos[1024];
+extern t_infoCliente clientesActivos[2048];
 char* nombreMapa;
 char* configMapa;
 
@@ -68,6 +68,7 @@ t_queue* colaBloqueados;
 sem_t sem_Listos;
 sem_t sem_Bloqueados;
 sem_t sem_quantum;
+sem_t sem_llego;
 
 int numHilos;
 
@@ -87,7 +88,6 @@ void banquero() {
 
 	while (1) {
 		usleep(datosMapa->tiempoChequeoDeadlock);
-//if(!SIGINT){
 		if (list_size(entrenadoresEnCurso)) {
 			t_list* vectorT = list_create();
 			int auxiliar;
@@ -98,14 +98,41 @@ void banquero() {
 				vecto->valor = punter->valor;
 				list_add(vectorT, vecto);
 			}
-			int auu;
 
+
+			int iaux;
+						for (iaux = 0; iaux < list_size(entrenadoresEnCurso); iaux++) {
+							entrenador* en;
+							tabla* t;
+							en = list_get(entrenadoresEnCurso, iaux);
+							if (!en->fallecio) {
+								int auxixi;
+								int flago = 0;
+								for (auxixi = 0; auxixi < list_size(en->asignados) && flago == 0; auxixi++) {
+									t = list_get(en->asignados, auxixi);
+									if (t->valor != 0) {
+										flago = 1;
+									}
+								}
+								if (flago == 0) {
+									en->estaMarcado = 1;
+									//log_info(logs,"entrenador %c no esta en riesgo de deadlock por el momemnto",en->simbolo);
+								}
+
+							}
+						}
+
+
+
+
+			int auu;
 			for (auu = 0; auu < list_size(entrenadoresEnCurso); auu++) {
 				entrenador* an;
 				tabla* ta;
 				tabla* b;
 				an = list_get(entrenadoresEnCurso, auu);
 				//	log_info(logs, "saca entrenador en curso");
+
 				if (!an->fallecio) {
 					if (!an->estaMarcado) {
 						//log_info(logs, "entrenador %c no esta marcado",an->simbolo);
@@ -113,12 +140,9 @@ void banquero() {
 						int val = 1;
 						for (j = 0; j < list_size(an->solicitud) && val; j++) {
 							ta = list_get(an->solicitud, j);
-							//		log_info(logs, "solicitud de %c es %d", an->simbolo,
-							//			ta->valor);
+									log_info(logs, "solicitud de %c en %c %d", an->simbolo, ta->pokenest,ta->valor);
 							b = list_get(vectorT, j);
-							//	log_info(logs,
-							//		"y el valor del vector auxiliar ahi es %d",
-							//	b->valor);
+								log_info(logs,"y el valor del vector auxiliar ahi es %d %c",b->valor,b->pokenest);
 							val = ta->valor <= b->valor;
 						}
 						if (val) {
@@ -251,15 +275,18 @@ void banquero() {
 
 								if (!gold->fallecio && !silver->fallecio) {
 
+									sem_wait(&sem_llego);
+									sem_wait(&sem_llego);
+
 									log_info(logs, "%c peleara con %c",gold->simbolo, silver->simbolo);
 									pokegold = create_pokemon(facto,
 											(gold->pokePeleador)->especie,
 											(gold->pokePeleador)->nivel);
-									//		log_info(logs,"pokemon del entrenador %c es %s y su nivel %d",gold->simbolo,(gold->pokePeleador)->especie,(gold->pokePeleador)->nivel);
+									log_info(logs,"pokemon del entrenador %c es %s y su nivel %d",gold->simbolo,(gold->pokePeleador)->especie,(gold->pokePeleador)->nivel);
 									pokesilver = create_pokemon(facto,
 											(silver->pokePeleador)->especie,
 											(silver->pokePeleador)->nivel);
-									//		log_info(logs,"pokemon del entrenador %c es %s y su nivel %d",silver->simbolo,(silver->pokePeleador)->especie,(silver->pokePeleador)->nivel);
+									log_info(logs,"pokemon del entrenador %c es %s y su nivel %d",silver->simbolo,(silver->pokePeleador)->especie,(silver->pokePeleador)->nivel);
 									pokeperdedor = pkmn_battle(pokegold,pokesilver);
 									log_info(logs,"Perdedor de tipo %s",pkmn_type_to_string(pokeperdedor->type));
 									int accionar = 0;
@@ -276,16 +303,15 @@ void banquero() {
 								}
 						}
 						entrenador* muerto;
-											muerto = list_get(listota, 0);
-											int accion = 7;
-											send(clientesActivos[muerto->numeroCliente].socket,
-													&accion, sizeof(int), 0);
+						muerto = list_get(listota, 0);
+					    int accion = 7;
+						send(clientesActivos[muerto->numeroCliente].socket, &accion, sizeof(int), 0);
 					}
 
 					}
 				}
 
-				list_destroy_and_destroy_elements(vectorT, (void*) free);
+
 				list_destroy(entrenadoresEnDeadlock);
 				int otromas;
 				for (otromas = 0; otromas < list_size(deadlocks); otromas++) {
@@ -299,9 +325,10 @@ void banquero() {
 				entri = list_get(entrenadoresEnCurso, auxi23);
 				entri->estaMarcado = 0;
 			}
+			list_destroy_and_destroy_elements(vectorT, (void*) free);
 		}
 	}
-	//}
+
 }
 
 //arranque de planificacion
@@ -327,7 +354,7 @@ void planificador(void* argu) {
 
 			while (q && (!(entre->fallecio) && queue_size(entre->colaAccion))) {
 
-				sem_wait(&sem_quantum);
+		//		sem_wait(&sem_quantum);
 				acto = queue_pop(entre->colaAccion);
 				//log_info(logs,"funca3");
 
@@ -382,7 +409,7 @@ void planificador(void* argu) {
 								entre->posy--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-		//						nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 								q--;
 								//log_info(logs,"valor de quantum %d",q);
 							}
@@ -395,7 +422,7 @@ void planificador(void* argu) {
 								entre->posy++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-		//						nivel_gui_dibujar(items, argument);
+		     					nivel_gui_dibujar(items, argument);
 								q--;
 								//log_info(logs,"valor de quantum %d",q);
 							}
@@ -408,7 +435,7 @@ void planificador(void* argu) {
 								entre->posx--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-		//						nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 								q--;
 								//log_info(logs,"valor de quantum %d",q);
 							}
@@ -420,7 +447,7 @@ void planificador(void* argu) {
 								entre->posx++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-		//						nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 
 								q--;
 								//log_info(logs, "valor de quantum %d", q);
@@ -464,7 +491,7 @@ void planificador(void* argu) {
 									return param->pokenest == pokem->especie[0];
 								}
 								e = list_find(listaContenedora, (void*) esBloq);
-							//	log_info(logs,"%c entra en la cola de bloqueo de %c",entre->simbolo, e->pokenest);
+								log_info(logs,"%c entra en la cola de bloqueo de %c",entre->simbolo, e->pokenest);
 								queue_push(e->colabloq, entre);
 								captu = 1;
 								//sem_post(&(e->sembloq));
@@ -487,7 +514,7 @@ void planificador(void* argu) {
 									(void*) esLaPokenest2);
 							tab->valor++;
 							entre->entroBloqueados = 1;
-						//	log_info(logs, "%c va a la cola %c", entre->simbolo, e->pokenest);
+							log_info(logs, "%c va a la cola %c", entre->simbolo, e->pokenest);
 							queue_push(e->colabloq, entre);
 							//	sem_post(&(e->sembloq));
 
@@ -507,7 +534,7 @@ void planificador(void* argu) {
 
 //			pthread_mutex_lock(&mutexMuertee);
 			if (entre->fallecio) {
-		//		log_info(logs, "%c muere en el planificador", entre->simbolo);
+				log_info(logs, "%c muere en el planificador", entre->simbolo);
 				matar(entre);
 				//entre->fallecio=0;
 
@@ -607,7 +634,7 @@ void planificador(void* argu) {
 								ent1->posy--;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
-		//						nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 
 							}
 							break;
@@ -619,7 +646,7 @@ void planificador(void* argu) {
 								ent1->posy++;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
-		//						nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 
 							}
 							break;
@@ -631,7 +658,7 @@ void planificador(void* argu) {
 								ent1->posx--;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
-		//						nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 
 							}
 							break;
@@ -642,7 +669,7 @@ void planificador(void* argu) {
 								ent1->posx++;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
-		//						nivel_gui_dibujar(items, argument);
+								nivel_gui_dibujar(items, argument);
 
 							}
 							break;
@@ -735,7 +762,7 @@ void bloqui(void* stru) {
 
 		int dal;
 		sem_getvalue(&strub->sembloq, &dal);
-		//log_info(logs, "Pasa el sem wait, el siguiente vale %d", dal);
+		log_info(logs, "Pasa el sem wait, el siguiente vale %d", dal);
 
 		//SOLUCION RUDIMENTARISISISISISISISISISIISISISISISISIISISISISISIISISISISISIISISMA
 
@@ -876,7 +903,7 @@ void bloqui(void* stru) {
 					//log_info(logs, "llego a bloqueados");
 					//postea semaforo pokemon de P y su valor es 2
 					restarRecurso(items, poki->pokinest);
-	//				nivel_gui_dibujar(items, nombreMapa);
+					nivel_gui_dibujar(items, nombreMapa);
 
 			//		log_info(logs,"entrenador %c sale de la cola de %c y entra a listos",ent1->simbolo, strub->pokenest);
 					queue_push(colaListos, ent1);
@@ -916,6 +943,7 @@ int main(int argc, char* argv[]) {
 	sem_init(&sem_Listos, 0, 0);
 	sem_init(&sem_Bloqueados, 0, 0);
 	sem_init(&sem_quantum, 0, 0);
+	sem_init(&sem_llego, 0, 0);
 
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -973,8 +1001,8 @@ int main(int argc, char* argv[]) {
 	log_info(logs,
 			"Los tres archivos de config fueron creados exitosamente!\n");
 
-//	nivel_gui_inicializar();
-//	nivel_gui_get_area_nivel(&rows, &cols);
+	nivel_gui_inicializar();
+	nivel_gui_get_area_nivel(&rows, &cols);
 
 	//POKENESTchar** posPoke;
 	int ka;
@@ -990,7 +1018,7 @@ int main(int argc, char* argv[]) {
 				datosPokenest->cantPokemons);
 	}
 
-//	nivel_gui_dibujar(items, argv[1]);
+	nivel_gui_dibujar(items, argv[1]);
 
 	//hilo de planificacion
 
@@ -1097,7 +1125,7 @@ int main(int argc, char* argv[]) {
 		BorrarItem(items, ide);
 	}
 	close(socketEscucha);
-//	nivel_gui_terminar();
+	nivel_gui_terminar();
 
 	/*	list_destroy_and_destroy_elements(pokenests,(void*)free);
 	 list_destroy_and_destroy_elements(disponibles,(void*)free);
