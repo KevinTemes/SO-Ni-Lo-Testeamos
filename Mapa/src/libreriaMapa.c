@@ -12,10 +12,8 @@
 #define MAX_LEN 128
 
 pthread_mutex_t mutexPaqueton = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t mutexRegistro = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t mutexMorten = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t muSem = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexMortenAtend = PTHREAD_MUTEX_INITIALIZER;
-
 
 int numEntrenador;
 
@@ -24,6 +22,7 @@ t_infoCliente clientesActivos[2048];
 extern t_list* entrenadoresEnCurso;
 extern t_list* pokemons;
 extern sem_t sem_Listos;
+extern sem_t sem_quantum;
 extern char* nombreMapa;
 extern metaDataComun* datosMapa;
 extern t_log* logs;
@@ -80,17 +79,13 @@ void imprimirGiladas(void *unCliente) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-int calcularDistancia(entrenador* ent)
-{
-	return abs(ent->posx - ent->posPokex)+abs(ent->posy - ent->posPokey);
+int calcularDistancia(entrenador* ent) {
+	return abs(ent->posx - ent->posPokex) + abs(ent->posy - ent->posPokey);
 }
 
-bool esMasCerca(entrenador* cerca, entrenador* lejos)
-{
+bool esMasCerca(entrenador* cerca, entrenador* lejos) {
 	return calcularDistancia(cerca) < calcularDistancia(lejos);
 }
-
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void enviarHeader(int unSocket, int unHeader) {
@@ -139,13 +134,12 @@ void notificarCaida() {
 	exit(0);
 }
 
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void terminarMapa(){
-	list_destroy_and_destroy_elements(pokenests,(void*)free);
-	list_destroy_and_destroy_elements(disponibles,(void*)free);
+void terminarMapa() {
+	list_destroy_and_destroy_elements(pokenests, (void*) free);
+	list_destroy_and_destroy_elements(disponibles, (void*) free);
 	int auxie;
-	void destruir(bloq* self){
+	void destruir(bloq* self) {
 		queue_destroy(self->colabloq);
 		free(self);
 	}
@@ -156,80 +150,93 @@ void terminarMapa(){
 
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void sumarRecurso(t_list* items, char id) {
-    ITEM_NIVEL* item = _search_item_by_id(items, id);
+void sumarRecurso2(t_list* items, char id) {
+	ITEM_NIVEL* item = _search_item_by_id(items, id);
 
-    if (item != NULL) {
-        item->quantity = item->quantity >= 0 ? item->quantity + 1 : 0;
-    } else {
-        printf("WARN: Item %c no existente\n", id);
-    }
+	if (item != NULL) {
+		item->quantity = item->quantity >= 0 ? item->quantity + 1 : 0;
+	} else {
+		printf("WARN: Item %c no existente\n", id);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void matar(entrenador* entreni) {
 	int peo;
-		for(peo=0;peo<list_size(entreni->asignados);peo++){
+	for (peo = 0; peo < list_size(entreni->asignados); peo++) {
 		tabla* a;
 		tabla* b;
-		a=list_get(entreni->asignados,peo);
-		b=list_get(entreni->solicitud,peo);
-		a->valor=0;
-		b->valor=0;
-		}
-	pthread_mutex_lock(&mutexMorten);
-	//log_info(logs,"sale entrenado %c de los que estan en curso",entreni->simbolo);
-	bool esEntrenador(entrenador* entiti){
+		a = list_get(entreni->asignados, peo);
+		b = list_get(entreni->solicitud, peo);
+		a->valor = 0;
+		b->valor = 0;
+	}
+		//log_info(logs,"sale entrenado %c de los que estan en curso",entreni->simbolo);
+	bool esEntrenador(entrenador* entiti) {
 		return entreni->simbolo == entiti->simbolo;
 	}
 
-	list_remove_by_condition(entrenadoresEnCurso, (void*)esEntrenador);
+	list_remove_by_condition(entrenadoresEnCurso, (void*) esEntrenador);
+	free((entreni->pokePeleador)->especie);
 	free(entreni->pokePeleador);
-	log_info(logs,"libera pokemon (si se le asigno para el deadlock) del entrenador %c",entreni->simbolo);
+	log_info(logs,
+			"libera pokemon (si se le asigno para el deadlock) del entrenador %c",
+			entreni->simbolo);
 	list_destroy_and_destroy_elements(entreni->asignados, (void*) free);
-	log_info(logs,"libera lista de asignados de %c",entreni->simbolo);
+	log_info(logs, "libera lista de asignados de %c", entreni->simbolo);
 	list_destroy_and_destroy_elements(entreni->solicitud, (void*) free);
-	log_info(logs,"libera lista de solicitud de %c",entreni->simbolo);
-/*	int y;
-	for (y = 0; y < list_size(entreni->pokemones); y++) {
-		metaDataPokemon* pok;
-		bloq* bli;
-		tabla* d;
-		pok = list_get(entreni->pokemones, y);
-		log_info(logs,"%c libera a su pokemon %s",entreni->simbolo,pok->especie);
-		bool esLaPokenest3(tabla* a) {
-				return a->pokenest ==pok->especie[0] ;
-			}
-		d = list_find(disponibles,(void*)esLaPokenest3);
-		d->valor++;
-		log_info(logs,"se suma un valor para %c y queda en %d",d->pokenest,d->valor);
-		sumarRecurso(items,d->pokenest);
-		nivel_gui_dibujar(items,nombreMapa);
-		pok->estaOcupado = 0;
-		bool esLad(bloq* ver){
-			return ver->pokenest == pok->especie[0];
-		}
-		bli = list_find(listaContenedora,(void*)esLad);
-		list_remove(entreni->pokemones,y);
-		log_info(logs,"postea el semaforo de %c",bli->pokenest);
-		sem_post(&(bli->sembloq));
+	log_info(logs, "libera lista de solicitud de %c", entreni->simbolo);
+	while (list_size(entreni->pokemones)) {
+			metaDataPokemon* pok;
+			bloq* bli;
+			tabla* d;
 
-	}*/
+			pok = list_get(entreni->pokemones, 0);
+			log_info(logs,"se libera al pokemon %s del entrenador %c EN LIBPOK",pok->especie,entreni->simbolo);
+			bool esLaPokenest3(tabla* a) {
+				return pok->especie[0] == a->pokenest;
+			}
+			d = list_find(disponibles, (void*) esLaPokenest3);
+			d->valor++;
+			sumarRecurso2(items, d->pokenest);
+	//		nivel_gui_dibujar(items, nombreMapa);
+			pok->estaOcupado = 0;
+
+
+
+			int iiiuax;
+			for (iiiuax = 0; iiiuax < list_size(disponibles); iiiuax++) {
+				tabla* e;
+				e = list_get(disponibles, iiiuax);
+				log_info(logs, "Disponible de %c es %d", e->pokenest, e->valor);
+			}
+
+			bool esLad(bloq* ver) {
+							return ver->pokenest == pok->especie[0];
+						}
+
+
+			bli = list_find(listaContenedora, (void*) esLad);
+
+			sem_post(&(bli->sembloq));
+
+			int vale;
+			sem_getvalue(&(bli->sembloq),&vale);
+			log_info(logs, "postea semaforo pokemon de %c y su valor es %d", bli->pokenest,vale);
+
+			list_remove(entreni->pokemones,0);
+
+
+
+		}
 	list_destroy(entreni->pokemones);
 	queue_destroy(entreni->colaAccion);
 	BorrarItem(items, entreni->simbolo);
 //	nivel_gui_dibujar(items, nombreMapa);
 	free(entreni);
-	int iiiuax;
-	for(iiiuax=0; iiiuax<list_size(disponibles);iiiuax++){
-		tabla* e;
-		e = list_get(disponibles,iiiuax);
-		log_info(logs,"Disponible de %c es %d",e->pokenest,e->valor);
+
 	}
-	pthread_mutex_unlock(&mutexMorten);
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void atenderConexion(void *numeroCliente) {
@@ -241,43 +248,33 @@ void atenderConexion(void *numeroCliente) {
 
 	entrenador* ent1 = malloc(sizeof(entrenador));
 
-
 	t_log* logi;
 	//remove("Mapi.log");
 
 	logi = log_create("Mapi.log", "Mapa", false, log_level_from_string("INFO"));
 
-	//printf("Entrenador #%d conectado! esperando mensajes... \n",
-	//clientesActivos[unCliente].cliente);
+
 	while (status != 0) {
 
-		// paquete = recibirDatos(clientesActivos[unCliente].socket,2);
-		status = recv(clientesActivos[unCliente].socket, &paquete,
-				sizeof(char), MSG_WAITALL);
+		status = recv(clientesActivos[unCliente].socket, &paquete, sizeof(char),MSG_WAITALL);
 		if (status != 0) {
-			//printf("el Entrenador #%d dijo: \n %s", clientesActivos[unCliente].cliente, paquete);
-			//status = recv(clientesActivos[unCliente].socket, paquete, 2, 0);
-			//log_info(logs,"paquete: %c%c",paquete[0],paquete[1]);
+
 			cambio[0] = paquete[0];
-			if (isalpha(cambio[0]) || cambio[0] == '2' || cambio[0] == '6'
-					|| cambio[0] == '8' || cambio[0] == '4'
-					|| cambio[0] == '9') {
-				status = recv(clientesActivos[unCliente].socket,
-						&paquete, sizeof(char), MSG_WAITALL);
+
+			if (isalpha(cambio[0]) || cambio[0] == '2' || cambio[0] == '6' || cambio[0] == '8' || cambio[0] == '4' || cambio[0] == '9') {
+
+				status = recv(clientesActivos[unCliente].socket, &paquete, sizeof(char), MSG_WAITALL);
 
 				cambio[1] = paquete[0];
 
-				log_info(logi, "paquete global:%c %c", cambio[0], cambio[1]);
-				log_info(logi,
-						"unCliente:%d clientesactivos[uncliente].cliente:%d",
-						unCliente, clientesActivos[unCliente].cliente);
+			//	log_info(logi, "paquete global:%c %c", cambio[0], cambio[1]);
+			//	log_info(logi,"unCliente:%d clientesactivos[uncliente].cliente:%d",unCliente, clientesActivos[unCliente].cliente);
 				//printf("%c",paqueton[0]);
 
 				//enviarHeader(clientesActivos[unCliente].socket, 1);
 
-				log_info(logi, "Este seria un caracter del entrenador: %c",
-						cambio[1]);
-				log_info(logi, "Este seria su accionar: %d", cambio[0]);
+			//	log_info(logi, "Este seria un caracter del entrenador: %c",cambio[1]);
+			//	log_info(logi, "Este seria su accionar: %d", cambio[0]);
 
 				//mientras no haya recibido nada
 
@@ -288,7 +285,6 @@ void atenderConexion(void *numeroCliente) {
 				//si el entrenador no esta registrado
 				if (!estaLista) {
 
-
 					ent1->simbolo = cambio[1]; //almaceno simbolo en entrenador (paqueton [0] es variable global
 					ent1->numeroCliente = unCliente; //numero de cliente para envio de informacion
 					ent1->flagLeAsignaronPokenest = 0;
@@ -298,7 +294,7 @@ void atenderConexion(void *numeroCliente) {
 					ent1->estaMarcado = 0;
 					ent1->entroBloqueados = 0;
 					ent1->fallecio = 0;
-					ent1->pokePeleador=malloc(sizeof(metaDataPokemon));
+					ent1->pokePeleador = malloc(sizeof(metaDataPokemon));
 					ent1->posx = 0; //posicion en x inicializada en 0
 					ent1->posy = 0; // idem en y
 					ent1->asignados = list_create();
@@ -315,7 +311,7 @@ void atenderConexion(void *numeroCliente) {
 						//log_info(logs,"Asignados: %c%d",t->pokenest,t->valor);
 						otre->pokenest = datosPo->caracterPokeNest[0];
 						otre->valor = 0;
-					//	log_info(logs,"Solicitud: %c%d",otre->pokenest,otre->valor);
+						//	log_info(logs,"Solicitud: %c%d",otre->pokenest,otre->valor);
 						list_add(ent1->asignados, t);
 						list_add(ent1->solicitud, otre);
 					}
@@ -330,13 +326,11 @@ void atenderConexion(void *numeroCliente) {
 
 					//list_add_in_index(listaDeColasAccion,ent1->numeroLlegada,coli);
 
-
-
-		//			nivel_gui_dibujar(items, nombreMapa);
-
+			//		nivel_gui_dibujar(items, nombreMapa);
 
 					pthread_mutex_lock(&mutexPaqueton);
-					CrearPersonaje(items, ent1->simbolo, ent1->posx,ent1->posy); //mete al pj en el mapa
+					CrearPersonaje(items, ent1->simbolo, ent1->posx,
+							ent1->posy); //mete al pj en el mapa
 
 					list_add(entrenadoresEnCurso, ent1);
 
@@ -344,18 +338,15 @@ void atenderConexion(void *numeroCliente) {
 
 					queue_push(colaListos, ent1); //llego un entrenador entonces lo meto en la cola de listos
 
-					log_info(logs, "entrenador %c a listos", ent1->simbolo); //informo por archivo de log la llegada del entrenad
-
+				//	log_info(logs, "entrenador %c a listos", ent1->simbolo); //informo por archivo de log la llegada del entrenad
 
 					sem_post(&sem_Listos); //produce un ent en colaListos
 
-				/*	if(!strcmp(datosMapa->algoritmo,"RR")){
-					sem_post(&sem_quantum);
-					} */
+						if(!strcmp(datosMapa->algoritmo,"RR")){
+					 sem_post(&sem_quantum);
+					 }
 
 					pthread_mutex_unlock(&mutexPaqueton);
-
-
 
 					//	aux = '\0';
 
@@ -363,7 +354,6 @@ void atenderConexion(void *numeroCliente) {
 
 				//si el entrenador se encontraba registrado
 				else {
-					pthread_mutex_lock(&mutexRegistro);
 
 					queue_push(ent1->colaAccion, cambio[0]); //pusheo nuevo accionar a la cola auxiliar
 					/*int ac;
@@ -372,12 +362,9 @@ void atenderConexion(void *numeroCliente) {
 
 					//list_replace(listaDeColasAccion, ent1->numeroLlegada, cola); //reemplaza la cola de la lista por la auxiliar
 					//log_info(logi, "paso el replace");
-
-		/*			if(!strcmp(datosMapa->algoritmo,"RR")){
-					sem_post(&sem_quantum);
-					}
-*/
-					pthread_mutex_unlock(&mutexRegistro);
+								if(!strcmp(datosMapa->algoritmo,"RR")){
+					 sem_post(&sem_quantum);
+					 }
 
 					//aux = '\0';
 				}
@@ -385,35 +372,46 @@ void atenderConexion(void *numeroCliente) {
 				//aux = '\0';
 			}
 			if (cambio[0] == '5') {
+				pthread_mutex_lock(&muSem);
+
 				int tamanioUno;
-				//log_info(logi,"llega un poke peleador");
+		    	log_info(logs,"llega un poke peleador de %c",ent1->simbolo);
 
 				ent1->pokePeleador = malloc(sizeof(metaDataPokemon));
 
-				recv(clientesActivos[ent1->numeroCliente].socket, &tamanioUno, sizeof(int), MSG_WAITALL);
+				recv(clientesActivos[ent1->numeroCliente].socket, &tamanioUno,
+						sizeof(int), MSG_WAITALL);
 
-				log_info(logi,"el tamanio de la cosa uno es: %d",tamanioUno);
-			/*	recv(clientesActivos[ent1->numeroCliente].socket, &tamanioDos,
-						sizeof(int), MSG_WAITALL);         */
+				log_info(logs, "el tamanio de la cosa uno es: %d", tamanioUno);
+				/*	recv(clientesActivos[ent1->numeroCliente].socket, &tamanioDos,
+				 sizeof(int), MSG_WAITALL);         */
 
 				void *bufferCosaUno = malloc(tamanioUno);
 				int nivel;
 
 				recv(clientesActivos[ent1->numeroCliente].socket, bufferCosaUno,
 						tamanioUno, MSG_WAITALL);
-				recv(clientesActivos[ent1->numeroCliente].socket, &nivel,sizeof(int), MSG_WAITALL);
+				recv(clientesActivos[ent1->numeroCliente].socket, &nivel,
+						sizeof(int), MSG_WAITALL);
 
+				char* pasaje = (char*) bufferCosaUno;
+				char* papa = string_new();
+				string_append(&papa, pasaje);
+				string_append(&papa, "\0");
 
-
-				((ent1->pokePeleador)->especie) = (char*) bufferCosaUno;
-				log_info(logs,"poke peleador de %c es %s",ent1->simbolo,(ent1->pokePeleador)->especie);
+				((ent1->pokePeleador)->especie) = papa;
+				log_info(logs, "poke peleador de %c es %s", ent1->simbolo,(ent1->pokePeleador)->especie);
 				((ent1->pokePeleador)->nivel) = nivel;
-                log_info(logs,"nivel del poke peleador de %c es %d",ent1->simbolo,(ent1->pokePeleador)->nivel);
+				log_info(logs, "nivel del poke peleador de %c es %d",ent1->simbolo, (ent1->pokePeleador)->nivel);
 
 				free(bufferCosaUno);
+
+				cambio[0]='\0';
+
+				pthread_mutex_unlock(&muSem);
 			}
 
-			if(cambio[0] == 1){
+			if (cambio[0] == 1) {
 				status = 0;
 
 			}
@@ -422,31 +420,56 @@ void atenderConexion(void *numeroCliente) {
 
 	}
 	//usleep(10000);
-	pthread_mutex_lock(&mutexMortenAtend);
+
 	ent1->fallecio = 1;
 	queue_clean(ent1->colaAccion);
-	int y;
-	for (y = 0; y < list_size(ent1->pokemones); y++) {
-							metaDataPokemon* pok;
-							bloq* bli;
-							tabla* d;
-							pok = list_get(ent1->pokemones, y);
-							bool esLaPokenest3(tabla* a) {
-								return pok->especie[0] == a->pokenest;
-							}
-							d = list_find(disponibles, (void*) esLaPokenest3);
-							d->valor++;
-							sumarRecurso(items, d->pokenest);
-					//		nivel_gui_dibujar(items, nombreMapa);
-							pok->estaOcupado = 0;
-							bool esLad(bloq* ver) {
-								return ver->pokenest == pok->especie[0];
-							}
-							bli = list_find(listaContenedora, (void*) esLad);
-							log_info(logs,"postea semaforo pokemon de %c",bli->pokenest);
-							sem_post(&(bli->sembloq));
 
-						}
-    log_info(logi,"entrenador fallece");
-    pthread_mutex_unlock(&mutexMortenAtend);
+
+	while (list_size(ent1->pokemones)) {
+		metaDataPokemon* pok;
+		bloq* bli;
+		tabla* d;
+
+		pok = list_get(ent1->pokemones, 0);
+	//	log_info(logs,"se libera al pokemon %s del entrenador %c EN LIBPOK",pok->especie,ent1->simbolo);
+		bool esLaPokenest3(tabla* a) {
+			return pok->especie[0] == a->pokenest;
+		}
+		d = list_find(disponibles, (void*) esLaPokenest3);
+		d->valor++;
+		sumarRecurso2(items, d->pokenest);
+//		nivel_gui_dibujar(items, nombreMapa);
+		pok->estaOcupado = 0;
+		bool esLad(bloq* ver) {
+			return ver->pokenest == pok->especie[0];
+		}
+
+
+		int iiiuax;
+		for (iiiuax = 0; iiiuax < list_size(disponibles); iiiuax++) {
+			tabla* e;
+			e = list_get(disponibles, iiiuax);
+//			log_info(logs, "Disponible de %c es %d", e->pokenest, e->valor);
+		}
+
+
+
+		bli = list_find(listaContenedora, (void*) esLad);
+
+		sem_post(&(bli->sembloq));
+		//sem_post(&(bli->sembloq));
+
+
+		int vale;
+		sem_getvalue(&(bli->sembloq),&vale);
+	//	log_info(logs, "postea semaforo pokemon de %c y su valor es %d", bli->pokenest,vale);
+
+		list_remove(ent1->pokemones,0);
+
+
+
+	}
+
+	//log_info(logi, "entrenador fallece");
+
 }

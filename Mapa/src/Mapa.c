@@ -52,14 +52,14 @@ int cols; // nro de columnas
 t_log* logs;
 
 //listas
-t_list* pokemons;//MATADO
-t_list* pokenests;//MATADO
-t_list* disponibles;//MATADO
+t_list* pokemons; //MATADO
+t_list* pokenests; //MATADO
+t_list* disponibles; //MATADO
 t_list* items;
-t_list* entrenadoresEnCurso;//MATADO
-t_list* entrenadoresEnDeadlock;//MATADO
+t_list* entrenadoresEnCurso; //MATADO
+
 t_list* listaContenedora; //MATADO
-t_list* deadlocks;//MATADO
+t_list* deadlocks; //MATADO
 //colas
 t_queue* colaListos;
 t_queue* colaBloqueados;
@@ -67,6 +67,7 @@ t_queue* colaBloqueados;
 //semaforos
 sem_t sem_Listos;
 sem_t sem_Bloqueados;
+sem_t sem_quantum;
 
 int numHilos;
 
@@ -77,18 +78,15 @@ pthread_t hiloDeBloqueados;
 pthread_t hiloAtenderConexiones[1024];
 pthread_attr_t attr;
 
-pthread_mutex_t mu = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t pokemi = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexEnvio = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexMuerte = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t mutexMuertee = PTHREAD_MUTEX_INITIALIZER;
 
 //deadlock
 void banquero() {
 
 	while (1) {
 		usleep(datosMapa->tiempoChequeoDeadlock);
-		//sleep(2);
-		//log_info(logs,"chequeo de la existencia de deadlock");
 //if(!SIGINT){
 		if (list_size(entrenadoresEnCurso)) {
 			t_list* vectorT = list_create();
@@ -100,30 +98,6 @@ void banquero() {
 				vecto->valor = punter->valor;
 				list_add(vectorT, vecto);
 			}
-		//	log_info(logs, "cargo vector auxiliar");
-			int iaux;
-			for (iaux = 0; iaux < list_size(entrenadoresEnCurso); iaux++) {
-				entrenador* en;
-				tabla* t;
-				en = list_get(entrenadoresEnCurso, iaux);
-				if (!en->fallecio) {
-					int auxixi;
-					int flago = 0;
-					for (auxixi = 0;
-							auxixi < list_size(en->asignados) && flago == 0;
-							auxixi++) {
-						t = list_get(en->asignados, auxixi);
-						if (t->valor != 0) {
-							flago = 1;
-						}
-					}
-					if (flago == 0) {
-						en->estaMarcado = 1;
-						//log_info(logs,"entrenador %c no esta en riesgo de deadlock por el momemnto",en->simbolo);
-					}
-
-				}
-			}
 			int auu;
 
 			for (auu = 0; auu < list_size(entrenadoresEnCurso); auu++) {
@@ -131,33 +105,32 @@ void banquero() {
 				tabla* ta;
 				tabla* b;
 				an = list_get(entrenadoresEnCurso, auu);
-			//	log_info(logs, "saca entrenador en curso");
+				//	log_info(logs, "saca entrenador en curso");
 				if (!an->fallecio) {
 					if (!an->estaMarcado) {
-					//	log_info(logs, "entrenador %c no esta marcado",
-						//		an->simbolo);
+						//log_info(logs, "entrenador %c no esta marcado",an->simbolo);
 						int j;
 						int val = 1;
 						for (j = 0; j < list_size(an->solicitud) && val; j++) {
 							ta = list_get(an->solicitud, j);
-					//		log_info(logs, "solicitud de %c es %d", an->simbolo,
-						//			ta->valor);
+							//		log_info(logs, "solicitud de %c es %d", an->simbolo,
+							//			ta->valor);
 							b = list_get(vectorT, j);
-						//	log_info(logs,
+							//	log_info(logs,
 							//		"y el valor del vector auxiliar ahi es %d",
-								//	b->valor);
+							//	b->valor);
 							val = ta->valor <= b->valor;
 						}
 						if (val) {
 							tabla* fa;
 							tabla* fe;
 							an->estaMarcado = 1;
-				//			log_info(logs, "marca a %c", an->simbolo);
+							//log_info(logs, "marca a %c", an->simbolo);
 							int x;
 							for (x = 0; x < list_size(an->asignados); x++) {
 								fa = list_get(an->asignados, x);
 								fe = list_get(vectorT, x);
-								fe->valor = fa->valor + b->valor;
+								fe->valor = fa->valor + fe->valor;
 								auu = 0;
 							}
 
@@ -168,186 +141,166 @@ void banquero() {
 
 			}
 			int pokixi;
+			t_list* entrenadoresEnDeadlock;
 			entrenadoresEnDeadlock = list_create();
-		//	log_info(logs, "crea lista de entrenadores en deadlock");
-			for (pokixi = 0; pokixi < list_size(entrenadoresEnCurso);
-					pokixi++) {
-		//		log_info(logs, "se mete al for pokixi");
+			//	log_info(logs, "crea lista de entrenadores en deadlock");
+			for (pokixi = 0; pokixi < list_size(entrenadoresEnCurso);pokixi++) {
+				//		log_info(logs, "se mete al for pokixi");
 				entrenador* entreneitor;
 				//
 				//	if(entreneitor->fallecio == 0){
 				entreneitor = list_get(entrenadoresEnCurso, pokixi);
-	//			log_info(logs, "entrenador %c esta marcado? %d",
-		//				entreneitor->simbolo, entreneitor->estaMarcado);
+				//			log_info(logs, "entrenador %c esta marcado? %d",
+				//				entreneitor->simbolo, entreneitor->estaMarcado);
 				if (!(entreneitor->estaMarcado)) {
-		//			log_info(logs, "entrenador %c en estado de deadlock");
+					log_info(logs, "entrenador %c en estado de deadlock",entreneitor->simbolo);
 					int accione = 3;
-					int efe;
-					efe =
-							send(
-									(clientesActivos[entreneitor->numeroCliente]).socket,
-									&accione, sizeof(int), 0);
-		//			log_info(logs, "%d", efe);
+					//int efe;
+					 send((clientesActivos[entreneitor->numeroCliente]).socket,&accione, sizeof(int), 0);
+					//			log_info(logs, "%d", efe);
 					list_add(entrenadoresEnDeadlock, entreneitor);
 				}
-				//	}
-				//
 			}
 
 			//LISTA DE LISTAS DE ENTRENADORES EN DEADLOCK
-			if (list_size(entrenadoresEnDeadlock)) {
-				int auxiliar75;
-				for (auxiliar75 = 0;
-						auxiliar75 < list_size(entrenadoresEnDeadlock);
-						auxiliar75++) {
-					entrenador* entit;
-					entit = list_get(entrenadoresEnDeadlock, auxiliar75);
-					bool entrencontrado(entrenador* parametro) {
-						tabla* tab;
-						tabla* teb;
-						int h3;
-						int x = 0;
-						for (h3 = 0; h3 < list_size(parametro->asignados);
-								h3++) {
-							tab = list_get(parametro->asignados, h3);
-							teb = list_get(entit->solicitud, h3);
-							if (tab->valor == teb->valor) {
-								x = 1;
-							}
-							tab = list_get(parametro->solicitud, h3);
-							teb = list_get(entit->asignados, h3);
-							if (tab->valor == teb->valor) {
-								x = 1;
-							}
-						}
-						return x;
 
+
+				while(list_size(entrenadoresEnDeadlock)){
+					entrenador* hp;
+					hp = list_remove(entrenadoresEnDeadlock,0);
+					bool entrencontrado(entrenador* parametro) {
+											tabla* tab;
+											tabla* teb;
+											int h3;
+											int x = 0;
+											for (h3 = 0; h3 < list_size(parametro->asignados);
+													h3++) {
+												tab = list_get(parametro->asignados, h3);
+												teb = list_get(hp->solicitud, h3);
+												if (tab->valor >= teb->valor) {
+													x = 1;
+												}
+
+											}
+											return x;
 					}
-					if (!list_size(deadlocks)) {
-						t_list* unaLista = list_create();
-						list_add(unaLista, entit);
-						list_add(deadlocks, unaLista);
-					} else {
-						int jej;
-						for (jej = 0; jej < list_size(deadlocks); jej++) {
-							t_list* listina = list_get(deadlocks, jej);
-							if (list_find(listina,
-									(void*) entrencontrado)!=NULL) {
-								list_add(listina, entit);
-							} else {
-								t_list* otraLista = list_create();
-								list_add(otraLista, entit);
-							}
-						}
+					log_info(logs,"Remueve a %c de entEnDed y lo agreaga a deadlocks",hp->simbolo);
+					t_list* listin = list_create();
+					list_add(listin,hp);
+					list_add(deadlocks,listin);
+
+				while(list_find(entrenadoresEnDeadlock,(void*)entrencontrado) != NULL){
+					entrenador* hp;
+					hp = list_remove_by_condition(entrenadoresEnDeadlock,(void*)entrencontrado);
+					log_info(logs,"Remueve a %c de entete y agrega",hp->simbolo);
+					list_add(listin,hp);
+					}
+
+			  }
+
+			if (list_size(deadlocks)){
+				t_list* liste;
+				int ef;
+				for(ef=0;ef<list_size(deadlocks);ef++){
+					liste = list_get(deadlocks,ef);
+					int efefe;
+					for(efefe=0;efefe<list_size(liste);efefe++){
+	                entrenador* pef;
+	                pef = list_get(liste,efefe);
+	                log_info(logs,"entrenadores en deadlock%d: %c",ef,pef->simbolo);
 					}
 				}
 			}
+
 			if (list_size(deadlocks)) {
 
 				bool llegoPrimero(entrenador* a, entrenador* b) {
 					return a->numeroLlegada < b->numeroLlegada;
 				}
 				int ej;
-				for(ej=0;ej<list_size(deadlocks);ej++){
-				t_list* listiti;
-				listiti = list_get(deadlocks,ej);
-				list_sort(entrenadoresEnDeadlock, (void*) llegoPrimero);
+				for (ej = 0; ej < list_size(deadlocks); ej++) {
+					t_list* listie;
+					listie = list_get(deadlocks, ej);
+					list_sort(listie, (void*) llegoPrimero);
 				}
 //				log_info(logs,
-	//					"entrenadores ordenados, hora de la batalla pokemon");
+				//					"entrenadores ordenados, hora de la batalla pokemon");
 
 				//hora de peleaaaaar
 				if (datosMapa->batalla) {
 					int otroAux;
 					int yotromas;
-					for(yotromas=0;yotromas<list_size(deadlocks);yotromas++){
+					for (yotromas = 0; yotromas < list_size(deadlocks);
+							yotromas++) {
 
-					t_list* listota;
-					listota = list_get(deadlocks,yotromas);
+						t_list* listota;
+						listota = list_get(deadlocks, yotromas);
 
-						for (otroAux = 0;otroAux < list_size(listota);otroAux++) {
+						if(list_size(listota)>1){
+						for (otroAux = 0; otroAux < list_size(listota);otroAux++) {
 
+								t_pkmn_factory* facto = create_pkmn_factory();
+								t_pokemon* pokegold;
+								t_pokemon* pokesilver;
+								t_pokemon* pokeperdedor;
 
-						if (otroAux > 1) {
-							t_pkmn_factory* facto = create_pkmn_factory();
-							t_pokemon* pokegold;
-							t_pokemon* pokesilver;
-							t_pokemon* pokeperdedor;
+								entrenador* gold;
+								entrenador* silver;
+								gold = list_get(listota, otroAux);
+								silver = list_get(listota, otroAux + 1);
 
-							entrenador* gold;
-							entrenador* silver;
-							gold = list_get(listota, otroAux);
-							silver = list_get(listota,
-									otroAux + 1);
+								if (!gold->fallecio && !silver->fallecio) {
 
-							if (!gold->fallecio && !silver->fallecio) {
-
-						//		log_info(logs, "%c peleara con %c",gold->simbolo, silver->simbolo);
-								pokegold = create_pokemon(facto,(gold->pokePeleador)->especie,(gold->pokePeleador)->nivel);
-						//		log_info(logs,"pokemon del entrenador %c es %s y su nivel %d",gold->simbolo,(gold->pokePeleador)->especie,(gold->pokePeleador)->nivel);
-								pokesilver = create_pokemon(facto,(silver->pokePeleador)->especie,(silver->pokePeleador)->nivel);
-						//		log_info(logs,"pokemon del entrenador %c es %s y su nivel %d",silver->simbolo,(silver->pokePeleador)->especie,(silver->pokePeleador)->nivel);
-								pokeperdedor = pkmn_battle(pokegold,pokesilver);
-								int accionar = 0;
-								if (!strcmp(pokegold->species,pokeperdedor->species)&& (pokegold->level== pokeperdedor->level)) {
-									send(clientesActivos[silver->numeroCliente].socket,&accionar, sizeof(int), 0);
-									list_remove(listota,otroAux + 1);
-						//			log_info(logs, "entrenador %c victorioso",silver->simbolo);
-									otroAux--;
-								} else {
-									send(
-											clientesActivos[gold->numeroCliente].socket,&accionar, sizeof(int), 0);
-									list_remove(listota,otroAux);
-					//				log_info(logs, "entrenador %c victorioso",gold->simbolo);
+									log_info(logs, "%c peleara con %c",gold->simbolo, silver->simbolo);
+									pokegold = create_pokemon(facto,
+											(gold->pokePeleador)->especie,
+											(gold->pokePeleador)->nivel);
+									//		log_info(logs,"pokemon del entrenador %c es %s y su nivel %d",gold->simbolo,(gold->pokePeleador)->especie,(gold->pokePeleador)->nivel);
+									pokesilver = create_pokemon(facto,
+											(silver->pokePeleador)->especie,
+											(silver->pokePeleador)->nivel);
+									//		log_info(logs,"pokemon del entrenador %c es %s y su nivel %d",silver->simbolo,(silver->pokePeleador)->especie,(silver->pokePeleador)->nivel);
+									pokeperdedor = pkmn_battle(pokegold,pokesilver);
+									log_info(logs,"Perdedor de tipo %s",pkmn_type_to_string(pokeperdedor->type));
+									int accionar = 0;
+									if (!strcmp(pokegold->species,pokeperdedor->species) && (pokegold->level == pokeperdedor->level)) {
+										send(clientesActivos[silver->numeroCliente].socket,&accionar, sizeof(int), 0);
+										list_remove(listota, otroAux + 1);
+										log_info(logs, "entrenador %c victorioso",silver->simbolo);
+										otroAux--;
+									} else {
+										send(clientesActivos[gold->numeroCliente].socket,&accionar, sizeof(int), 0);
+										list_remove(listota, otroAux);
+										log_info(logs, "entrenador %c victorioso",gold->simbolo);
+									}
 								}
-							}
 						}
+						entrenador* muerto;
+											muerto = list_get(listota, 0);
+											int accion = 7;
+											send(clientesActivos[muerto->numeroCliente].socket,
+													&accion, sizeof(int), 0);
 					}
-					entrenador* muerto;
-					muerto = list_get(listota, 0);
-					int accion = 7;
-					send(clientesActivos[muerto->numeroCliente].socket, &accion,sizeof(int), 0);
-		//			log_info(logs, "entrenador %c sera eliminado porque perdio Deadlock",muerto->simbolo);
-				/*	int y;
-					for (y = 0; y < list_size(muerto->pokemones); y++) {
-						metaDataPokemon* pok;
-						bloq* bli;
-						tabla* d;
-						pok = list_get(muerto->pokemones, y);
-						bool esLaPokenest3(tabla* a) {
-							return pok->especie[0] == a->pokenest;
-						}
-						d = list_find(disponibles, (void*) esLaPokenest3);
-						d->valor++;
-						sumarRecurso(items, d->pokenest);
-						nivel_gui_dibujar(items, nombreMapa);
-						pok->estaOcupado = 0;
-						bool esLad(bloq* ver) {
-							return ver->pokenest == pok->especie[0];
-						}
-						bli = list_find(listaContenedora, (void*) esLad);
-						sem_post(&(bli->sembloq));
 
-					}*/
+					}
+				}
 
+				list_destroy_and_destroy_elements(vectorT, (void*) free);
+				list_destroy(entrenadoresEnDeadlock);
+				int otromas;
+				for (otromas = 0; otromas < list_size(deadlocks); otromas++) {
+					list_remove_and_destroy_element(deadlocks, otromas,(void*) free);
 				}
 			}
-
-			list_destroy_and_destroy_elements(vectorT, (void*) free);
-			list_destroy(entrenadoresEnDeadlock);
-			int otromas;
-			for(otromas=0;otromas<list_size(deadlocks);otromas++){
-				list_remove_and_destroy_element(deadlocks,otromas,(void*)free);
+			int auxi23;
+			for (auxi23 = 0; auxi23 < list_size(entrenadoresEnCurso);
+					auxi23++) {
+				entrenador* entri;
+				entri = list_get(entrenadoresEnCurso, auxi23);
+				entri->estaMarcado = 0;
 			}
 		}
-		int auxi23;
-		for (auxi23 = 0; auxi23 < list_size(entrenadoresEnCurso); auxi23++) {
-			entrenador* entri;
-			entri = list_get(entrenadoresEnCurso, auxi23);
-			entri->estaMarcado = 0;
-		}
 	}
-}
 	//}
 }
 
@@ -370,10 +323,11 @@ void planificador(void* argu) {
 
 			int bloqueo = 0;
 			entre = queue_pop(colaListos);
-    //        log_info(logs,"extrae %c de la cola de listos",entre->simbolo);
+			//        log_info(logs,"extrae %c de la cola de listos",entre->simbolo);
 
 			while (q && (!(entre->fallecio) && queue_size(entre->colaAccion))) {
-				//sem_wait(&sem_quantum);
+
+				sem_wait(&sem_quantum);
 				acto = queue_pop(entre->colaAccion);
 				//log_info(logs,"funca3");
 
@@ -385,8 +339,8 @@ void planificador(void* argu) {
 						if (datosPokenest->caracterPokeNest[0] == acto) {
 
 							//log_info(logs, "antes del send %s",datosPokenest->posicion);
-							int pedo;
-							pedo =
+
+
 									send(
 											(clientesActivos[entre->numeroCliente]).socket,
 											datosPokenest->posicion, 5, 0);
@@ -428,7 +382,7 @@ void planificador(void* argu) {
 								entre->posy--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-								nivel_gui_dibujar(items, argument);
+		//						nivel_gui_dibujar(items, argument);
 								q--;
 								//log_info(logs,"valor de quantum %d",q);
 							}
@@ -441,7 +395,7 @@ void planificador(void* argu) {
 								entre->posy++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-								nivel_gui_dibujar(items, argument);
+		//						nivel_gui_dibujar(items, argument);
 								q--;
 								//log_info(logs,"valor de quantum %d",q);
 							}
@@ -454,7 +408,7 @@ void planificador(void* argu) {
 								entre->posx--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-								nivel_gui_dibujar(items, argument);
+		//						nivel_gui_dibujar(items, argument);
 								q--;
 								//log_info(logs,"valor de quantum %d",q);
 							}
@@ -466,7 +420,7 @@ void planificador(void* argu) {
 								entre->posx++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
-								nivel_gui_dibujar(items, argument);
+		//						nivel_gui_dibujar(items, argument);
 
 								q--;
 								//log_info(logs, "valor de quantum %d", q);
@@ -510,11 +464,11 @@ void planificador(void* argu) {
 									return param->pokenest == pokem->especie[0];
 								}
 								e = list_find(listaContenedora, (void*) esBloq);
-								log_info(logs,"%c entra en la cola de bloqueo de %c",entre->simbolo,e->pokenest);
+							//	log_info(logs,"%c entra en la cola de bloqueo de %c",entre->simbolo, e->pokenest);
 								queue_push(e->colabloq, entre);
 								captu = 1;
 								//sem_post(&(e->sembloq));
-								log_info(logs,"postea semaforo entrenador de %c",e->pokenest);
+							//	log_info(logs,"postea semaforo entrenador de %c",e->pokenest);
 								sem_post(&(e->sem2));
 							}
 
@@ -533,11 +487,11 @@ void planificador(void* argu) {
 									(void*) esLaPokenest2);
 							tab->valor++;
 							entre->entroBloqueados = 1;
-							log_info(logs,"%c va a la cola %c",entre->simbolo,e->pokenest);
+						//	log_info(logs, "%c va a la cola %c", entre->simbolo, e->pokenest);
 							queue_push(e->colabloq, entre);
 							//	sem_post(&(e->sembloq));
 
-							log_info(logs,"postea semaforo entrenador de %c",e->pokenest);
+						//	log_info(logs, "postea semaforo entrenador de %c",e->pokenest);
 							sem_post(&(e->sem2));
 						}
 
@@ -551,19 +505,19 @@ void planificador(void* argu) {
 				}
 			}
 
-			pthread_mutex_lock(&mutexMuertee);
+//			pthread_mutex_lock(&mutexMuertee);
 			if (entre->fallecio) {
-				log_info(logs, "%c muere en el planificador",entre->simbolo);
+		//		log_info(logs, "%c muere en el planificador", entre->simbolo);
 				matar(entre);
 				//entre->fallecio=0;
 
 			}
-			pthread_mutex_unlock(&mutexMuertee);
+//			pthread_mutex_unlock(&mutexMuertee);
 
 			if (!bloqueo && !entre->fallecio) {
 				usleep(datosMapa->retardoQ);
 				//q = datosMapa->quantum;
-			//	log_info(logs,"el entrenador %c no murio y va a la cola de listos",entre->simbolo);
+				//	log_info(logs,"el entrenador %c no murio y va a la cola de listos",entre->simbolo);
 				queue_push(colaListos, entre);
 				sem_post(&sem_Listos);
 
@@ -574,7 +528,6 @@ void planificador(void* argu) {
 ////////////////////////////////////////////////////////EMPIEZA SRDF
 
 		if (!strcmp(datosMapa->algoritmo, "SRDF")) {
-			log_info(logs, "entre a srdf");
 
 			t_list* listaAux = list_create();
 
@@ -602,9 +555,9 @@ void planificador(void* argu) {
 
 			int acto;
 
-			acto = (int) queue_peek(ent1->colaAccion);
+			sem_wait(&sem_quantum);
 
-			//log_info(logs,"funca3");
+			acto = (int) queue_peek(ent1->colaAccion);
 
 			if (isalpha(acto)) {
 				queue_pop(ent1->colaAccion);
@@ -613,28 +566,20 @@ void planificador(void* argu) {
 					datosPokenest = (metaDataPokeNest*) list_get(pokenests, ka);
 					if (datosPokenest->caracterPokeNest[0] == acto) {
 
-						log_info(logs, "antes del send %s",
-								datosPokenest->posicion);
 						int pedo;
-						pedo = send(
-								(clientesActivos[ent1->numeroCliente]).socket,
-								datosPokenest->posicion, 5, 0);
+						pedo = send((clientesActivos[ent1->numeroCliente]).socket,datosPokenest->posicion, 5, 0);
 
-						log_info(logs, "Se envio coordenadas: %d", pedo);
+					//	log_info(logs, "Se envio coordenadas: %d", pedo);
 
 						char** posicionPoke;
 						posicionPoke = string_split(datosPokenest->posicion,";");
 
 						ent1->posPokex = atoi(posicionPoke[0]);
 						ent1->posPokey = atoi(posicionPoke[1]);
-						ent1->pokenestAsignado =
-								datosPokenest->caracterPokeNest[0];
+						ent1->pokenestAsignado =datosPokenest->caracterPokeNest[0];
 						ent1->flagLeAsignaronPokenest = 1;
 
 						ka = list_size(pokenests);
-
-						log_info(logs, "la posicion es  %d y %d",ent1->posPokex, ent1->posPokey);
-						log_info(logs, "el acto es  %d o %c ", acto, acto);
 
 					}
 				}
@@ -644,10 +589,11 @@ void planificador(void* argu) {
 			//8 es 56, 2 es 50, 4 es 52, 6 es 54
 
 			if (isdigit(acto)) {
-				while (banderin && (!(ent1->fallecio))
-						&& queue_size(ent1->colaAccion)) {
+				while (banderin && (!(ent1->fallecio)) && queue_size(ent1->colaAccion)) {
+
+					sem_wait(&sem_quantum);
+
 					acto = (int) queue_pop(ent1->colaAccion);
-					log_info(logs, "entre como un campeon");
 					if (acto == '2' || acto == '4' || acto == '6'
 							|| acto == '8') {
 
@@ -656,47 +602,47 @@ void planificador(void* argu) {
 
 						case '8':
 							if (ent1->posy > 1 && !ent1->fallecio) {
-								log_info(logs, "mueva arriba");
+				//				log_info(logs, "mueva arriba");
 
 								ent1->posy--;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
-								nivel_gui_dibujar(items, argument);
+		//						nivel_gui_dibujar(items, argument);
 
 							}
 							break;
 
 						case '2':
 							if (ent1->posy < rows && !ent1->fallecio) {
-								log_info(logs, "mueva abajo");
+				//				log_info(logs, "mueva abajo");
 
 								ent1->posy++;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
-								nivel_gui_dibujar(items, argument);
+		//						nivel_gui_dibujar(items, argument);
 
 							}
 							break;
 
 						case '4':
 							if (ent1->posx > 1 && !ent1->fallecio) {
-								log_info(logs, "mueva izquierda");
+				//				log_info(logs, "mueva izquierda");
 
 								ent1->posx--;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
-								nivel_gui_dibujar(items, argument);
+		//						nivel_gui_dibujar(items, argument);
 
 							}
 							break;
 						case '6':
 							if (ent1->posx < cols && !ent1->fallecio) {
-								log_info(logs, "mueva derecha");
+				//				log_info(logs, "mueva derecha");
 
 								ent1->posx++;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
-								nivel_gui_dibujar(items, argument);
+		//						nivel_gui_dibujar(items, argument);
 
 							}
 							break;
@@ -711,14 +657,10 @@ void planificador(void* argu) {
 						bloqueo = 1;
 
 						pokimons* p;
-
-						//bool(poki*)
-						//log_info(logs, "Extrajo un bloqueado");
 						bool esLaPokenest(pokimons *parametro1) {
 							return ent1->pokenestAsignado
 									== parametro1->pokinest;
 						}
-						//log_info(logs, "Ahora busca un poki");
 						p = list_find(pokemons, (void*) esLaPokenest);
 
 						int saux;
@@ -726,12 +668,7 @@ void planificador(void* argu) {
 						for (saux = 0; saux < list_size(p->listaPokemons);
 								saux++) {
 							metaDataPokemon* pokem;
-							//log_info(logs,"Extrae lista de pokemon");
 							pokem = list_get(p->listaPokemons, saux);
-							//log_info(logs, "Saca un pokemon de la lista poki");
-							//log_info(logs, "%s", pokem->especie);
-							//log_info(logs, "%d", pokem->nivel);
-							//log_info(logs, "%d", pokem->estaOcupado);
 							if (!pokem->estaOcupado) {
 								bloq* e;
 								bool esBloq(bloq* param) {
@@ -740,8 +677,6 @@ void planificador(void* argu) {
 								e = list_find(listaContenedora, (void*) esBloq);
 								queue_push(e->colabloq, ent1);
 								captu = 1;
-								//sem_post(&(e->sembloq));
-								log_info(logs,"postea semaforo entrenador de %c",e->pokenest);
 								sem_post(&(e->sem2));
 							}
 
@@ -761,26 +696,17 @@ void planificador(void* argu) {
 							tab->valor++;
 							ent1->entroBloqueados = 1;
 							queue_push(e->colabloq, ent1);
-							//	sem_post(&(e->sembloq));
-							log_info(logs,"postea semaforo entrenador de %c",e->pokenest);
+							log_info(logs, "postea semaforo entrenador de %c",
+									e->pokenest);
 							sem_post(&(e->sem2));
 						}
-
-						/*						usleep(datosMapa->retardoQ);
-						 //banderin = 0;
-						 bloqueo = 1;
-						 queue_push(colaBloqueados, entre);
-						 sem_post(&sem_Bloqueados);
-						 */
 					}
-
 				}
 			}
 
 			if (ent1->fallecio) {
 				log_info(logs, "Ahora lo mata en planificador");
 				matar(ent1);
-				//entre->fallecio=0;
 
 			}
 
@@ -801,50 +727,71 @@ void bloqui(void* stru) {
 	bloq* strub = (bloq*) stru;
 	while (1) {
 
-		sem_wait(&strub->sem2);
 
-		sem_wait(&strub->sembloq);
-		/*int ew;
-				for(ew=0;ew<queue_size(strub->colabloq);ew++){
-					entrenador* ex;
-					ex = queue_pop(strub->colabloq);
-					if(ex->fallecio){
-						matar(ex);
-					}
-					queue_push(strub->colabloq,ex);
-				}*/
+		sem_wait(&strub->sem2);
 		entrenador* ent1;
-		pokimons* poki;
 		ent1 = queue_pop(strub->colabloq);
-		log_info(logs,"saca %c de la cola de %c",ent1->simbolo,strub->pokenest);
+		//log_info(logs, "saca %c de la cola de %c", ent1->simbolo,strub->pokenest);
+
+		int dal;
+		sem_getvalue(&strub->sembloq, &dal);
+		//log_info(logs, "Pasa el sem wait, el siguiente vale %d", dal);
+
+		//SOLUCION RUDIMENTARISISISISISISISISISIISISISISISISIISISISISISIISISISISISIISISMA
+
+		if(dal==0){
+
+			pokimons* a;
+			bool esLaPokenest(pokimons *parametro1) {
+						return strub->pokenest == parametro1->pokinest;
+					}
+			a = list_find(pokemons, (void*) esLaPokenest);
+			int ew;
+			for (ew = 0;ew < list_size(a->listaPokemons) && !ent1->fallecio;ew++) {
+				metaDataPokemon* meta;
+				meta = list_get(a->listaPokemons,ew);
+				if(!meta->estaOcupado){
+
+					sem_post(&(strub->sembloq));
+				}
+			}
+		}
+
+
+		sem_wait(&(strub->sembloq));
+
+		pokimons* poki;
+
 		if (!ent1->fallecio) {
 
 			//log_info(logs, "Extrajo un bloqueado");
 			bool esLaPokenest(pokimons *parametro1) {
-				return ent1->pokenestAsignado == parametro1->pokinest;
+				return strub->pokenest == parametro1->pokinest;
 			}
+
+			pthread_mutex_lock(&pokemi);
 			//log_info(logs, "Ahora busca un poki");
 			poki = list_find(pokemons, (void*) esLaPokenest); //sc
 			//log_info(logs, "Saca un poki");
 			//log_info(logs, "%c", poki->pokinest);
+			pthread_mutex_unlock(&pokemi);
+
 			int auxi67;
 
 			bool esLaPokenest2(tabla* a) {
-				return ent1->pokenestAsignado == a->pokenest;
+				return strub->pokenest == a->pokenest;
 			}
 
-			for (auxi67 = 0; auxi67 < list_size(poki->listaPokemons);
+			for (auxi67 = 0;
+					auxi67 < list_size(poki->listaPokemons) && !ent1->fallecio;
 					auxi67++) {
 				metaDataPokemon* pokem;
-				//log_info(logs,"Extrae lista de pokemon");
 				pokem = list_get(poki->listaPokemons, auxi67); //sc
-				//log_info(logs, "Saca un pokemon de la lista poki");
-				//log_info(logs, "%s", pokem->especie);
-				//log_info(logs, "%d", pokem->nivel);
-				//log_info(logs, "%d", pokem->estaOcupado);
-				if (!pokem->estaOcupado) {
+				if (!pokem->estaOcupado && !ent1->fallecio) {
 
 					pthread_mutex_lock(&mutexEnvio);
+					pokem->estaOcupado = 1;
+
 					char* nombreAux = pokem->nombreArch;
 					char** nombreSinDatAux = string_split(nombreAux, ".");
 					char* nombreSinDAT = nombreSinDatAux[0];
@@ -899,65 +846,52 @@ void bloqui(void* stru) {
 					free(miBuffer);
 					auxi67 = list_size(poki->listaPokemons);
 
-					pokem->estaOcupado = 1;
-
 					//log_info(logs,"ahora el pokem esta ocupado %d",pokem->estaOcupado);
 
 					tabla* t;
+					tabla* d;
 					tabla* dispo1;
 
 					t = list_find(ent1->asignados, (void*) esLaPokenest2);
+					d = list_find(ent1->solicitud, (void*) esLaPokenest2);
 					dispo1 = (tabla*) list_find(disponibles,
 							(void*) esLaPokenest2);
 
 					t->valor++;
+					if(d->valor>0){
+						d--;
+					}
 					dispo1->valor--;
 
-					log_info(logs,"%c captura el pokemon %c la tabla de asignacion en ese campo es %d y la dispo %d ",ent1->simbolo,pokem->especie[0],t->valor,dispo1->valor);
+			//		log_info(logs,"%c captura el pokemon %c la tabla de asignacion en ese campo es %d y la dispo %d ",ent1->simbolo, pokem->especie[0], t->valor,dispo1->valor);
 					list_add(ent1->pokemones, pokem);
-					log_info(logs,"%c capturo efectivamente a %s",ent1->simbolo,pokem->especie);
+			//		log_info(logs, "%c capturo efectivamente a %s",ent1->simbolo, pokem->especie);
 					int m;
-					for(m=0;m<list_size(ent1->pokemones);m++){
+					for (m = 0; m < list_size(ent1->pokemones); m++) {
 						metaDataPokemon* q;
-						q = list_get(ent1->pokemones,m);
-						log_info(logs,"hasta ahora estan capturados por %c %s",ent1->simbolo,q->especie);
+						q = list_get(ent1->pokemones, m);
+						log_info(logs, "hasta ahora estan capturados por %c %s",ent1->simbolo, q->especie);
 					}
 
 					//log_info(logs, "llego a bloqueados");
-
+					//postea semaforo pokemon de P y su valor es 2
 					restarRecurso(items, poki->pokinest);
-					nivel_gui_dibujar(items, nombreMapa);
+	//				nivel_gui_dibujar(items, nombreMapa);
 
-					log_info(logs,"entrenador %c sale de la cola de %c y entra a listos",ent1->simbolo,strub->pokenest);
+			//		log_info(logs,"entrenador %c sale de la cola de %c y entra a listos",ent1->simbolo, strub->pokenest);
 					queue_push(colaListos, ent1);
 					sem_post(&sem_Listos);
 
 					pthread_mutex_unlock(&mutexEnvio);
-
-					//log_info(logs,"pushea a entrenador a listos");
 				}
-
 			}
 
-			/*				if (!ent1->entroBloqueados && !ent1->fallecio) {
-			 //log_info(logs,"no hay recurso disponible para %c",ent1->simbolo);
-			 tabla* tab;
-			 tab = list_find(ent1->solicitud, (void*) esLaPokenest2);
-			 tab->valor++;
-			 ent1->entroBloqueados = 1;
-			 queue_push(colaBloqueados, ent1);
-
-			 }       */
-
 		} else {
-			pthread_mutex_lock(&mutexMuerte);
+
 			log_info(logs, "mata a entrenador en bloqueados");
 			matar(ent1);
-			pthread_mutex_unlock(&mutexMuerte);
 		}
-
 	}
-
 }
 
 ///////////////////////////////////////////Main//////////////////////////////////////////////////////////
@@ -981,11 +915,10 @@ int main(int argc, char* argv[]) {
 	//inicializo semaforos
 	sem_init(&sem_Listos, 0, 0);
 	sem_init(&sem_Bloqueados, 0, 0);
+	sem_init(&sem_quantum, 0, 0);
 
 	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED);
-
-
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
 	remove("Mapa.log");
 	logs = log_create("Mapa.log", "Mapa", false, log_level_from_string("INFO"));
@@ -1040,8 +973,8 @@ int main(int argc, char* argv[]) {
 	log_info(logs,
 			"Los tres archivos de config fueron creados exitosamente!\n");
 
-	nivel_gui_inicializar();
-	nivel_gui_get_area_nivel(&rows, &cols);
+//	nivel_gui_inicializar();
+//	nivel_gui_get_area_nivel(&rows, &cols);
 
 	//POKENESTchar** posPoke;
 	int ka;
@@ -1053,10 +986,11 @@ int main(int argc, char* argv[]) {
 		char ide;
 		ide = datosPokenest->caracterPokeNest[0];
 
-		CrearCaja(items, ide, atoi(posPoke[0]), atoi(posPoke[1]),datosPokenest->cantPokemons);
+		CrearCaja(items, ide, atoi(posPoke[0]), atoi(posPoke[1]),
+				datosPokenest->cantPokemons);
 	}
 
-	nivel_gui_dibujar(items, argv[1]);
+//	nivel_gui_dibujar(items, argv[1]);
 
 	//hilo de planificacion
 
@@ -1072,13 +1006,11 @@ int main(int argc, char* argv[]) {
 	}
 
 	//hilo deteccion de deadlock
-	//pthread_create(&hiloDeadlock, NULL, (void*) banquero, NULL);
+	pthread_create(&hiloDeadlock, NULL, (void*) banquero, NULL);
 
 //SOCKETS
 	log_info(logs,
 			"iniciado el servidor principal del Mapa. Aguardando conexiones...\n\n");
-
-
 
 	signal(SIGUSR2, leerConfiguracion);
 
@@ -1165,20 +1097,20 @@ int main(int argc, char* argv[]) {
 		BorrarItem(items, ide);
 	}
 	close(socketEscucha);
-	nivel_gui_terminar();
+//	nivel_gui_terminar();
 
-/*	list_destroy_and_destroy_elements(pokenests,(void*)free);
-		list_destroy_and_destroy_elements(disponibles,(void*)free);
-		int auxie;
-		void destruir(bloq* self){
-			queue_destroy(self->colabloq);
-			free(self);
-		}
-		list_destroy(listaContenedora);
-		list_destroy(entrenadoresEnCurso);
-		list_destroy(pokemons);
-		free(datosMapa);
-*/
+	/*	list_destroy_and_destroy_elements(pokenests,(void*)free);
+	 list_destroy_and_destroy_elements(disponibles,(void*)free);
+	 int auxie;
+	 void destruir(bloq* self){
+	 queue_destroy(self->colabloq);
+	 free(self);
+	 }
+	 list_destroy(listaContenedora);
+	 list_destroy(entrenadoresEnCurso);
+	 list_destroy(pokemons);
+	 free(datosMapa);
+	 */
 	signal(SIGINT, terminarMapa);
 	return EXIT_SUCCESS;
 

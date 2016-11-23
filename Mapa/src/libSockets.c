@@ -80,11 +80,9 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 
 		while ((dir = readdir(d)) != NULL ) {
 			tabla* dispo;
-			bloq* strubloq;
 			dispo = malloc(sizeof(tabla)); //MATADO
 			datos = malloc(sizeof(metaDataPokeNest)); //MATADO
-			strubloq = malloc(sizeof(bloq));
-			strubloq->colabloq=queue_create();
+
 
 			if (dir->d_type == DT_DIR && (strcmp(dir->d_name, ".") != 0) && (strcmp(dir->d_name, "..") != 0)) {
 
@@ -123,9 +121,8 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 										"Identificador"));
 						datos->caracterPokeNest = simbolo;
 						dispo->pokenest=simbolo[0];
-						strubloq->pokenest = simbolo[0];
-						sem_init(&(strubloq->sembloq), 0, 0);
-						sem_init(&(strubloq->sem2),0,0);
+
+
 
 						{
 							int file_count = 0;
@@ -148,7 +145,6 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 						list_add(pokenests, (void*) datos);
 						log_info(logs,"Disponible: %c%d",dispo->pokenest,dispo->valor);
 						list_add(disponibles, dispo);
-						list_add(listaContenedora, strubloq);
 
 						config_destroy(archivoConfigPokenest);
 						//free(datos);
@@ -187,10 +183,18 @@ int leerPokemons(char *name, t_list *pokemons) {
 		while ((dir = readdir(d)) != NULL ) {
 
 			if (dir->d_type == DT_DIR && (strcmp(dir->d_name, ".") != 0) && (strcmp(dir->d_name, "..") != 0)) {
+				bloq* strubloq;
+				strubloq = malloc(sizeof(bloq));
                 po=malloc(sizeof(pokimons));
                 po->listaPokemons=list_create();
                 char simbol = dir->d_name[0];
                 po->pokinest=simbol;
+                strubloq->colabloq=queue_create();
+                sem_init(&(strubloq->sembloq),0,0);
+                sem_init(&(strubloq->sem2),0,0);
+                strubloq->pokenest=dir->d_name[0];
+                log_info(logs,"Carga de info en pokenest %c",dir->d_name[0]);
+
 				//printf("%s\n", dir->d_name);
 						{
 							DIR * dirp;
@@ -226,12 +230,11 @@ int leerPokemons(char *name, t_list *pokemons) {
 
 									list_add(po->listaPokemons,poke);
 
-									bool esPokenesti(bloq* t){
-										return t->pokenest == poke->especie[0];
-									}
-									bloq* alfa;
-									alfa = list_find(listaContenedora,(void*)esPokenesti);
-									sem_post(&(alfa->sembloq));
+									sem_post(&(strubloq->sembloq));
+									log_info(logs,"Se postea semaforo de %c",strubloq->pokenest);
+									int vale;
+									sem_getvalue(&(strubloq->sembloq),&vale);
+									log_info(logs,"Valor del mismo: %d",vale);
 
 									config_destroy(archivoConfigPokenest);
 								}
@@ -240,6 +243,7 @@ int leerPokemons(char *name, t_list *pokemons) {
 
 							closedir(dirp);
 						}
+						list_add(listaContenedora,strubloq);
 						list_add(pokemons,po);
 			}
 		}
