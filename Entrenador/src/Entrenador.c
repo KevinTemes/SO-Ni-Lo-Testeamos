@@ -365,12 +365,60 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 				log_info(logs,"Recibi este protocolo: %d",protocoloRecibido);
 				if(protocoloRecibido==MORI){
 					morir("deadlock");
+					// revisar este free
+					free(miBuffer);
+					return posicionesYDeadlocks;
 				} else if(protocoloRecibido==SOBREVIVI){
 					log_info(logs,"Sobrevivi al deadlock \n");
+
+					recv(servidor,&(protocoloRec),sizeof(int),MSG_WAITALL);
+					log_info(logs,"Recibi este protocolo %d",protocoloRec);
+
+					t_pokemonDeserializado* pokePiola2;
+					pokePiola2 =malloc(sizeof(t_pokemonDeserializado));
+
+					// deserializo el pokemon, recibo 7 10 Pikachu Pikachu001 33
+					int tamanioEspecie2,tamanioNombreMetadata2;
+
+					recv(servidor,&tamanioEspecie2,sizeof(int),MSG_WAITALL);
+					recv(servidor,&tamanioNombreMetadata2,sizeof(int),MSG_WAITALL);
+
+					void* bufferEspecie2  = malloc(tamanioEspecie2+1);
+					void* bufferNombreMetadata2 = malloc(tamanioNombreMetadata2+1);
+
+					recv(servidor,bufferEspecie2,tamanioEspecie2, MSG_WAITALL);
+					recv(servidor,bufferNombreMetadata2,tamanioNombreMetadata2, MSG_WAITALL);
+
+					pokePiola2->especie = (char*)bufferEspecie2;
+					pokePiola2->especie[tamanioEspecie2] = '\0';
+
+					pokePiola2->nombreMetadata = (char*)bufferNombreMetadata2;
+					pokePiola2->nombreMetadata[tamanioNombreMetadata2] = '\0';
+
+					recv(servidor, &pokePiola2->nivelPokemon,sizeof(int),MSG_WAITALL);
+
+					log_info(logs, "Especie %s",pokePiola2->especie);
+					log_info(logs, "Especifico %s", pokePiola2->nombreMetadata);
+					log_info(logs,"Agregue el nivel %d \n", pokePiola2->nivelPokemon);
+
+					list_add((ent)->listaNivAtrapados,pokePiola2);
+					int posicion2 = list_size(ent->listaNivAtrapados);
+					t_pokemonDeserializado* meteEnLaLista2 = list_get((ent->listaNivAtrapados),posicion2-1);
+
+					log_info(logs, "Especie agregada a la lista %s",meteEnLaLista2->especie);
+					log_info(logs, "Especifico agregado a la lista %s", meteEnLaLista2->nombreMetadata);
+					log_info(logs,"Agregue el nivel a la lista %d \n",meteEnLaLista2->nivelPokemon);
+
+					finBloq = temporal_get_string_time();
+
+					copiarArchivo(mapa,pokePiola2->especie,pokePiola2->nombreMetadata);
+					tiempo = sacarTiempo(calculoTiempo,tiempo,"bloqueado",inicioBloq,finBloq);
+
+					free(finBloq);
+					free(inicioBloq);
+					return tiempo;
 				}
-				// revisar este free
-				free(miBuffer);
-				return posicionesYDeadlocks;
+
 		}
 
 	return NULL;
