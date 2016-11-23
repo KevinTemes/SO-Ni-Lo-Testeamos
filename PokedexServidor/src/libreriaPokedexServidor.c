@@ -125,9 +125,8 @@ char *convertirString(void *buffer, int tamanioRuta){
 void atenderConexion(void *numeroCliente){
 	int unCliente = *((int *) numeroCliente);
 	int status = 1;
-	int codOp, exito;
-	int tamanioRuta, tamanioNombre;
-	size_t tamanioNuevoContenido, nuevoTamanio;
+	int codOp, exito, nuevoTamanio;
+	int tamanioRuta, tamanioNombre, tamanioNuevoContenido;
 	off_t offset;
 	char *ruta = string_new();
 	char *contenidoDir = string_new();
@@ -232,12 +231,12 @@ void atenderConexion(void *numeroCliente){
 
 
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
-				status = recv(clientesActivos[unCliente].socket, &tamanioNuevoContenido, sizeof(size_t), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &tamanioNuevoContenido, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
 				nuevoContenido = malloc(tamanioNuevoContenido);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				status = recv(clientesActivos[unCliente].socket, nuevoContenido, tamanioNuevoContenido, MSG_WAITALL);
-				status = recv(clientesActivos[unCliente].socket, &offset, sizeof(off_t), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &offset, sizeof(int), MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_write(ruta, nuevoContenido, tamanioNuevoContenido, offset);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), 0);
@@ -314,7 +313,7 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
-				status = recv(clientesActivos[unCliente].socket, &nuevoTamanio, sizeof(size_t), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &nuevoTamanio, sizeof(int), MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_truncate(ruta, nuevoTamanio);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
@@ -589,7 +588,7 @@ int osada_create(char *ruta){
 	return exito;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-int osada_write(char *ruta, void *nuevoContenido, size_t sizeAgregado, off_t offset){
+int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
 
 	int exito = -1;
 	int i = buscarArchivo(ruta);
@@ -799,7 +798,7 @@ int osada_rename(char *ruta, char *nuevoNombre){
 	return exito;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-int osada_truncate(char *ruta, off_t nuevoTamanio){
+int osada_truncate(char *ruta, int nuevoTamanio){
 	int exito = -1;
 	int i = buscarArchivo(ruta);
 	int bloques = calcularBloquesNecesarios(nuevoTamanio);

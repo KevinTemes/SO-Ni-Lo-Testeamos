@@ -154,7 +154,7 @@ void *osada_read(char *unaRuta);
 
 int osada_create(char *ruta);
 
-int osada_write(char *ruta, void *nuevoContenido, size_t sizeAgregado, off_t offset);
+int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset);
 
 int osada_unlink(char *ruta);
 
@@ -164,6 +164,6 @@ int osada_rmdir(char *ruta);
 
 int osada_rename(char *ruta, char *nuevoNombre);
 
-int osada_truncate(char *ruta, off_t nuevoTamanio);
+int osada_truncate(char *ruta, int nuevoTamanio);
 
 #endif /* LIBRERIAPOKEDEXSERVIDOR_H_ */

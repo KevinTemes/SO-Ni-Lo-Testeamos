@@ -228,13 +228,15 @@ static int cliente_write(const char* path,const char *buf, size_t size, off_t of
 	protocolo = 4;
 	char *ruta = (char *)path;
 	int tamanioRuta = strlen(ruta);
-	void *buffer = malloc((2 * sizeof(int)) + sizeof(size_t)+ tamanioRuta + size + sizeof(off_t));
+	int off = offset;
+	int buf_size = size;
+	void *buffer = malloc((4 * sizeof(int)) + tamanioRuta + buf_size);
 	memcpy(buffer, &protocolo, sizeof(int));
 	memcpy(buffer + sizeof(int), &tamanioRuta, sizeof(int));
-	memcpy(buffer + (2 * sizeof(int)), &size, sizeof(size_t));
-	memcpy(buffer + (2 * sizeof(int)) + sizeof(size_t), ruta, tamanioRuta);
-	memcpy(buffer + (2 * sizeof(int)) + sizeof(size_t) + tamanioRuta, buf, size);
-	memcpy(buffer + (2 * sizeof(int)) + sizeof(size_t) + tamanioRuta + size, &offset, sizeof(off_t));
+	memcpy(buffer + (2 * sizeof(int)), &buf_size, sizeof(int));
+	memcpy(buffer + (3 * sizeof(int)), ruta, tamanioRuta);
+	memcpy(buffer + (3 * sizeof(int)) + tamanioRuta, buf, buf_size);
+	memcpy(buffer + (3 * sizeof(int)) + tamanioRuta + buf_size, &off, sizeof(int));
 
 	send(pokedexServidor, buffer, (4 * sizeof(int)) + tamanioRuta + size, MSG_WAITALL);
 
@@ -363,12 +365,13 @@ int cliente_truncate(const char * path, off_t offset) {
 	int protocolo = 10;
 	char *ruta = (char *)path;
 	int tamanioRuta = strlen(ruta);
-	void *buffer = malloc((2 * sizeof(int)) + sizeof(off_t) + tamanioRuta);
+	int off = offset;
+	void *buffer = malloc((3 * sizeof(int)) + tamanioRuta);
 	memcpy(buffer, &protocolo, sizeof(int));
 	memcpy(buffer + sizeof(int), &tamanioRuta, sizeof(int));
 	memcpy(buffer + (2 *sizeof(int)), ruta, tamanioRuta);
-	memcpy(buffer + (2 *sizeof(int)) + tamanioRuta, &offset, sizeof(off_t));
-	send(pokedexServidor, buffer, (2 * sizeof(int)) + sizeof(off_t) + tamanioRuta, MSG_WAITALL);
+	memcpy(buffer + (2 *sizeof(int)) + tamanioRuta, &off, sizeof(int));
+	send(pokedexServidor, buffer, (3 * sizeof(int)) + tamanioRuta, MSG_WAITALL);
 
 	recv(pokedexServidor, &res, sizeof(int), MSG_WAITALL);
 
@@ -384,17 +387,6 @@ int cliente_truncate(const char * path, off_t offset) {
 	return res;
 }
 
-static int cliente_chmod (const char *path, mode_t mode){
-	int res = 0;
-	// Nada que ver por aquí...
-	return res;
-}
-
-static int cliente_chown(const char *path, uid_t user, gid_t group){
-	int res = 0;
-	// Nada que ver por aquí...
-	return res;
-}
 
 
 //--------------------------------------------------------------------------------
@@ -411,8 +403,6 @@ static struct fuse_operations cliente_oper = {
 		.rmdir = cliente_rmdir,
 		.rename = cliente_rename,
 		.truncate = cliente_truncate,
-		.chmod = cliente_chmod,
-		.chown = cliente_chown,
 };
 
 
