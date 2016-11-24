@@ -491,6 +491,7 @@ int osada_open(char *ruta){
 	return exito;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
 void *osada_read(char *ruta){
 
 	int i = buscarArchivo(ruta);
@@ -543,8 +544,48 @@ void *osada_read(char *ruta){
 
 	pthread_mutex_unlock(&misMutex[i]);
 
-	terminar:
-	return(buffer);
+terminar:
+return(buffer);
+}
+ */
+
+void *osada_read(char *ruta){
+
+	int i = buscarArchivo(ruta);
+
+	//log_info(logPS, "Recibida solicitud de lectura (.read) del archivo %s", ruta);
+	int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
+	if(miDisco.tablaDeArchivos[i].file_size == 0){
+		goto terminar;
+	}
+
+	pthread_mutex_lock(&misMutex[i]);
+
+	void *buffer = malloc(miDisco.tablaDeArchivos[i].file_size);
+	int tamanioActualBuffer = 0;
+	int inicioDatos = inicioDeDatos();
+	void *desplazamiento;
+	int datosPendientes = miDisco.tablaDeArchivos[i].file_size;
+
+	while((datosPendientes > 0) && (siguienteBloque != -1)){
+		desplazamiento = &miDisco.discoMapeado[inicioDatos + (siguienteBloque * 64)];
+		if(datosPendientes >= 64){
+			memcpy(buffer + tamanioActualBuffer, desplazamiento, 64);
+			datosPendientes -= 64;
+			tamanioActualBuffer += 64;
+		}
+		else{
+			memcpy(buffer + tamanioActualBuffer, desplazamiento, datosPendientes);
+			datosPendientes--;
+			tamanioActualBuffer += datosPendientes;
+		}
+		siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
+	}
+
+	pthread_mutex_unlock(&misMutex[i]);
+
+terminar:
+return(buffer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
