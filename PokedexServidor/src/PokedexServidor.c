@@ -43,28 +43,26 @@ void osada_iniciar(){
 
 	// CARGO LOS TAMAÑOS CORRESPONDIENTES A CADA ESTRUCTURA
 	miDisco.cantBloques.bloques_header = 1;
-		miDisco.cantBloques.bloques_bitmap = miDisco.header->bitmap_blocks;
-		miDisco.cantBloques.bloques_tablaDeArchivos = 1024;
+	miDisco.cantBloques.bloques_bitmap = miDisco.header->bitmap_blocks;
+	miDisco.cantBloques.bloques_tablaDeArchivos = 1024;
 
-		int tablaAsignacionesEnBytes = (miDisco.header->fs_blocks - 1 -1024 - miDisco.header->bitmap_blocks)
+	int tablaAsignacionesEnBytes = (miDisco.header->fs_blocks - 1 -1024 - miDisco.header->bitmap_blocks)
 		    		* 4;
-		    div_t bloquesTablaAsignacion = div(tablaAsignacionesEnBytes, 64);
+	div_t bloquesTablaAsignacion = div(tablaAsignacionesEnBytes, 64);
 
-		if(bloquesTablaAsignacion.rem != 0){
-		    miDisco.cantBloques.bloques_tablaDeAsignaciones = bloquesTablaAsignacion.quot + 1;
-		}
-		else{
-			miDisco.cantBloques.bloques_tablaDeAsignaciones = bloquesTablaAsignacion.quot;
-		}
-		miDisco.cantBloques.bloques_datos = miDisco.header->fs_blocks - miDisco.header->bitmap_blocks
-				- 1 - 1024 - miDisco.cantBloques.bloques_tablaDeAsignaciones;
+	if(bloquesTablaAsignacion.rem != 0){
+		miDisco.cantBloques.bloques_tablaDeAsignaciones = bloquesTablaAsignacion.quot + 1;
+	}
+	else{
+		miDisco.cantBloques.bloques_tablaDeAsignaciones = bloquesTablaAsignacion.quot;
+	}
+	miDisco.cantBloques.bloques_datos = miDisco.header->fs_blocks - miDisco.header->bitmap_blocks
+		- 1 - 1024 - miDisco.cantBloques.bloques_tablaDeAsignaciones;
 
 	// CARGO EL BITMAP
-	int inicioBitmap = 64;
-	int tamanioBitmap = miDisco.header->fs_blocks / 8;
-	char *miBitArray = malloc(tamanioBitmap);
-	memcpy(miBitArray, &miDisco.discoMapeado[inicioBitmap], tamanioBitmap);
-	miDisco.bitmap = bitarray_create(miBitArray, tamanioBitmap);
+	char *inicioBitmap = miDisco.discoMapeado + 64;
+	int tamanioBitmap = miDisco.header->bitmap_blocks * 64;
+	miDisco.bitmap = bitarray_create(inicioBitmap, tamanioBitmap);
 
 	// CARGO LA TABLA DE ARCHIVOS
 	int inicioTablaArchivos = (1 + miDisco.header->bitmap_blocks) * 64;
@@ -73,10 +71,10 @@ void osada_iniciar(){
 
 	// CARGO LA TABLA DE ASIGNACIONES
 	int inicioTablaAsignaciones = (1 + 1024 + miDisco.header->bitmap_blocks) * 64;
-	int tamanioTablaDeAsignaciones = (miDisco.header->fs_blocks - 1 - 1024 -
-			miDisco.header->bitmap_blocks) * 64;
+	int tamanioTablaDeAsignaciones = miDisco.cantBloques.bloques_tablaDeAsignaciones * 64;
 	miDisco.tablaDeAsignaciones = malloc(tamanioTablaDeAsignaciones);
 	memcpy(miDisco.tablaDeAsignaciones, &miDisco.discoMapeado[inicioTablaAsignaciones], tamanioTablaDeAsignaciones);
+
 
 }
 
