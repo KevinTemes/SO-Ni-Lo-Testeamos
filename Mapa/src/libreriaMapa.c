@@ -165,16 +165,7 @@ void sumarRecurso2(t_list* items, char id) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void matar(entrenador* entreni) {
-	int peo;
-	for (peo = 0; peo < list_size(entreni->asignados); peo++) {
-		tabla* a;
-		tabla* b;
-		a = list_get(entreni->asignados, peo);
-		b = list_get(entreni->solicitud, peo);
-		a->valor = 0;
-		b->valor = 0;
-	}
-    log_info(logs,"sale entrenado %c de los que estan en curso",entreni->simbolo);
+
 
 	free(entreni->pokePeleador);
 	log_info(logs,"libera pokemon (si se le asigno para el deadlock) del entrenador %c",entreni->simbolo);
@@ -227,8 +218,7 @@ void matar(entrenador* entreni) {
 		}
 	list_destroy(entreni->pokemones);
 	queue_destroy(entreni->colaAccion);
-	BorrarItem(items, entreni->simbolo);
-	nivel_gui_dibujar(items, nombreMapa);
+
 	free(entreni);
 
 	}
@@ -286,7 +276,6 @@ void atenderConexion(void *numeroCliente) {
 							- 1); //numero del entrenador
 					estaLista = 1;
 					ent1->estaMarcado = 0;
-					ent1->entroBloqueados = 0;
 					ent1->fallecio = 0;
 					ent1->pokePeleador = malloc(sizeof(metaDataPokemon));
 					ent1->posx = 1; //posicion en x inicializada en 0
@@ -414,12 +403,23 @@ void atenderConexion(void *numeroCliente) {
 
 	ent1->fallecio = 1;
 	queue_clean(ent1->colaAccion);
+	BorrarItem(items, ent1->simbolo);
+    nivel_gui_dibujar(items, nombreMapa);
 	bool esEntrenador(entrenador* entiti) {
 			return ent1->simbolo == entiti->simbolo;
 		}
 
 		list_remove_by_condition(entrenadoresEnCurso, (void*) esEntrenador);
 
+		int peo;
+			for (peo = 0; peo < list_size(ent1->asignados); peo++) {
+				tabla* a;
+				tabla* b;
+				a = list_get(ent1->asignados, peo);
+				b = list_get(ent1->solicitud, peo);
+				a->valor = 0;
+				b->valor = 0;
+			}
 
 	while (list_size(ent1->pokemones)) {
 		metaDataPokemon* pok;
