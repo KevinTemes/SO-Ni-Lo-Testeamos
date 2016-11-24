@@ -26,6 +26,7 @@ extern sem_t sem_quantum;
 extern sem_t sem_llego;
 extern char* nombreMapa;
 extern metaDataComun* datosMapa;
+extern metaDataComun* datos2;
 extern t_log* logs;
 extern t_queue* colaListos;
 extern t_list* entrenadoresEnCurso;
@@ -288,8 +289,8 @@ void atenderConexion(void *numeroCliente) {
 					ent1->entroBloqueados = 0;
 					ent1->fallecio = 0;
 					ent1->pokePeleador = malloc(sizeof(metaDataPokemon));
-					ent1->posx = 0; //posicion en x inicializada en 0
-					ent1->posy = 0; // idem en y
+					ent1->posx = 1; //posicion en x inicializada en 0
+					ent1->posy = 1; // idem en y
 					ent1->asignados = list_create();
 					ent1->solicitud = list_create();
 					ent1->pokemones = list_create();

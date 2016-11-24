@@ -43,6 +43,7 @@ char* configMapa;
 //variables del mapa
 int nE = 0; //numero entrenador
 metaDataComun* datosMapa; //MATADO
+metaDataComun* datosMapa2;
 metaDataPokeNest* datosPokenest;
 //metaDataPokemon* datosPokemon;
 int rows; // nro de filas
@@ -83,11 +84,13 @@ pthread_mutex_t pokemi = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexEnvio = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexMuerte = PTHREAD_MUTEX_INITIALIZER;
 
+
+
 //deadlock
 void banquero() {
 
 	while (1) {
-		usleep(datosMapa->tiempoChequeoDeadlock);
+		usleep(datosMapa2->tiempoChequeoDeadlock);
 
 
 		if (list_size(entrenadoresEnCurso)) {
@@ -180,11 +183,7 @@ void banquero() {
 				//			log_info(logs, "entrenador %c esta marcado? %d",
 				//				entreneitor->simbolo, entreneitor->estaMarcado);
 				if (!(entreneitor->estaMarcado)) {
-					log_info(logs, "entrenador %c en estado de deadlock",entreneitor->simbolo);
-					int accione = 3;
-					//int efe;
-					 send((clientesActivos[entreneitor->numeroCliente]).socket,&accione, sizeof(int), 0);
-					//			log_info(logs, "%d", efe);
+
 					list_add(entrenadoresEnDeadlock, entreneitor);
 				}
 			}
@@ -230,12 +229,23 @@ void banquero() {
 				int ef;
 				for(ef=0;ef<list_size(deadlocks);ef++){
 					liste = list_get(deadlocks,ef);
+					if(list_size(liste)>1){
 					int efefe;
 					for(efefe=0;efefe<list_size(liste);efefe++){
 	                entrenador* pef;
 	                pef = list_get(liste,efefe);
 	                log_info(logs,"entrenadores en deadlock%d: %c",ef,pef->simbolo);
+					int accione = 3;
+					//int efe;
+					 send((clientesActivos[pef->numeroCliente]).socket,&accione, sizeof(int), 0);
+					//			log_info(logs, "%d", efe);
 					}
+				}else{
+					entrenador* pof;
+					pof=list_get(liste,0);
+					log_info(logs,"entrenador %c es re trucho, esta en inanicion",pof->simbolo);
+				}
+
 				}
 			}
 
@@ -254,7 +264,7 @@ void banquero() {
 				//					"entrenadores ordenados, hora de la batalla pokemon");
 
 				//hora de peleaaaaar
-				if (datosMapa->batalla) {
+				if (datosMapa2->batalla) {
 					int otroAux;
 					int yotromas;
 					for (yotromas = 0; yotromas < list_size(deadlocks);
@@ -343,12 +353,12 @@ void planificador(void* argu) {
 	while (1) {
 		sem_wait(&sem_Listos); //semaforo de nuevos bloqueando que se saque un ent si la cola esta vacia
 
-		int q = datosMapa->quantum;
+		int q = datosMapa2->quantum;
 
 		//log_info(logs,"se mete a planificador");
 /////////////////////////////////////////ROUND ROBIN/////////////////////////////////////////////////////////////
 
-		if (!strcmp(datosMapa->algoritmo, "RR")) {
+		if (!strcmp(datosMapa2->algoritmo, "RR")) {
 
 			int acto;
 			entrenador* entre;
@@ -410,7 +420,7 @@ void planificador(void* argu) {
 						case '8':
 							if (entre->posy > 1 && !entre->fallecio) {
 								//log_info(logs, "entrenador %c se mueve arriba",entre->simbolo);
-								usleep(datosMapa->retardoQ);
+								usleep(datosMapa2->retardoQ);
 								entre->posy--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
@@ -423,7 +433,7 @@ void planificador(void* argu) {
 						case '2':
 							if (entre->posy < rows && !entre->fallecio) {
 								//log_info(logs, "entrenador %c se mueve abajo", entre->simbolo);
-								usleep(datosMapa->retardoQ);
+								usleep(datosMapa2->retardoQ);
 								entre->posy++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
@@ -437,7 +447,7 @@ void planificador(void* argu) {
 						case '4':
 							if (entre->posx > 1 && !entre->fallecio) {
 								//log_info(logs, "entrenador %c se mueve a la izquierda", entre->simbolo);
-								usleep(datosMapa->retardoQ);
+								usleep(datosMapa2->retardoQ);
 								entre->posx--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
@@ -449,7 +459,7 @@ void planificador(void* argu) {
 						case '6':
 							if (entre->posx < cols && !entre->fallecio) {
 								//log_info(logs, "entrenador % c se mueve a la derecha", entre->simbolo);
-								usleep(datosMapa->retardoQ);
+								usleep(datosMapa2->retardoQ);
 								entre->posx++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
@@ -547,7 +557,7 @@ void planificador(void* argu) {
 //			pthread_mutex_unlock(&mutexMuertee);
 
 			if (!bloqueo && !entre->fallecio) {
-				usleep(datosMapa->retardoQ);
+				usleep(datosMapa2->retardoQ);
 				//q = datosMapa->quantum;
 				//	log_info(logs,"el entrenador %c no murio y va a la cola de listos",entre->simbolo);
 				queue_push(colaListos, entre);
@@ -559,7 +569,7 @@ void planificador(void* argu) {
 
 ////////////////////////////////////////////////////////EMPIEZA SRDF////////////////////////////
 
-		if (!strcmp(datosMapa->algoritmo, "SRDF")) {
+		if (!strcmp(datosMapa2->algoritmo, "SRDF")) {
 
 			t_list* listaAux = list_create();
 
@@ -742,7 +752,7 @@ void planificador(void* argu) {
 			}
 
 			if (!bloqueo && !ent1->fallecio && !bloqueo) {
-				usleep(datosMapa->retardoQ);
+				usleep(datosMapa2->retardoQ);
 				//q = datosMapa->quantum;
 				queue_push(colaListos, ent1);
 				sem_post(&sem_Listos);
@@ -958,12 +968,14 @@ int main(int argc, char* argv[]) {
 // CONFIG
 
 	datosMapa = malloc(sizeof(metaDataComun));
+	datosMapa2 = malloc(sizeof(metaDataComun));
 	//datosPokenest = malloc(sizeof(metaDataPokeNest));
 	//datosPokemon = malloc(sizeof(metaDataPokemon));
 
 	configMapa = string_from_format("%s/Mapas/%s/metadata", argv[2], argv[1]);
 
 	leerConfiguracion();
+	leerConfiguracion2();
 
 //por ahora
 	char* configPokenest = string_from_format("%s/Mapas/%s/PokeNests", argv[2],
@@ -1044,7 +1056,7 @@ int main(int argc, char* argv[]) {
 	log_info(logs,
 			"iniciado el servidor principal del Mapa. Aguardando conexiones...\n\n");
 
-	signal(SIGUSR2, leerConfiguracion2);
+
 
 	int socketEscucha, retornoPoll;
 	int fd_index = 0;
@@ -1144,6 +1156,7 @@ int main(int argc, char* argv[]) {
 	 free(datosMapa);
 	 */
 	signal(SIGINT, terminarMapa);
+
 	return EXIT_SUCCESS;
 
 }

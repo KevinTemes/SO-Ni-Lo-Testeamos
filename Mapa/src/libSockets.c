@@ -14,7 +14,8 @@ extern t_list* disponibles;
 extern t_list* listaContenedora;
 extern char* configMapa;
 metaDataPokeNest *datos; // Variable global
-metaDataComun* datosMapa;
+extern metaDataComun* datosMapa;
+extern metaDataComun* datosMapa2;
 
 
 
@@ -31,25 +32,25 @@ void leerConfiguracion2() {
 			perror("Error leer config");
 		} else {
 
-			datosMapa->tiempoChequeoDeadlock = config_get_int_value(
+			datosMapa2->tiempoChequeoDeadlock = config_get_int_value(
 					archivoConfiguracion, "TiempoChequeoDeadlock");
 			//printf("TiempoChequeo %d\n",(*datos)->tiempoChequeoDeadlock);
 
-			datosMapa->batalla = config_get_int_value(archivoConfiguracion,
+			datosMapa2->batalla = config_get_int_value(archivoConfiguracion,
 					"Batalla");
 			//printf("batalla %d\n",(*datos)->batalla);
 
 			char* algoritmo = string_new();
 			string_append(&algoritmo,
 					config_get_string_value(archivoConfiguracion, "algoritmo"));
-			datosMapa->algoritmo = algoritmo;
+			datosMapa2->algoritmo = algoritmo;
 			//printf("algoritmo  %s\n",(*datos)->algoritmo);
 
-			datosMapa->quantum = config_get_int_value(archivoConfiguracion,
+			datosMapa2->quantum = config_get_int_value(archivoConfiguracion,
 					"quantum");
 			//printf("quantum  %d\n",(*datos)->quantum);
 
-			datosMapa->retardoQ = config_get_int_value(archivoConfiguracion,
+			datosMapa2->retardoQ = config_get_int_value(archivoConfiguracion,
 					"retardo");
 
 
