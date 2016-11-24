@@ -167,24 +167,27 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 							solicitarAtraparPokemon(calculoTiempo,tiempo,mapa);
 
 
-							if (posicionesYDeadlocks->cargarDeNuevoObjetivo== 0){ // solo si resetea y tiene vidas lo hace
+							if (posicionesYDeadlocks->cargarDeNuevoObjetivo== 0){
 								list_add((ent)->pokemonsPorMapaCapturados,caracterPoke);
-								log_info(logs,"Capture en el mapa %s a %s", mapa,caracterPoke);
+								log_info(logs,"Capture en el mapa %s a %s y lo agregue a la lista por mapa capturados\n", mapa,caracterPoke);
 								dictionary_remove(pokesDeCadaMapa,mapa);
-							}else{
+							}else{ // solo si resetea y tiene vidas lo hace
+
 								int i;
 								do{
 									char* losQueQuedaron = dictionary_get(pokesDeCadaMapa,mapa);
 									list_add(ent->pokemonsPorMapaCapturados, losQueQuedaron);
-									log_info(logs,"Agrego al final de la lista al poke %s que estaba en el dictionary de objetivos no realizados todavia%s",losQueQuedaron);
+									log_info(logs,"Agrego al final de la lista por mapa capturados al poke %s que estaba en el dictionary de objetivos no realizados todavia",losQueQuedaron);
 									dictionary_remove(pokesDeCadaMapa,mapa);
 								}while(dictionary_get(pokesDeCadaMapa,mapa)!=NULL);
 
 								for(i=0;i<list_size(ent->pokemonsPorMapaCapturados);i++){
 									char* pokeAMeter = list_get(ent->pokemonsPorMapaCapturados,i);
 									log_info(logs,"Agrego este pokemon al diccionario %s para reiniciar el mapa que se encontraba",pokeAMeter);
+									log_info(logs, "Lo agregue en la posicion %d del diccionario\n",i);
 									dictionary_put(pokesDeCadaMapa,mapa,pokeAMeter); // vuelvo a meter todos los pokemons de ese mapa
 								}
+								list_clean(ent->pokemonsPorMapaCapturados);
 							}
 
 						} // cierro el for de los objetivos
@@ -270,10 +273,60 @@ void pierdoUnaVida(){
 	sleep(1);
 }
 
+void* deserializoPokemon(t_calculoTiempo* calculoTiempo, t_tiempoBloqueado* tiempo, char* mapa, char* inicioBloq, char* finBloq){
+	//reservo memoria para mi struct cada vez que entra, sino lo pisaria
+	t_pokemonDeserializado* pokePiola;
+	pokePiola =malloc(sizeof(t_pokemonDeserializado));
+
+	// deserializo el pokemon, recibo 7 10 Pikachu Pikachu001 33
+	int tamanioEspecie,tamanioNombreMetadata;
+
+	recv(servidor,&tamanioEspecie,sizeof(int),MSG_WAITALL);
+	recv(servidor,&tamanioNombreMetadata,sizeof(int),MSG_WAITALL);
+
+	void* bufferEspecie  = malloc(tamanioEspecie+1);
+	void* bufferNombreMetadata  = malloc(tamanioNombreMetadata+1);
+
+	recv(servidor,bufferEspecie,tamanioEspecie, MSG_WAITALL);
+	recv(servidor,bufferNombreMetadata,tamanioNombreMetadata, MSG_WAITALL);
+
+	pokePiola->especie = (char*)bufferEspecie;
+	pokePiola->especie[tamanioEspecie] = '\0';
+
+	pokePiola->nombreMetadata = (char*)bufferNombreMetadata;
+	pokePiola->nombreMetadata[tamanioNombreMetadata] = '\0';
+
+	recv(servidor, &pokePiola->nivelPokemon,sizeof(int),MSG_WAITALL);
+
+	log_info(logs, "Especie del atrapado: %s",pokePiola->especie);
+	log_info(logs, "Especifico del atrapado: %s", pokePiola->nombreMetadata);
+	log_info(logs,"Agregue el nivel %d del atrapado \n", pokePiola->nivelPokemon);
+
+	list_add((ent)->listaNivAtrapados,pokePiola);
+	int posicion = list_size(ent->listaNivAtrapados);
+	t_pokemonDeserializado* meteEnLaLista = list_get((ent->listaNivAtrapados),posicion-1);
+
+	log_info(logs, "Especie que atrape agregada a la lista: %s, importante si llega a haber deadlock",meteEnLaLista->especie);
+	log_info(logs, "Especifico que atrape agregado a la lista: %s, importante si llega a haber deadlock", meteEnLaLista->nombreMetadata);
+	log_info(logs,"Agregue el nivel que atrape a la lista: %d, importante si llega a haber deadlock \n",meteEnLaLista->nivelPokemon);
+
+	finBloq = temporal_get_string_time();
+
+	copiarArchivo(mapa,pokePiola->especie,pokePiola->nombreMetadata);
+	tiempo = sacarTiempo(calculoTiempo,tiempo,"bloqueado",inicioBloq,finBloq);
+
+	//free(bufferEspecie);
+	//free(bufferNombreMetadata);
+	free(finBloq);
+	free(inicioBloq);
+	return tiempo;
+}
+
+
 void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* tiempo, char* mapa){
 
 	char* inicioBloq = temporal_get_string_time();
-	char* finBloq;
+	char* finBloq = "\0";
 
 	int protocoloRec;
 	recv(servidor,&(protocoloRec),sizeof(int),MSG_WAITALL);
@@ -283,54 +336,7 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 		switch(protocoloRec){
 			case ATRAPA:
 				usleep(1000);
-
-				//reservo memoria para mi struct cada vez que entra, sino lo pisaria
-				t_pokemonDeserializado* pokePiola;
-				pokePiola =malloc(sizeof(t_pokemonDeserializado));
-
-
-				// deserializo el pokemon, recibo 7 10 Pikachu Pikachu001 33
-				int tamanioEspecie,tamanioNombreMetadata;
-
-				recv(servidor,&tamanioEspecie,sizeof(int),MSG_WAITALL);
-				recv(servidor,&tamanioNombreMetadata,sizeof(int),MSG_WAITALL);
-
-				void* bufferEspecie  = malloc(tamanioEspecie+1);
-				void* bufferNombreMetadata  = malloc(tamanioNombreMetadata+1);
-
-				recv(servidor,bufferEspecie,tamanioEspecie, MSG_WAITALL);
-				recv(servidor,bufferNombreMetadata,tamanioNombreMetadata, MSG_WAITALL);
-
-				pokePiola->especie = (char*)bufferEspecie;
-				pokePiola->especie[tamanioEspecie] = '\0';
-
-				pokePiola->nombreMetadata = (char*)bufferNombreMetadata;
-				pokePiola->nombreMetadata[tamanioNombreMetadata] = '\0';
-
-				recv(servidor, &pokePiola->nivelPokemon,sizeof(int),MSG_WAITALL);
-
-				log_info(logs, "Especie del atrapado: %s",pokePiola->especie);
-				log_info(logs, "Especifico del atrapado: %s", pokePiola->nombreMetadata);
-				log_info(logs,"Agregue el nivel %d del atrapado \n", pokePiola->nivelPokemon);
-
-				list_add((ent)->listaNivAtrapados,pokePiola);
-				int posicion = list_size(ent->listaNivAtrapados);
-				t_pokemonDeserializado* meteEnLaLista = list_get((ent->listaNivAtrapados),posicion-1);
-
-				log_info(logs, "Especie que atrape agregada a la lista: %s, importante si llega a haber deadlock",meteEnLaLista->especie);
-				log_info(logs, "Especifico que atrape agregado a la lista: %s, importante si llega a haber deadlock", meteEnLaLista->nombreMetadata);
-				log_info(logs,"Agregue el nivel que atrape a la lista: %d, importante si llega a haber deadlock \n",meteEnLaLista->nivelPokemon);
-
-				finBloq = temporal_get_string_time();
-
-				copiarArchivo(mapa,pokePiola->especie,pokePiola->nombreMetadata);
-				tiempo = sacarTiempo(calculoTiempo,tiempo,"bloqueado",inicioBloq,finBloq);
-
-				//libero los buffer antes de volver
-				//free(bufferEspecie);
-				//free(bufferNombreMetadata);
-				free(finBloq);
-				free(inicioBloq);
+				deserializoPokemon(calculoTiempo,tiempo,mapa,inicioBloq,finBloq);
 				return tiempo;
 
 			case DEADLOCK:
@@ -360,62 +366,24 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 
 				send(servidor,miBuffer,tamanioTotal,0);
 
-				int protocoloRecibido;
-				recv(servidor,&(protocoloRecibido),sizeof(int),MSG_WAITALL);
-				log_info(logs,"Recibo 7 si mori o 0 si sobrevivi, y el protocolo recibido es: %d",protocoloRecibido);
-				if(protocoloRecibido==MORI){
+				recv(servidor,&(protocoloRec),sizeof(int),MSG_WAITALL);
+				log_info(logs,"Recibo 7 si mori o 0 si sobrevivi, y el protocolo recibido es: %d",protocoloRec);
+
+				if(protocoloRec==MORI){
 					morir("deadlock");
 					// revisar este free
 					free(miBuffer);
 					return posicionesYDeadlocks;
-				} else if(protocoloRecibido==SOBREVIVI){
+
+				} else if(protocoloRec==SOBREVIVI){
+
 					log_info(logs,"Sobrevivi al deadlock\n");
 
 					recv(servidor,&(protocoloRec),sizeof(int),MSG_WAITALL);
-					log_info(logs,"Recibi este protocolo %d, voy a agarrar el pokemon que queria",protocoloRec);
+					log_info(logs,"Recibi este protocolo %d, voy a agarrar y deserializar el pokemon que queria",protocoloRec);
 
-					t_pokemonDeserializado* pokePiola2;
-					pokePiola2 =malloc(sizeof(t_pokemonDeserializado));
+					deserializoPokemon(calculoTiempo,tiempo,mapa,inicioBloq,finBloq);
 
-					// deserializo el pokemon, recibo 7 10 Pikachu Pikachu001 33
-					int tamanioEspecie2,tamanioNombreMetadata2;
-
-					recv(servidor,&tamanioEspecie2,sizeof(int),MSG_WAITALL);
-					recv(servidor,&tamanioNombreMetadata2,sizeof(int),MSG_WAITALL);
-
-					void* bufferEspecie2  = malloc(tamanioEspecie2+1);
-					void* bufferNombreMetadata2 = malloc(tamanioNombreMetadata2+1);
-
-					recv(servidor,bufferEspecie2,tamanioEspecie2, MSG_WAITALL);
-					recv(servidor,bufferNombreMetadata2,tamanioNombreMetadata2, MSG_WAITALL);
-
-					pokePiola2->especie = (char*)bufferEspecie2;
-					pokePiola2->especie[tamanioEspecie2] = '\0';
-
-					pokePiola2->nombreMetadata = (char*)bufferNombreMetadata2;
-					pokePiola2->nombreMetadata[tamanioNombreMetadata2] = '\0';
-
-					recv(servidor, &pokePiola2->nivelPokemon,sizeof(int),MSG_WAITALL);
-
-					log_info(logs, "Especie del atrapado %s",pokePiola2->especie);
-					log_info(logs, "Especifico del atrapado %s", pokePiola2->nombreMetadata);
-					log_info(logs,"Agregue el nivel %d del atrapado \n", pokePiola2->nivelPokemon);
-
-					list_add((ent)->listaNivAtrapados,pokePiola2);
-					int posicion2 = list_size(ent->listaNivAtrapados);
-					t_pokemonDeserializado* meteEnLaLista2 = list_get((ent->listaNivAtrapados),posicion2-1);
-
-					log_info(logs, "Especie que atrape agregada a la lista: %s, importante si llega a haber deadlock",meteEnLaLista2->especie);
-					log_info(logs, "Especifico que atrape agregado a la lista: %s, importante si llega a haber deadlock", meteEnLaLista2->nombreMetadata);
-					log_info(logs,"Agregue el nivel que atrape a la lista: %d, importante si llega a haber deadlock \n",meteEnLaLista2->nivelPokemon);
-
-					finBloq = temporal_get_string_time();
-
-					copiarArchivo(mapa,pokePiola2->especie,pokePiola2->nombreMetadata);
-					tiempo = sacarTiempo(calculoTiempo,tiempo,"bloqueado",inicioBloq,finBloq);
-
-					free(finBloq);
-					free(inicioBloq);
 					return tiempo;
 				}
 
@@ -616,7 +584,7 @@ void* morir(char* motivo){
 			borrarArchivosBill();
 			log_info(logs,"Borrados archivos de pokemones del Dir de Bill exitosamente!");
 			//reconecto al mismo mapa, y reinicio el objetivo siempre desde cero
-			log_info(logs,"Reconectandose al mismo mapa que se encontraba");
+			log_info(logs,"Reconectandose al mismo mapa que se encontraba\n");
 			// empiezo del mapa anterior
 			posicionesYDeadlocks->pos = posicionesYDeadlocks->pos -1;
 			// no dejo que siga iterando los objetivos

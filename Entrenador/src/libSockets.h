@@ -99,6 +99,7 @@ typedef struct Paquete {
 	char *path;
 } t_paquete;
 
+void* deserializoPokemon(t_calculoTiempo*,t_tiempoBloqueado*,char*,char*,char*);
 void* agarrarPokeConMasNivel(t_list*);
 void terminarAventura(t_calculoTiempo*,t_tiempoBloqueado*,char*);
 char* empezarAventura();
