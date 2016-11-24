@@ -106,11 +106,13 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 		 do{
 			 for(posicionesYDeadlocks->pos = 0;posicionesYDeadlocks->pos<cantMapas;posicionesYDeadlocks->pos++){
 
-					miIP= list_get(ips,posicionesYDeadlocks->pos);
+				 	log_info(logs,"Entre con la pos %d",posicionesYDeadlocks->pos);
+
+				 	miIP= list_get(ips,posicionesYDeadlocks->pos);
 					miPuerto = list_get(puertos,posicionesYDeadlocks->pos);
 
-					//printf("ip %s \n", miIP);
-					//printf("puerto %s \n",miPuerto);
+					printf("ip %s \n", miIP);
+					printf("puerto %s \n",miPuerto);
 
 
 					servidor = conectarCliente(miIP, miPuerto);
@@ -129,7 +131,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 					posicionesYDeadlocks->salirDeObjetivos = 0;
 					posicionesYDeadlocks->cargarDeNuevoObjetivo=0;
 
-						for(posicionesYDeadlocks->posObjetivo=0;(dictionary_get(pokesDeCadaMapa,mapa)!=NULL) && (posicionesYDeadlocks->salirDeObjetivos!=1);posicionesYDeadlocks->posObjetivo++){
+						while((dictionary_get(pokesDeCadaMapa,mapa)!=NULL) && (posicionesYDeadlocks->salirDeObjetivos!=1)){
 
 							char* caracterPoke = dictionary_get(pokesDeCadaMapa,mapa);
 							//string_append(&protocolo,caracterPoke);
@@ -174,12 +176,12 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 							}else{ // solo si resetea y tiene vidas lo hace
 
 								int i;
-								do{
+								while(dictionary_get(pokesDeCadaMapa,mapa)!=NULL){
 									char* losQueQuedaron = dictionary_get(pokesDeCadaMapa,mapa);
 									list_add(ent->pokemonsPorMapaCapturados, losQueQuedaron);
 									log_info(logs,"Agrego al final de la lista por mapa capturados al poke %s que estaba en el dictionary de objetivos no realizados todavia",losQueQuedaron);
 									dictionary_remove(pokesDeCadaMapa,mapa);
-								}while(dictionary_get(pokesDeCadaMapa,mapa)!=NULL);
+								};
 
 								for(i=0;i<list_size(ent->pokemonsPorMapaCapturados);i++){
 									char* pokeAMeter = list_get(ent->pokemonsPorMapaCapturados,i);
@@ -190,7 +192,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 								list_clean(ent->pokemonsPorMapaCapturados);
 							}
 
-						} // cierro el for de los objetivos
+						} // cierro el while de los objetivos
 
 					if(posicionesYDeadlocks->salirDeObjetivos==0){
 						copiarMedalla(mapa);
@@ -626,6 +628,8 @@ void* morir(char* motivo){
 					log_error(logs,"Error al leer el archivo de configuracion de Metadata Entrenador");
 					return NULL;
 				}
+
+				log_info(logs,"Archivo de config Entrenador creado exitosamente!\n");
 				posicionesYDeadlocks->reintentosActualizados++;
 				ent->reintentos = posicionesYDeadlocks->reintentosActualizados;
 				log_info(logs,"Numero de reintentos realizados: %d \n",ent->reintentos);
