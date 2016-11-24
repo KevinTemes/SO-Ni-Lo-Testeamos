@@ -32,26 +32,26 @@ void leerConfiguracion2() {
 			perror("Error leer config");
 		} else {
 
-			datosMapa2->tiempoChequeoDeadlock = config_get_int_value(
-					archivoConfiguracion, "TiempoChequeoDeadlock");
+			datosMapa2->tiempoChequeoDeadlock = config_get_int_value(archivoConfiguracion, "TiempoChequeoDeadlock");
 			//printf("TiempoChequeo %d\n",(*datos)->tiempoChequeoDeadlock);
+			log_info(logs,"Tiempo de chequeo vale: %d",datosMapa2->tiempoChequeoDeadlock);
 
-			datosMapa2->batalla = config_get_int_value(archivoConfiguracion,
-					"Batalla");
+			datosMapa2->batalla = config_get_int_value(archivoConfiguracion,"Batalla");
 			//printf("batalla %d\n",(*datos)->batalla);
+			log_info(logs,"Batalla activada? %d",datosMapa2->batalla);
 
 			char* algoritmo = string_new();
-			string_append(&algoritmo,
-					config_get_string_value(archivoConfiguracion, "algoritmo"));
+			string_append(&algoritmo,config_get_string_value(archivoConfiguracion, "algoritmo"));
 			datosMapa2->algoritmo = algoritmo;
 			//printf("algoritmo  %s\n",(*datos)->algoritmo);
+			log_info(logs,"Algoritmo: %s",datosMapa2->algoritmo);
 
-			datosMapa2->quantum = config_get_int_value(archivoConfiguracion,
-					"quantum");
+			datosMapa2->quantum = config_get_int_value(archivoConfiguracion,"quantum");
 			//printf("quantum  %d\n",(*datos)->quantum);
+			log_info(logs,"Quantum: %d",datosMapa2->quantum);
 
-			datosMapa2->retardoQ = config_get_int_value(archivoConfiguracion,
-					"retardo");
+			datosMapa2->retardoQ = config_get_int_value(archivoConfiguracion,"retardo");
+			log_info(logs,"Retardo: %d",datosMapa2->retardoQ);
 
 
 			config_destroy(archivoConfiguracion);

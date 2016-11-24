@@ -76,6 +76,7 @@ pthread_attr_t attr;
 
 pthread_mutex_t pokemi = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexEnvio = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutexMuerte = PTHREAD_MUTEX_INITIALIZER;
 
 //deadlock
 void banquero() {
@@ -251,7 +252,7 @@ void banquero() {
 					listie = list_get(deadlocks, ej);
 					list_sort(listie, (void*) llegoPrimero);
 				}
-//				log_info(logs,
+//				log_info(logs,f
 				//					"entrenadores ordenados, hora de la batalla pokemon");
 
 				//hora de peleaaaaar
@@ -852,19 +853,23 @@ void bloqui(void* stru) {
 			}
 		}
 
+		usleep(datosMapa2->retardoQ);
 
 		sem_wait(&(strub->sembloq));
 
-		pokimons* poki;
 
 		if (!ent1->fallecio) {
+
+			pthread_mutex_lock(&pokemi);
+
+
+			pokimons* poki;
 
 			//log_info(logs, "Extrajo un bloqueado");
 			bool esLaPokenest(pokimons *parametro1) {
 				return strub->pokenest == parametro1->pokinest;
 			}
 
-			pthread_mutex_lock(&pokemi);
 			//log_info(logs, "Ahora busca un poki");
 			poki = list_find(pokemons, (void*) esLaPokenest); //sc
 			//log_info(logs, "Saca un poki");
@@ -981,8 +986,37 @@ void bloqui(void* stru) {
 
 		} else {
 
+			pthread_mutex_lock(&mutexMuerte);
 			log_info(logs, "mata a entrenador %c en bloqueados",ent1->simbolo);
+
 			matar(ent1);
+
+			int dal;
+					sem_getvalue(&strub->sembloq, &dal);
+					log_info(logs, "Pasa el sem wait, el siguiente vale %d", dal);
+
+					//SOLUCION RUDIMENTARISISISISISISISISISIISISISISISISIISISISISISIISISISISISIISISMA
+
+					if(dal==0){
+
+						pokimons* a;
+						bool esLaPokenest(pokimons *parametro1) {
+									return strub->pokenest == parametro1->pokinest;
+								}
+						a = list_find(pokemons, (void*) esLaPokenest);
+						int ew;
+						for (ew = 0;ew < list_size(a->listaPokemons) && !ent1->fallecio;ew++) {
+							metaDataPokemon* meta;
+							meta = list_get(a->listaPokemons,ew);
+							if(!meta->estaOcupado){
+
+								sem_post(&(strub->sembloq));
+							}
+						}
+					}
+
+			pthread_mutex_unlock(&mutexMuerte);
+
 		}
 	}
 }
@@ -1026,7 +1060,7 @@ int main(int argc, char* argv[]) {
 	configMapa = string_from_format("%s/Mapas/%s/metadata", argv[2], argv[1]);
 
 	leerConfiguracion();
-	//log_info(logs,"Valores de la metadata de mapa:")
+
 	leerConfiguracion2();
 
 	signal(SIGUSR2,leerConfiguracion2);

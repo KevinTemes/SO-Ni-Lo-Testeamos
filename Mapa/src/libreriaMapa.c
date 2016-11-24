@@ -14,6 +14,7 @@
 pthread_mutex_t mutexPaqueton = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t muSem = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexMortenAtend = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutexMurte = PTHREAD_MUTEX_INITIALIZER;
 
 int numEntrenador;
 
@@ -86,6 +87,7 @@ int calcularDistancia(entrenador* ent) {
 }
 
 bool esMasCerca(entrenador* cerca, entrenador* lejos) {
+
 	return calcularDistancia(cerca) < calcularDistancia(lejos);
 }
 
@@ -401,6 +403,7 @@ void atenderConexion(void *numeroCliente) {
 	}
 	//usleep(10000);
 
+	pthread_mutex_lock(&mutexMurte);
 	ent1->fallecio = 1;
 	queue_clean(ent1->colaAccion);
 	BorrarItem(items, ent1->simbolo);
@@ -480,7 +483,7 @@ void atenderConexion(void *numeroCliente) {
 
 
 	}
-
+    pthread_mutex_unlock(&mutexMurte);
 	log_info(logi, "entrenador fallece");
 
 }
