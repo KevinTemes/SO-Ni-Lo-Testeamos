@@ -131,7 +131,6 @@ void atenderConexion(void *numeroCliente){
 	char *ruta = string_new();
 	char *contenidoDir = string_new();
 	char *nombre = string_new();
-	void *contenido;
 	void *buffer, *bufferDir, *nuevoContenido, 	*bufferContenido;;
 	void *respuesta;
 
@@ -668,6 +667,8 @@ int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
 		int datosPendientes = sizeAgregado;
 		int aux;
 
+		/*-- Verifico si el tamaño que me pasan es menor al de un bloque-- */
+
 		while(datosPendientes > 0){
 			desplazamiento = nuevoContenido + datosCopiados;
 			if (datosPendientes >= 64){
@@ -680,7 +681,9 @@ int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
 				datosCopiados += datosPendientes;
 				datosPendientes = 0;
 			}
+			if(datosPendientes > 0){
 			siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
+			}
 		}
 
 		while(siguienteBloque != -1){
@@ -690,6 +693,7 @@ int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
 			siguienteBloque = aux;
 		}
 
+		miDisco.tablaDeArchivos[i].file_size = sizeAgregado;
 
 	}
 

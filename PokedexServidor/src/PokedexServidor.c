@@ -71,9 +71,15 @@ void osada_iniciar(){
 
 	// CARGO LA TABLA DE ASIGNACIONES
 	int inicioTablaAsignaciones = (1 + 1024 + miDisco.header->bitmap_blocks) * 64;
-	int tamanioTablaDeAsignaciones = miDisco.cantBloques.bloques_tablaDeAsignaciones * 64;
-	miDisco.tablaDeAsignaciones = malloc(tamanioTablaDeAsignaciones);
-	memcpy(miDisco.tablaDeAsignaciones, &miDisco.discoMapeado[inicioTablaAsignaciones], tamanioTablaDeAsignaciones);
+//	int tamanioTablaDeAsignaciones = miDisco.cantBloques.bloques_tablaDeAsignaciones * 64;
+//	miDisco.tablaDeAsignaciones = malloc(tamanioTablaDeAsignaciones);
+//	memcpy(miDisco.tablaDeAsignaciones, &miDisco.discoMapeado[inicioTablaAsignaciones], tamanioTablaDeAsignaciones);
+
+	osada_block_pointer *puente = (osada_block_pointer *)(miDisco.discoMapeado + inicioTablaAsignaciones);
+
+	miDisco.tablaDeAsignaciones = puente;
+
+
 
 
 }

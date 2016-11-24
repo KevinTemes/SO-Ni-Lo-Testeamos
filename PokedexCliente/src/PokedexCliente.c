@@ -359,7 +359,7 @@ static int cliente_rmdir(const char* path){
 }
 //////////////////////////////////////////////////////////////////////////////
 int cliente_truncate(const char * path, off_t offset) {
-
+	/*
 	int res;
 	log_info(logPC, "Peticion de truncado de archivo %s", path);
 	int protocolo = 10;
@@ -385,6 +385,8 @@ int cliente_truncate(const char * path, off_t offset) {
 
 
 	return res;
+	*/
+	return 0;
 }
 
 static int cliente_chmod(const char *path, mode_t mode){
