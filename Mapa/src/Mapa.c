@@ -991,30 +991,7 @@ void bloqui(void* stru) {
 
 			matar(ent1);
 
-			int dal;
-					sem_getvalue(&strub->sembloq, &dal);
-					log_info(logs, "Pasa el sem wait, el siguiente vale %d", dal);
-
-					//SOLUCION RUDIMENTARISISISISISISISISISIISISISISISISIISISISISISIISISISISISIISISMA
-
-					if(dal==0){
-
-						pokimons* a;
-						bool esLaPokenest(pokimons *parametro1) {
-									return strub->pokenest == parametro1->pokinest;
-								}
-						a = list_find(pokemons, (void*) esLaPokenest);
-						int ew;
-						for (ew = 0;ew < list_size(a->listaPokemons) && !ent1->fallecio;ew++) {
-							metaDataPokemon* meta;
-							meta = list_get(a->listaPokemons,ew);
-							if(!meta->estaOcupado){
-
-								sem_post(&(strub->sembloq));
-							}
-						}
-					}
-
+			sem_post(&(strub->sembloq));
 			pthread_mutex_unlock(&mutexMuerte);
 
 		}
