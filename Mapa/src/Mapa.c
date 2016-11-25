@@ -255,125 +255,62 @@ void banquero() {
 //				log_info(logs,f
 				//					"entrenadores ordenados, hora de la batalla pokemon");
 
-				//hora de peleaaaaar
 				if (datosMapa2->batalla) {
-					int otroAux;
-					int yotromas;
-					for (yotromas = 0; yotromas < list_size(deadlocks);
-							yotromas++) {
+									int yotromas;
+									for (yotromas = 0; yotromas < list_size(deadlocks); yotromas++) {
 
-						t_list* listota;
-						listota = list_get(deadlocks, yotromas);
+										t_list* listota;
+										listota = list_get(deadlocks, yotromas);
 
-						if(list_size(listota)>1){
-						for (otroAux = 0; otroAux < list_size(listota);otroAux++) {
 
-								t_pkmn_factory* facto = create_pkmn_factory();
-								t_pokemon* pokegold;
-								t_pokemon* pokesilver;
-								t_pokemon* pokeperdedor;
+										while(list_size(listota) && list_size(listota)>1) {
 
-								entrenador* gold;
-								entrenador* silver;
-								gold = list_get(listota, otroAux);
-								silver = list_get(listota, otroAux + 1);
+												t_pkmn_factory* facto = create_pkmn_factory();
+												t_pokemon* pokegold;
+												t_pokemon* pokesilver;
+												t_pokemon* pokeperdedor;
 
-								if (!gold->fallecio && !silver->fallecio) {
+												entrenador* gold;
+												entrenador* silver;
+												gold = list_get(listota, 0);
+												silver = list_get(listota, 1);
 
-									sem_wait(&sem_llego);
-									sem_wait(&sem_llego);
+												if (!gold->fallecio && !silver->fallecio) {
 
-									log_info(logs, "%c peleara con %c",gold->simbolo, silver->simbolo);
-									pokegold = create_pokemon(facto,
-											(gold->pokePeleador)->especie,
-											(gold->pokePeleador)->nivel);
-									log_info(logs,"pokemon del entrenador %c es %s y su nivel %d",gold->simbolo,(gold->pokePeleador)->especie,(gold->pokePeleador)->nivel);
-									pokesilver = create_pokemon(facto,
-											(silver->pokePeleador)->especie,
-											(silver->pokePeleador)->nivel);
-									log_info(logs,"pokemon del entrenador %c es %s y su nivel %d",silver->simbolo,(silver->pokePeleador)->especie,(silver->pokePeleador)->nivel);
-									pokeperdedor = pkmn_battle(pokegold,pokesilver);
-									log_info(logs,"Perdedor de tipo %s",pkmn_type_to_string(pokeperdedor->type));
-									int accionar = 0;
-									if (!strcmp(pokegold->species,pokeperdedor->species) && (pokegold->level == pokeperdedor->level)) {
-										send(clientesActivos[silver->numeroCliente].socket,&accionar, sizeof(int), 0);
-										list_remove(listota, otroAux + 1);
-										log_info(logs, "entrenador %c victorioso",silver->simbolo);
-										otroAux--;
-									} else {
-										send(clientesActivos[gold->numeroCliente].socket,&accionar, sizeof(int), 0);
-										list_remove(listota, otroAux);
-										log_info(logs, "entrenador %c victorioso",gold->simbolo);
+													sem_wait(&sem_llego);
+													sem_wait(&sem_llego);
+
+													log_info(logs, "%c peleara con %c",gold->simbolo, silver->simbolo);
+													pokegold = create_pokemon(facto,
+															(gold->pokePeleador)->especie,
+															(gold->pokePeleador)->nivel);
+													log_info(logs,"pokemon del entrenador %c es %s y su nivel %d",gold->simbolo,(gold->pokePeleador)->especie,(gold->pokePeleador)->nivel);
+													pokesilver = create_pokemon(facto,
+															(silver->pokePeleador)->especie,
+															(silver->pokePeleador)->nivel);
+													log_info(logs,"pokemon del entrenador %c es %s y su nivel %d",silver->simbolo,(silver->pokePeleador)->especie,(silver->pokePeleador)->nivel);
+													pokeperdedor = pkmn_battle(pokegold,pokesilver);
+													log_info(logs,"Perdedor de tipo %s",pkmn_type_to_string(pokeperdedor->type));
+													int accionar = 0;
+													if (!strcmp(pokegold->species,pokeperdedor->species) && (pokegold->level == pokeperdedor->level)) {
+														send(clientesActivos[silver->numeroCliente].socket,&accionar, sizeof(int), 0);
+														list_remove(listota, 1);
+														log_info(logs, "entrenador %c victorioso",silver->simbolo);
+													} else {
+														send(clientesActivos[gold->numeroCliente].socket,&accionar, sizeof(int), 0);
+														list_remove(listota, 0);
+														log_info(logs, "entrenador %c victorioso",gold->simbolo);
+													}
+												}
+										}
+										entrenador* muerto;
+										muerto = list_get(listota, 0);
+									    int accion = 7;
+										send(clientesActivos[muerto->numeroCliente].socket, &accion, sizeof(int), 0);
+
+
 									}
 								}
-						}
-						entrenador* muerto;
-						muerto = list_get(listota, 0);
-						while (list_size(muerto->pokemones)) {
-								metaDataPokemon* pok;
-								bloq* bli;
-								tabla* d;
-
-								pok = list_get(muerto->pokemones, 0);
-							//	log_info(logs,"se libera al pokemon %s del entrenador %c EN LIBPOK",pok->especie,ent1->simbolo);
-								bool esLaPokenest3(tabla* a) {
-									return pok->especie[0] == a->pokenest;
-								}
-								d = list_find(disponibles, (void*) esLaPokenest3);
-								d->valor++;
-								sumarRecurso2(items, d->pokenest);
-						    	nivel_gui_dibujar(items, nombreMapa);
-								pok->estaOcupado = 0;
-
-
-								int ultimoAux;
-								for(ultimoAux=0;ultimoAux<list_size(entrenadoresEnCurso);ultimoAux++){
-									entrenador* e;
-									tabla* ate;
-									e = list_get(entrenadoresEnCurso,ultimoAux);
-									ate = list_find(e->solicitud,(void*)esLaPokenest3);
-									if(ate->valor > 0){
-										ate->valor--;
-									}
-									log_info(logs,"Ahora la solicitudo del pokemon %c de %c es %d",ate->pokenest,e->simbolo,ate->valor);
-								}
-
-
-								bool esLad(bloq* ver) {
-									return ver->pokenest == pok->especie[0];
-								}
-
-
-								int iiiuax;
-								for (iiiuax = 0; iiiuax < list_size(disponibles); iiiuax++) {
-									tabla* e;
-									e = list_get(disponibles, iiiuax);
-									log_info(logs, "Disponible de %c es %d", e->pokenest, e->valor);
-								}
-
-
-
-								bli = list_find(listaContenedora, (void*) esLad);
-
-								sem_post(&(bli->sembloq));
-								//sem_post(&(bli->sembloq));
-
-
-								int vale;
-								sem_getvalue(&(bli->sembloq),&vale);
-								log_info(logs, "postea semaforo pokemon de %c y su valor es %d", bli->pokenest,vale);
-
-								list_remove(muerto->pokemones,0);
-
-
-
-							}
-					    int accion = 7;
-						send(clientesActivos[muerto->numeroCliente].socket, &accion, sizeof(int), 0);
-					}
-
-					}
-				}
 
 
 				list_destroy(entrenadoresEnDeadlock);
