@@ -86,10 +86,25 @@ int calcularDistancia(entrenador* ent) {
 	return abs(ent->posx - ent->posPokex) + abs(ent->posy - ent->posPokey);
 }
 
-bool esMasCerca(entrenador* cerca, entrenador* lejos) {
-
-	return calcularDistancia(cerca) < calcularDistancia(lejos);
-}
+bool esMasCerca(entrenador *cerca, entrenador *lejos)
+				  	  {
+					  if(cerca->flagLeAsignaronPokenest && lejos->flagLeAsignaronPokenest)
+					  {
+						  return calcularDistancia(cerca) < calcularDistancia(lejos);
+					  }
+					  else
+					  {
+						  if (cerca->flagLeAsignaronPokenest && !lejos->flagLeAsignaronPokenest)
+						  {
+							  return 0;
+						  }
+						  if (!cerca->flagLeAsignaronPokenest && lejos->flagLeAsignaronPokenest)
+						  {
+							  return 1;
+						  }
+						  return -1;
+					  }
+				  }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 void enviarHeader(int unSocket, int unHeader) {
