@@ -37,6 +37,7 @@ typedef struct{
 	t_list* solicitud;
 	t_list* pokemones;
 	char simbolo;
+	int sumo;
 	int numeroLlegada;
 	int numeroCliente;
 	int flagEstaEnLista;

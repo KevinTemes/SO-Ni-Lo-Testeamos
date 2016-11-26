@@ -151,7 +151,7 @@ void banquero() {
 							for (x = 0; x < list_size(an->asignados); x++) {
 								fa = list_get(an->asignados, x);
 								fe = list_get(vectorT, x);
-								log_info(logs,"suma %c de %c con %c asignados",an->simbolo,fa->pokenest,fe->pokenest);
+								log_info(logs,"suma %c de %c%d con %c%d asignados",an->simbolo,fa->pokenest, fa->valor,fe->pokenest, fe->valor);
 								fe->valor = fa->valor + fe->valor;
 								auu = 0;
 							}
@@ -262,8 +262,8 @@ void banquero() {
 										t_list* listota;
 										listota = list_get(deadlocks, yotromas);
 
-
-										while(list_size(listota) && list_size(listota)>1) {
+                                    if(list_size(listota)>1){
+										while(list_size(listota)>1) {
 
 												t_pkmn_factory* facto = create_pkmn_factory();
 												t_pokemon* pokegold;
@@ -308,7 +308,7 @@ void banquero() {
 									    int accion = 7;
 										send(clientesActivos[muerto->numeroCliente].socket, &accion, sizeof(int), 0);
 
-
+									}
 									}
 								}
 
@@ -404,7 +404,7 @@ void planificador(void* argu) {
 						//usleep(datosMapa->retardoQ);
 						//usleep(datosMapa->retardoQ);
 						usleep(50000);
-						log_info(logs,"se mueve RR");
+						//log_info(logs,"se mueve RR");
 						switch (acto) {
 
 
@@ -470,6 +470,8 @@ void planificador(void* argu) {
 						q = 0;
 						bloqueo = 1;
 
+						entre->flagLeAsignaronPokenest = 0;
+
 						pokimons* p;
 
 						//bool(poki*)
@@ -516,9 +518,11 @@ void planificador(void* argu) {
 								return entre->pokenestAsignado == a->pokenest;
 							}
 							e = list_find(listaContenedora, (void*) esBloq);
-							tab = list_find(entre->solicitud,
-									(void*) esLaPokenest2);
-							tab->valor++;
+							tab = list_find(entre->solicitud,(void*) esLaPokenest2);
+
+							tab->valor = tab->valor + 1;
+
+							entre->sumo=1;
 							//entre->entroBloqueados = 1;
 							log_info(logs, "%c va a la cola %c", entre->simbolo, e->pokenest);
 							queue_push(e->colabloq, entre);
@@ -528,12 +532,6 @@ void planificador(void* argu) {
 							sem_post(&(e->sem2));
 						}
 
-						/*						usleep(datosMapa->retardoQ);
-						 //banderin = 0;
-						 bloqueo = 1;
-						 queue_push(colaBloqueados, entre);
-						 sem_post(&sem_Bloqueados);
-						 */
 					}
 				}
 			}
@@ -690,6 +688,8 @@ void planificador(void* argu) {
 						q = 0;
 						bloqueo = 1;
 
+						ent1->flagLeAsignaronPokenest=0;
+
 						pokimons* p;
 						bool esLaPokenest(pokimons *parametro1) {
 							return ent1->pokenestAsignado
@@ -726,7 +726,7 @@ void planificador(void* argu) {
 							e = list_find(listaContenedora, (void*) esBloq);
 							tab = list_find(ent1->solicitud,
 									(void*) esLaPokenest2);
-							tab->valor++;
+							tab->valor=tab->valor+1;
 							//ent1->entroBloqueados = 1;
 							queue_push(e->colabloq, ent1);
 							log_info(logs, "postea semaforo entrenador de %c",
@@ -770,6 +770,9 @@ void bloqui(void* stru) {
 		sem_getvalue(&strub->sembloq, &dal);
 		log_info(logs, "Pasa el sem wait, el siguiente vale %d", dal);
 
+
+
+		usleep(datosMapa2->retardoQ);
 		//SOLUCION RUDIMENTARISISISISISISISISISIISISISISISISIISISISISISIISISISISISIISISMA
 
 		if(dal==0){
@@ -790,7 +793,7 @@ void bloqui(void* stru) {
 			}
 		}
 
-		usleep(datosMapa2->retardoQ);
+
 
 		sem_wait(&(strub->sembloq));
 
@@ -892,11 +895,12 @@ void bloqui(void* stru) {
 					dispo1 = (tabla*) list_find(disponibles,
 							(void*) esLaPokenest2);
 
-					t->valor++;
-					if(d->valor>0){
-						d--;
+					t->valor = t->valor+1;
+					if(ent1->sumo){
+						d->valor = d->valor - 1;
+						ent1->sumo=0;
 					}
-					dispo1->valor--;
+					dispo1->valor = dispo1->valor -1;
 
 			//		log_info(logs,"%c captura el pokemon %c la tabla de asignacion en ese campo es %d y la dispo %d ",ent1->simbolo, pokem->especie[0], t->valor,dispo1->valor);
 					list_add(ent1->pokemones, pokem);

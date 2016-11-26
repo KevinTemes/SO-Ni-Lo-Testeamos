@@ -269,22 +269,6 @@ void atenderConexion(void *numeroCliente) {
 
 				cambio[1] = paquete[0];
 
-			//	log_info(logi, "paquete global:%c %c", cambio[0], cambio[1]);
-			//	log_info(logi,"unCliente:%d clientesactivos[uncliente].cliente:%d",unCliente, clientesActivos[unCliente].cliente);
-				//printf("%c",paqueton[0]);
-
-				//enviarHeader(clientesActivos[unCliente].socket, 1);
-
-			//	log_info(logi, "Este seria un caracter del entrenador: %c",cambio[1]);
-			//	log_info(logi, "Este seria su accionar: %d", cambio[0]);
-
-				//mientras no haya recibido nada
-
-				//paso variable global al entrenador
-
-				//ent1->accion = cambio[0]; //almaceno que hacer en entrenador paqueton global
-
-				//si el entrenador no esta registrado
 				if (!estaLista) {
 					ent1->simbolo = cambio[1]; //almaceno simbolo en entrenador (paqueton [0] es variable global
 					ent1->numeroCliente = unCliente; //numero de cliente para envio de informacion
@@ -300,9 +284,10 @@ void atenderConexion(void *numeroCliente) {
 					ent1->asignados = list_create();
 					ent1->solicitud = list_create();
 					ent1->pokemones = list_create();
+					ent1->sumo = 0;
 					int ka;
-					metaDataPokeNest* datosPo;
 					for (ka = 0; ka < list_size(pokenests); ka++) {
+						metaDataPokeNest* datosPo;
 						datosPo = (metaDataPokeNest*) list_get(pokenests, ka);
 						tabla* t = malloc(sizeof(tabla));
 						tabla* otre = malloc(sizeof(tabla));
@@ -356,17 +341,7 @@ void atenderConexion(void *numeroCliente) {
 				else {
 
 					queue_push(ent1->colaAccion, cambio[0]); //pusheo nuevo accionar a la cola auxiliar
-					/*int ac;
-					 ac = queue_pop(cola);
-					 log_info(logs,"acto es %d", ac); */
 
-					//list_replace(listaDeColasAccion, ent1->numeroLlegada, cola); //reemplaza la cola de la lista por la auxiliar
-					//log_info(logi, "paso el replace");
-		/*						if(!strcmp(datosMapa->algoritmo,"RR")){
-					 sem_post(&sem_quantum);
-					 } */
-
-					//aux = '\0';
 				}
 
 				//aux = '\0';
@@ -456,7 +431,7 @@ void atenderConexion(void *numeroCliente) {
 		pok->estaOcupado = 0;
 
 
-		int ultimoAux;
+	/*	int ultimoAux;
 		for(ultimoAux=0;ultimoAux<list_size(entrenadoresEnCurso);ultimoAux++){
 			entrenador* e;
 			tabla* ate;
@@ -466,7 +441,7 @@ void atenderConexion(void *numeroCliente) {
 				ate->valor--;
 			}
 			log_info(logs,"Ahora la solicitudo del pokemon %c de %c es %d",ate->pokenest,e->simbolo,ate->valor);
-		}
+		} */
 
 
 		bool esLad(bloq* ver) {
@@ -478,7 +453,7 @@ void atenderConexion(void *numeroCliente) {
 		for (iiiuax = 0; iiiuax < list_size(disponibles); iiiuax++) {
 			tabla* e;
 			e = list_get(disponibles, iiiuax);
-//			log_info(logs, "Disponible de %c es %d", e->pokenest, e->valor);
+			log_info(logs, "Disponible de %c es %d", e->pokenest, e->valor);
 		}
 
 
