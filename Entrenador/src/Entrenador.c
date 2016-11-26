@@ -113,15 +113,12 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 					//printf("ip %s \n", miIP);
 					//printf("puerto %s \n",miPuerto);
 
-
 					servidor = conectarCliente(miIP, miPuerto);
-
 
 					char* mapa = list_get((ent)->hojaDeViaje,posicionesYDeadlocks->pos);
 
 					log_info(logs,"Conectado al Mapa %s. Ingrese el mensaje que desee enviar, o cerrar para salir\n",mapa);
 
-					//////////////// recibo y mando datos al Mapa /////////////////////
 
 					// cuando pase a otro mapa, o lo reinicia, vuelve a arrancar en (0;0)
 					posActual->posXInicial=1;
@@ -167,7 +164,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 								while(dictionary_get(pokesDeCadaMapa,mapa)!=NULL){
 									char* losQueQuedaron = dictionary_get(pokesDeCadaMapa,mapa);
 									list_add(ent->pokemonsPorMapaCapturados, losQueQuedaron);
-									log_info(logs,"Agrego al final de la lista por mapa capturados al poke %s que estaba en el dictionary de objetivos no realizados todavia",losQueQuedaron);
+									log_info(logs,"Agrego al final de la lista por mapa capturados al poke %s que estaba en el dictionary de objetivos no realizados todavia\n",losQueQuedaron);
 									dictionary_remove(pokesDeCadaMapa,mapa);
 								}
 
@@ -318,6 +315,9 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 	char* finBloq = "\0";
 
 	int protocoloRec;
+
+	atrapaOEntraDeadlock:
+
 	recv(servidor,&(protocoloRec),sizeof(int),MSG_WAITALL);
 
 	log_info(logs,"Recibo un 1 porque lo voy a atrapar o un 3 porque hay deadlock, y el protocolo recibido es %d",protocoloRec);
@@ -370,13 +370,14 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 
 					log_info(logs,"Sobrevivi al deadlock\n");
 
-					int protocAtrapo;
+					goto atrapaOEntraDeadlock;
+					/*int protocAtrapo;
 					recv(servidor,&(protocAtrapo),sizeof(int),MSG_WAITALL);
 					log_info(logs,"Recibi este protocolo %d, voy a agarrar y deserializar el pokemon que queria",protocAtrapo);
 
 					deserializoPokemon(calculoTiempo,tiempo,mapa,inicioBloq,finBloq);
 
-					return tiempo;
+					return tiempo;*/
 				}
 
 		}
