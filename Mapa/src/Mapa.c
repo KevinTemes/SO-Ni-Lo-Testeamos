@@ -371,24 +371,31 @@ void planificador(void* argu) {
 
 							//log_info(logs, "antes del send %s",datosPokenest->posicion);
 
-
-									send(
-											(clientesActivos[entre->numeroCliente]).socket,
-											datosPokenest->posicion, 5, 0);
-
-							//log_info(logs, "Se envio coordenadas: %d", pedo);
-
 							char** posicionPoke;
 							posicionPoke = string_split(datosPokenest->posicion,
-									";");
+							";");
 
 							entre->posPokex = atoi(posicionPoke[0]);
 							entre->posPokey = atoi(posicionPoke[1]);
-							entre->pokenestAsignado =
-									datosPokenest->caracterPokeNest[0];
+							entre->pokenestAsignado =datosPokenest->caracterPokeNest[0];
 							entre->flagLeAsignaronPokenest = 1;
 
 							ka = list_size(pokenests);
+
+							//serializo las coordenadas
+							int tamanioTotal = 2 *sizeof(int);
+							void* miBuffer = malloc(tamanioTotal);
+
+							// cargo todo
+							memcpy(miBuffer, &(entre->posPokex), sizeof(int));
+							memcpy(miBuffer +sizeof(int), &(entre->posPokey), sizeof(int));
+
+							// lo mando
+							send((clientesActivos[entre->numeroCliente]).socket,miBuffer, tamanioTotal, 0);
+
+							free(miBuffer);
+							//log_info(logs, "Se envio coordenadas: %d", pedo);
+
 
 						}
 					}

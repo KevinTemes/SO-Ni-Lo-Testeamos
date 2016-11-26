@@ -90,12 +90,10 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 	 char* protocolo = string_new();
 	 char* numConcatenado="1";
-	 char* coordPokenest;
 	 char* horaInicio;
 	 char* resultado = malloc(sizeof(int));
 	 char* miIP;
 	 char* miPuerto;
-	 char** posPokenest;
 
 	 string_append(&protocolo,numConcatenado);
 	 string_append(&protocolo,ent->caracter);
@@ -118,7 +116,6 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 					servidor = conectarCliente(miIP, miPuerto);
 
-					//int resultadoEnvio = 0;
 
 					char* mapa = list_get((ent)->hojaDeViaje,posicionesYDeadlocks->pos);
 
@@ -145,25 +142,16 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 							protocAManejar[0]=carPoke;
 
 							send(servidor, protocAManejar, 2, 0);
-							//recibo 5 chars, ej: "02;05"
-							//coordPokenest= "02;03";
 
-							coordPokenest = (char*)recibirDatos(servidor,5);
-							coordPokenest[5] = '\0';
+							int x;
+							int y;
+							recv(servidor, &x,sizeof(int),MSG_WAITALL);
+							recv(servidor, &y,sizeof(int),MSG_WAITALL);
 
-							log_info(logs, "Recibi esta coordenada entera %s",coordPokenest);
-
-							posPokenest = string_split(coordPokenest,";");
-
-							int x = atoi (posPokenest[0]);
 							log_info(logs,"Coordenada X pokenest: %d", x);
-
-							int y = atoi (posPokenest[1]);
 							log_info(logs,"Coordenada Y pokenest: %d\n", y);
 
 							moverseEnUnaDireccion(posActual, x, y);
-							free(coordPokenest);
-							free(posPokenest);
 
 							protocAManejar[0]='9';
 							send(servidor,protocAManejar,2,0);
@@ -210,8 +198,6 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 
 
 	//libero variables del main
-	//free(coordPokenest); invalid free
-	//free(posPokenest);
 	//free(objetivoDeMapa);
 	//free(objetivosMapa);
 	//free(cosasMapa);
@@ -369,15 +355,16 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 
 				send(servidor,miBuffer,tamanioTotal,0);
 
+				free(miBuffer);
+
 				int protocMoriOSobrevivi;
 
 				recv(servidor,&(protocMoriOSobrevivi),sizeof(int),MSG_WAITALL);
 				log_info(logs,"Recibo 7 si mori o 0 si sobrevivi, y el protocolo recibido es: %d",protocMoriOSobrevivi);
 
 				if(protocMoriOSobrevivi==MORI){
+
 					morir("deadlock");
-					// revisar este free
-					free(miBuffer);
 
 				} else if(protocMoriOSobrevivi==SOBREVIVI){
 
