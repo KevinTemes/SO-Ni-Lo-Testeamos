@@ -305,12 +305,12 @@ void atenderConexion(void *numeroCliente) {
 				pthread_mutex_lock(&muSem);
 
 				int tamanioUno;
-		    	log_info(logs,"llega un poke peleador de %c",ent1->simbolo);
+		   // 	log_info(logs,"llega un poke peleador de %c",ent1->simbolo);
 
 				recv(clientesActivos[ent1->numeroCliente].socket, &tamanioUno,
 						sizeof(int), MSG_WAITALL);
 
-				log_info(logs, "el tamanio de la cosa uno es: %d", tamanioUno);
+		//		log_info(logs, "el tamanio de la cosa uno es: %d", tamanioUno);
 				/*	recv(clientesActivos[ent1->numeroCliente].socket, &tamanioDos,
 				 sizeof(int), MSG_WAITALL);         */
 
@@ -325,9 +325,9 @@ void atenderConexion(void *numeroCliente) {
 				((ent1->pokePeleador)->especie) = (char*) bufferCosaUno;
 				((ent1->pokePeleador)->especie)[tamanioUno] = '\0';
 
-				log_info(logs, "poke peleador de %c es %s", ent1->simbolo,(ent1->pokePeleador)->especie);
+	/*			log_info(logs, "poke peleador de %c es %s", ent1->simbolo,(ent1->pokePeleador)->especie);
 				((ent1->pokePeleador)->nivel) = nivel;
-				log_info(logs, "nivel del poke peleador de %c es %d",ent1->simbolo, (ent1->pokePeleador)->nivel);
+				log_info(logs, "nivel del poke peleador de %c es %d",ent1->simbolo, (ent1->pokePeleador)->nivel); */
 
 			//	free(bufferCosaUno);
 
