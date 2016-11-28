@@ -11,19 +11,8 @@
 #include "PokedexServidor.h"
 #include <pthread.h>
 
-#define KNORMAL "\x1B[0m"
-#define KROJO "\x1B[31m"
-#define KVERDE "\x1B[32m"
-#define KAMARILLO "\x1B[33m"
-#define KAZUL "\x1B[34m"
-#define KMAGENTA "\x1B[35m"
-#define KCYAN "\x1B[36m"
-#define KBLANCO "\x1B[37m"
-
 #define BACKLOG 100
 /* para testear sockets */
-#define PACKAGESIZE 1024
-#define PUERTO "7777"
 
 t_log* logs;
 
@@ -33,7 +22,7 @@ void osada_iniciar(){
 	// MAPEO EL DISCO
 	int fd_disco;
 	struct stat discoStat;
-	fd_disco = open("/home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/tranki.bin", O_RDWR);
+	fd_disco = open("/home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/02-completa.bin", O_RDWR);
 	fstat(fd_disco, &discoStat);
 	miDisco.discoMapeado = mmap(0, discoStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_disco, 0);
 
@@ -84,7 +73,6 @@ void osada_iniciar(){
 int main(int argc, char **argv) {
 
 
-
 	//LOGS
 	remove("PokeServidor.log");
 	puts("Creando archivo de logueo PokeServidor...\n");
@@ -101,6 +89,9 @@ int main(int argc, char **argv) {
 	 	 }
 	 pthread_mutex_init (&mutex_bloques, NULL);
 
+	 char *IP_ESCUCHA = getenv("IP_ESCUCHA");
+	 char *PUERTO_ESCUCHA = getenv("PUERTO_ESCUCHA");
+
 
 	int socketEscucha, retornoPoll;
 	int fd_index = 0;
@@ -108,7 +99,7 @@ int main(int argc, char **argv) {
 
 	struct pollfd fileDescriptors[100];
 	int cantfds = 0;
-	socketEscucha = setup_listen("localhost", PUERTO);
+	socketEscucha = setup_listen(IP_ESCUCHA, PUERTO_ESCUCHA);
 	listen(socketEscucha, 1024);
 
 	fileDescriptors[0].fd = socketEscucha;

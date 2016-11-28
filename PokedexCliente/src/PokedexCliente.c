@@ -124,6 +124,7 @@ static int cliente_readdir(const char *path, void *buf, fuse_fill_dir_t filler,o
 			filler(buf, ".", NULL, 0);
 			filler(buf, "..", NULL, 0);
 			while (archivos[i] != NULL){
+				string_append(&archivos[i], "\0");
 				filler(buf, archivos[i], NULL, 0);
 				i++;
 			}
@@ -391,7 +392,10 @@ int main(int argc, char *argv[]) {
 	remove("Cliente.log");
 	logPC = log_create("Cliente.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
 
-	pokedexServidor = conectarCliente(IP, PUERTO);
+	char *SERVER_IP = getenv("SERVER_IP");
+	char *SERVER_PUERTO = getenv("SERVER_PUERTO");
+
+	pokedexServidor = conectarCliente(SERVER_IP, SERVER_PUERTO);
 
 
 

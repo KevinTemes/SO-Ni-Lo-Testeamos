@@ -7,17 +7,6 @@
 
 #include "libreriaPokedexServidor.h"
 
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-void *serializarString(char *unString){
-	int tamanioString = sizeof(char) * strlen(unString);
-	void *buffer = malloc(sizeof(int) + tamanioString);
-	memcpy(buffer, &tamanioString, sizeof(int));
-	memcpy(buffer + sizeof(int), &unString, tamanioString);
-
-	return buffer;
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int buscarArchivo(char *unaRuta){
@@ -336,10 +325,6 @@ void actualizarTablaDeArchivos(){
 	memcpy(miDisco.discoMapeado + inicioTabla, &miDisco.tablaDeArchivos, sizeof(osada_file) * 2048);
 
 }
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-unsigned int redondearDivision(unsigned int dividendo, unsigned int divisor){
-	return (dividendo + (divisor / 2) / divisor);
-}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 unsigned int primerBloqueBitmapLibre(){
@@ -362,27 +347,7 @@ unsigned int primerBloqueBitmapLibre(){
 
 	return pos;
 }
-///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-unsigned int primerBloqueTablaAsignacionesLibre(){
-	unsigned int nroBloque = 0;
-	while(miDisco.tablaDeAsignaciones[nroBloque] != -1){ // revisar
-		nroBloque++;
-	}
-	return nroBloque;
-}
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-int  asignarPosicionTablaArchivos(osada_file archivo){
-	int i, posAsignada = -1;
-	for (i=0; i <=2047; i++){
-		if(miDisco.tablaDeArchivos[i].state == DELETED){
-			miDisco.tablaDeArchivos[i] = archivo;
-			posAsignada = i;
-			break;
-		}
-	}
-	return posAsignada;
-}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int buscarPosicionLibre(){
 	int pos = -1;
@@ -430,7 +395,7 @@ char *osada_readdir(char *unaRuta){
 	char *contenidoDir = string_new();
 	char *separador = ";";
 	char nullChar[1];
-	nullChar[0] = '\0';
+//	nullChar[0] = '\0';
 	int parentBlock = buscarArchivo(unaRuta);
 	int numElems = 0;
 	int i;
@@ -448,12 +413,12 @@ char *osada_readdir(char *unaRuta){
 					&& miDisco.tablaDeArchivos[i].state != DELETED){
 
 				string_append(&contenidoDir, miDisco.tablaDeArchivos[i].fname);
-				string_append(&contenidoDir, nullChar);
+				string_append(&contenidoDir, "\0");
 
 				// Concateno los nombres en un string, separados por la variable separador.
 
 				string_append(&contenidoDir, separador);
-				string_append(&contenidoDir, nullChar);
+				string_append(&contenidoDir, "\0");
 				numElems++;
 
 			}
