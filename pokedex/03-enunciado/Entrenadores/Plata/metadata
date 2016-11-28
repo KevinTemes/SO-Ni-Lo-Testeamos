@@ -1,0 +1,6 @@
+nombre=Plata
+simbolo=#
+hojaDeViaje=[CiudadVerde]
+obj[CiudadVerde]=[C,Z,C]
+vidas=5
+reintentos=0

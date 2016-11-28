@@ -1,0 +1,6 @@
+nombre=Bronce
+simbolo=(
+hojaDeViaje=[CiudadPlateada]
+obj[CiudadPlateada]=[P,M,P,M,S]
+vidas=5
+reintentos=0
