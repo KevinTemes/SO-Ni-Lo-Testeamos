@@ -1,0 +1,7 @@
+nombre=Blue
+simbolo=$
+hojaDeViaje=[Azul,Home]
+obj[Azul]=[Z]
+obj[Home]=[R]
+vidas=1
+reintentos=0

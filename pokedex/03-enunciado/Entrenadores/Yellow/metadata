@@ -1,0 +1,7 @@
+nombre=Yellow
+simbolo=(
+hojaDeViaje=[CiudadVerde,CiudadPlateada]
+obj[CiudadVerde]=[Z,C,Z]
+obj[CiudadPlateada]=[M,P,M,P]
+vidas=8
+reintentos=0

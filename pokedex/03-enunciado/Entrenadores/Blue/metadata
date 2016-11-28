@@ -1,0 +1,6 @@
+nombre=Blue
+simbolo=$
+hojaDeViaje=[CiudadVerde]
+obj[CiudadVerde]=[Z]
+vidas=1
+reintentos=0
