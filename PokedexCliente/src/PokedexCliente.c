@@ -170,13 +170,17 @@ static int cliente_read(const char *path, char *buf, size_t size, off_t offset, 
 	char* ruta = string_new();
 	ruta =(char*) path;
 	int tamanioRuta = sizeof(char) * strlen(ruta);
+	int tamanioLectura = (int) size;
+	int off = (int) offset;
 	int tamanioRespuesta;
 
-	void *leBuffer = malloc((2 * sizeof(int)) + tamanioRuta);
+	void *leBuffer = malloc((4 * sizeof(int)) + tamanioRuta);
 	memcpy(leBuffer, &protocolo, sizeof(int));
 	memcpy(leBuffer + sizeof(int), &tamanioRuta, sizeof(int));
 	memcpy(leBuffer + (2 * sizeof(int)), ruta, tamanioRuta);
-	send(pokedexServidor, leBuffer, tamanioRuta + (2 * sizeof(int)), MSG_WAITALL);
+	memcpy(leBuffer + (2 * sizeof(int)) + tamanioRuta, &tamanioLectura, sizeof(int));
+	memcpy(leBuffer + (3 * sizeof(int)) + tamanioRuta, &off, sizeof(int));
+	send(pokedexServidor, leBuffer, tamanioRuta + (4 * sizeof(int)), MSG_WAITALL);
 
 	recv(pokedexServidor, &tamanioRespuesta, sizeof(int), MSG_WAITALL);
 	if(tamanioRespuesta == 0){
@@ -184,7 +188,7 @@ static int cliente_read(const char *path, char *buf, size_t size, off_t offset, 
 	}
 	void *contenido = malloc(tamanioRespuesta);
 	recv(pokedexServidor, contenido, tamanioRespuesta, MSG_WAITALL);
-	memcpy(buf, ((char *)contenido + offset), size);
+	memcpy(buf, ((char *)contenido), size);
 
 
 
@@ -359,43 +363,9 @@ static int cliente_rmdir(const char* path){
 }
 //////////////////////////////////////////////////////////////////////////////
 int cliente_truncate(const char * path, off_t offset) {
-	/*
-	int res;
-	log_info(logPC, "Peticion de truncado de archivo %s", path);
-	int protocolo = 10;
-	char *ruta = (char *)path;
-	int tamanioRuta = strlen(ruta);
-	int off = offset;
-	void *buffer = malloc((3 * sizeof(int)) + tamanioRuta);
-	memcpy(buffer, &protocolo, sizeof(int));
-	memcpy(buffer + sizeof(int), &tamanioRuta, sizeof(int));
-	memcpy(buffer + (2 *sizeof(int)), ruta, tamanioRuta);
-	memcpy(buffer + (2 *sizeof(int)) + tamanioRuta, &off, sizeof(int));
-	send(pokedexServidor, buffer, (3 * sizeof(int)) + tamanioRuta, MSG_WAITALL);
 
-	recv(pokedexServidor, &res, sizeof(int), MSG_WAITALL);
-
-
-	if(res == 0){
-		log_info(logPC, "Truncado exitoso del archivo %s", path);
-	}
-	else{
-		log_error(logPC, "Error al truncar el archivo %s", path);
-	}
-
-
-	return res;
-	*/
 	return 0;
 }
-
-static int cliente_chmod(const char *path, mode_t mode){
-	int res = 0;
-
-	return res;
-
-}
-
 
 
 
@@ -413,7 +383,6 @@ static struct fuse_operations cliente_oper = {
 		.rmdir = cliente_rmdir,
 		.rename = cliente_rename,
 		.truncate = cliente_truncate,
-		.chmod = cliente_chmod,
 };
 
 
