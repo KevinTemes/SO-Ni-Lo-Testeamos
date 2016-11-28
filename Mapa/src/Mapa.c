@@ -463,7 +463,7 @@ void planificador(void* argu) {
 
 						//usleep(datosMapa->retardoQ);
 						//usleep(datosMapa->retardoQ);
-						usleep(50000);
+						sleep(1);
 						//log_info(logs,"se mueve RR");
 						switch (acto) {
 
