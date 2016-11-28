@@ -190,52 +190,8 @@ void matar(entrenador* entreni) {
 	log_info(logs, "libera lista de asignados de %c", entreni->simbolo);
 	list_destroy_and_destroy_elements(entreni->solicitud, (void*) free);
 	log_info(logs, "libera lista de solicitud de %c", entreni->simbolo);
-	while (list_size(entreni->pokemones)) {
-			metaDataPokemon* pok;
-			bloq* bli;
-			tabla* d;
-
-			pok = list_get(entreni->pokemones, 0);
-			log_info(logs,"se libera al pokemon %s del entrenador %c EN LIBPOK",pok->especie,entreni->simbolo);
-			bool esLaPokenest3(tabla* a) {
-				return pok->especie[0] == a->pokenest;
-			}
-			d = list_find(disponibles, (void*) esLaPokenest3);
-			d->valor++;
-			sumarRecurso2(items, d->pokenest);
-			nivel_gui_dibujar(items, nombreMapa);
-			pok->estaOcupado = 0;
-
-
-
-			int iiiuax;
-			for (iiiuax = 0; iiiuax < list_size(disponibles); iiiuax++) {
-				tabla* e;
-				e = list_get(disponibles, iiiuax);
-				log_info(logs, "Disponible de %c es %d", e->pokenest, e->valor);
-			}
-
-			bool esLad(bloq* ver) {
-							return ver->pokenest == pok->especie[0];
-						}
-
-
-			bli = list_find(listaContenedora, (void*) esLad);
-
-			sem_post(&(bli->sembloq));
-
-			int vale;
-			sem_getvalue(&(bli->sembloq),&vale);
-			log_info(logs, "postea semaforo pokemon de %c y su valor es %d", bli->pokenest,vale);
-
-			list_remove(entreni->pokemones,0);
-
-
-
-		}
 	list_destroy(entreni->pokemones);
 	queue_destroy(entreni->colaAccion);
-
 	free(entreni);
 
 	}
@@ -327,9 +283,8 @@ void atenderConexion(void *numeroCliente) {
 
 					sem_post(&sem_Listos); //produce un ent en colaListos
 
-		/*				if(!strcmp(datosMapa->algoritmo,"RR")){
-					 sem_post(&sem_quantum);
-					 }  */
+					sem_post(&sem_quantum);
+
 
 					pthread_mutex_unlock(&mutexPaqueton);
 
@@ -341,7 +296,7 @@ void atenderConexion(void *numeroCliente) {
 				else {
 
 					queue_push(ent1->colaAccion, cambio[0]); //pusheo nuevo accionar a la cola auxiliar
-
+                    sem_post(&sem_quantum);
 				}
 
 				//aux = '\0';
@@ -391,8 +346,6 @@ void atenderConexion(void *numeroCliente) {
 		}
 
 	}
-	//usleep(10000);
-
 	pthread_mutex_lock(&mutexMurte);
 	ent1->fallecio = 1;
 	queue_clean(ent1->colaAccion);
