@@ -112,7 +112,6 @@ void banquero() {
 					}
 					if (flago == 0) {
 						en->estaMarcado = 1;
-						//log_info(logs,"entrenador %c no esta en riesgo de deadlock por el momemnto",en->simbolo);
 					}
 
 				}
@@ -124,7 +123,6 @@ void banquero() {
 				tabla* ta;
 				tabla* b;
 				an = list_get(entrenadoresEnCurso, auu);
-				//	log_info(logs, "saca entrenador en curso");
 
 				if (!an->fallecio) {
 					if (!an->estaMarcado) {
@@ -133,12 +131,7 @@ void banquero() {
 						int val = 1;
 						for (j = 0; j < list_size(an->solicitud) && val; j++) {
 							ta = list_get(an->solicitud, j);
-							log_info(logs, "solicitud de %c en %c %d",
-									an->simbolo, ta->pokenest, ta->valor);
 							b = list_get(vectorT, j);
-							log_info(logs,
-									"y el valor del vector auxiliar ahi es %d %c",
-									b->valor, b->pokenest);
 							val = ta->valor <= b->valor;
 						}
 						if (val) {
@@ -150,10 +143,6 @@ void banquero() {
 							for (x = 0; x < list_size(an->asignados); x++) {
 								fa = list_get(an->asignados, x);
 								fe = list_get(vectorT, x);
-								log_info(logs,
-										"suma %c de %c%d con %c%d asignados",
-										an->simbolo, fa->pokenest, fa->valor,
-										fe->pokenest, fe->valor);
 								fe->valor = fa->valor + fe->valor;
 								auu = 0;
 							}
@@ -204,7 +193,7 @@ void banquero() {
 					return x;
 				}
 				log_info(logs,
-						"Remueve a %c de entEnDed y lo agreaga a deadlocks",
+						"Remueve a %c de entrenadores que se suponen en deadlock",
 						hp->simbolo);
 				t_list* listin = list_create();
 				list_add(listin, hp);
@@ -215,7 +204,7 @@ void banquero() {
 					entrenador* hp;
 					hp = list_remove_by_condition(entrenadoresEnDeadlock,
 							(void*) entrencontrado);
-					log_info(logs, "Remueve a %c de entete y agrega",
+					log_info(logs, "%c se encuentra en el mismo deadlock",
 							hp->simbolo);
 					list_add(listin, hp);
 				}
@@ -244,7 +233,7 @@ void banquero() {
 						entrenador* pof;
 						pof = list_get(liste, 0);
 						log_info(logs,
-								"entrenador %c es re trucho, esta en inanicion",
+								"entrenador %c en inanicion",
 								pof->simbolo);
 					}
 
@@ -392,9 +381,10 @@ void planificador(void* argu) {
 	while (1) {
 		sem_wait(&sem_Listos); //semaforo de nuevos bloqueando que se saque un ent si la cola esta vacia
 
+		usleep(datosMapa2->retardoQ);
+
 		int q = datosMapa2->quantum;
 
-		//log_info(logs,"se mete a planificador");
 /////////////////////////////////////////ROUND ROBIN/////////////////////////////////////////////////////////////
 
 		if (!strcmp(datosMapa2->algoritmo, "RR")) {
@@ -404,12 +394,16 @@ void planificador(void* argu) {
 
 			int bloqueo = 0;
 			entre = queue_pop(colaListos);
-			//        log_info(logs,"extrae %c de la cola de listos",entre->simbolo);
+
+			if(queue_size(entre->colaAccion)){
+
+				log_info(logs,"Extrae entrenador %c de la cola de listos y ejecuta",entre->simbolo);
+
+			}
 
 			while (q && (!(entre->fallecio) && queue_size(entre->colaAccion))) {
 
-				//		sem_wait(&sem_quantum);
-				sem_wait(&sem_quantum);
+
 				acto = (int) queue_pop(entre->colaAccion);
 				//log_info(logs,"funca3");
 
@@ -448,7 +442,7 @@ void planificador(void* argu) {
 									miBuffer, tamanioTotal, 0);
 
 							free(miBuffer);
-							//log_info(logs, "Se envio coordenadas: %d", pedo);
+
 
 						}
 					}
@@ -458,31 +452,27 @@ void planificador(void* argu) {
 				//8 es 56, 2 es 50, 4 es 52, 6 es 54
 
 				if (isdigit(acto) && !(entre->fallecio)) {
-					if (acto == '2' || acto == '4' || acto == '6'
-							|| acto == '8') {
+					if (acto == '2' || acto == '4' || acto == '6' || acto == '8') {
 
-						//usleep(datosMapa->retardoQ);
-						//usleep(datosMapa->retardoQ);
-						usleep(50000);
-						//log_info(logs,"se mueve RR");
+
+						usleep(datosMapa2->retardoQ);
+
 						switch (acto) {
 
 						case '8':
 							if (entre->posy > 1 && !entre->fallecio) {
-								//log_info(logs, "entrenador %c se mueve arriba",entre->simbolo);
 								usleep(datosMapa2->retardoQ);
 								entre->posy--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
 								nivel_gui_dibujar(items, argument);
 								q--;
-								//log_info(logs,"valor de quantum %d",q);
+								log_info(logs, "valor de quantum para ejecucion de %c: %d ", entre->simbolo,q);
 							}
 							break;
 
 						case '2':
 							if (entre->posy < rows && !entre->fallecio) {
-								//log_info(logs, "entrenador %c se mueve abajo", entre->simbolo);
 								usleep(datosMapa2->retardoQ);
 								entre->posy++;
 								MoverPersonaje(items, entre->simbolo,
@@ -490,25 +480,23 @@ void planificador(void* argu) {
 
 								nivel_gui_dibujar(items, argument);
 								q--;
-								//log_info(logs,"valor de quantum %d",q);
+								log_info(logs, "valor de quantum para ejecucion de %c: %d ", entre->simbolo,q);
 							}
 							break;
 
 						case '4':
 							if (entre->posx > 1 && !entre->fallecio) {
-								//log_info(logs, "entrenador %c se mueve a la izquierda", entre->simbolo);
 								usleep(datosMapa2->retardoQ);
 								entre->posx--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
 								nivel_gui_dibujar(items, argument);
 								q--;
-								//log_info(logs,"valor de quantum %d",q);
+								log_info(logs, "valor de quantum para ejecucion de %c: %d ", entre->simbolo,q);
 							}
 							break;
 						case '6':
 							if (entre->posx < cols && !entre->fallecio) {
-								//log_info(logs, "entrenador % c se mueve a la derecha", entre->simbolo);
 								usleep(datosMapa2->retardoQ);
 								entre->posx++;
 								MoverPersonaje(items, entre->simbolo,
@@ -516,7 +504,7 @@ void planificador(void* argu) {
 								nivel_gui_dibujar(items, argument);
 
 								q--;
-								//log_info(logs, "valor de quantum %d", q);
+								log_info(logs, "valor de quantum para ejecucion de %c: %d ", entre->simbolo,q);
 							}
 							break;
 
@@ -525,7 +513,7 @@ void planificador(void* argu) {
 
 					if (acto == '9' && !entre->fallecio) {
 
-						//usleep(datosMapa->retardoQ);
+						usleep(datosMapa2->retardoQ);
 						q = 0;
 						bloqueo = 1;
 
@@ -533,13 +521,10 @@ void planificador(void* argu) {
 
 						pokimons* p;
 
-						//bool(poki*)
-						//log_info(logs, "Extrajo un bloqueado");
 						bool esLaPokenest(pokimons *parametro1) {
 							return entre->pokenestAsignado
 									== parametro1->pokinest;
 						}
-						//log_info(logs, "Ahora busca un poki");
 						p = list_find(pokemons, (void*) esLaPokenest);
 
 						int saux;
@@ -548,25 +533,17 @@ void planificador(void* argu) {
 								saux < list_size(p->listaPokemons) && captu == 0;
 								saux++) {
 							metaDataPokemon* pokem;
-							//log_info(logs,"Extrae lista de pokemon");
 							pokem = list_get(p->listaPokemons, saux);
-							//log_info(logs, "Saca un pokemon de la lista poki");
-							//log_info(logs, "%s", pokem->especie);
-							//log_info(logs, "%d", pokem->nivel);
-							//log_info(logs, "%d", pokem->estaOcupado);
+
 							if (!pokem->estaOcupado) {
 								bloq* e;
 								bool esBloq(bloq* param) {
 									return param->pokenest == pokem->especie[0];
 								}
 								e = list_find(listaContenedora, (void*) esBloq);
-								log_info(logs,
-										"%c entra en la cola de bloqueo de %c",
-										entre->simbolo, e->pokenest);
+								log_info(logs, "entrenador %c va a la cola de bloqueados,pokenest %c", entre->simbolo, e->pokenest);
 								queue_push(e->colabloq, entre);
 								captu = 1;
-								//sem_post(&(e->sembloq));
-								//	log_info(logs,"postea semaforo entrenador de %c",e->pokenest);
 								sem_post(&(e->sem2));
 							}
 
@@ -589,12 +566,8 @@ void planificador(void* argu) {
 
 							entre->sumo = 1;
 							//entre->entroBloqueados = 1;
-							log_info(logs, "%c va a la cola %c", entre->simbolo,
-									e->pokenest);
+							log_info(logs, "entrenador %c va a la cola de bloqueados,pokenest %c", entre->simbolo, e->pokenest);
 							queue_push(e->colabloq, entre);
-							//	sem_post(&(e->sembloq));
-
-							//	log_info(logs, "postea semaforo entrenador de %c",e->pokenest);
 							sem_post(&(e->sem2));
 						}
 
@@ -603,7 +576,7 @@ void planificador(void* argu) {
 			}
 
 			if (entre->fallecio) {
-				log_info(logs, "%c muere en el planificador", entre->simbolo);
+				log_info(logs, "%c muere", entre->simbolo);
 				matar(entre);
 				//entre->fallecio=0;
 
@@ -612,7 +585,7 @@ void planificador(void* argu) {
 			if (!bloqueo && !entre->fallecio) {
 				usleep(datosMapa2->retardoQ);
 				//q = datosMapa->quantum;
-				//	log_info(logs,"el entrenador %c no murio y va a la cola de listos",entre->simbolo);
+		    	log_info(logs,"termina el quantum del entrenador %c, vuelve a la cola de listos",entre->simbolo);
 				queue_push(colaListos, entre);
 				sem_post(&sem_Listos);
 
@@ -653,11 +626,11 @@ void planificador(void* argu) {
 
 			int acto;
 
-			//sem_wait(&sem_quantum);
 
 			acto = (int) queue_peek(ent1->colaAccion);
 
 			if (isalpha(acto)) {
+				log_info(logs,"Se extrae al entrenador %c de la cola de listos para asignar pokenest",ent1->simbolo);
 				queue_pop(ent1->colaAccion);
 				int ka;
 				for (ka = 0; ka < list_size(pokenests); ka++) {
@@ -703,24 +676,23 @@ void planificador(void* argu) {
 
 			if (isdigit(acto)) {
 
+				log_info(logs,"Se extrae al entrenador %c de la cola de listos para ejecucion hasta que corresponda traslado a cola de bloqueados",ent1->simbolo);
 
 				while (banderin && (!(ent1->fallecio))&& queue_size(ent1->colaAccion)) {
-
-					//sem_wait(&sem_quantum);
-					log_info(logs, "se mueve en SRDF");
 
 					acto = (int) queue_pop(ent1->colaAccion);
 
 					if (acto == '2' || acto == '4' || acto == '6'
 							|| acto == '8') {
 
-						usleep(50000);
+
 						switch (acto) {
 
 						case '8':
 							if (ent1->posy > 1 && !ent1->fallecio) {
 								//				log_info(logs, "mueva arriba");
-
+								usleep(datosMapa2->retardoQ);
+								usleep(50000);
 								ent1->posy--;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
@@ -732,7 +704,7 @@ void planificador(void* argu) {
 						case '2':
 							if (ent1->posy < rows && !ent1->fallecio) {
 								//				log_info(logs, "mueva abajo");
-
+								usleep(datosMapa2->retardoQ);
 								ent1->posy++;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
@@ -744,7 +716,7 @@ void planificador(void* argu) {
 						case '4':
 							if (ent1->posx > 1 && !ent1->fallecio) {
 								//				log_info(logs, "mueva izquierda");
-
+								usleep(datosMapa2->retardoQ);
 								ent1->posx--;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
@@ -755,7 +727,7 @@ void planificador(void* argu) {
 						case '6':
 							if (ent1->posx < cols && !ent1->fallecio) {
 								//				log_info(logs, "mueva derecha");
-
+								usleep(datosMapa2->retardoQ);
 								ent1->posx++;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
@@ -769,9 +741,9 @@ void planificador(void* argu) {
 					}
 					if (acto == '9' && !ent1->fallecio) {
 
-						//usleep(datosMapa->retardoQ);
+						usleep(datosMapa->retardoQ);
 						bloqueo = 1;
-
+                        banderin = 0;
 						ent1->flagLeAsignaronPokenest = 0;
 
 						pokimons* p;
@@ -794,9 +766,11 @@ void planificador(void* argu) {
 									return param->pokenest == pokem->especie[0];
 								}
 								e = list_find(listaContenedora, (void*) esBloq);
+								log_info(logs, "entrenador %c va a la cola de bloqueados,pokenest %c", ent1->simbolo, e->pokenest);
 								queue_push(e->colabloq, ent1);
 								captu = 1;
 								sem_post(&(e->sem2));
+
 							}
 
 						}
@@ -814,17 +788,18 @@ void planificador(void* argu) {
 									(void*) esLaPokenest2);
 							tab->valor = tab->valor + 1;
 							//ent1->entroBloqueados = 1;
+							log_info(logs, "entrenador %c va a la cola de bloqueados,pokenest %c", ent1->simbolo, e->pokenest);
 							queue_push(e->colabloq, ent1);
-							log_info(logs, "postea semaforo entrenador de %c",
-									e->pokenest);
+
 							sem_post(&(e->sem2));
+
 						}
 					}
 				}
 			}
 
 			if (ent1->fallecio) {
-				log_info(logs, "Ahora lo mata en planificador");
+				log_info(logs, "%c muere",ent1->fallecio);
 				matar(ent1);
 
 			}
