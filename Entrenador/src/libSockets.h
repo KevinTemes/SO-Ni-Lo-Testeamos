@@ -112,7 +112,6 @@ void* sacarTiempo(t_calculoTiempo*,t_tiempoBloqueado*,char*,char*,char*);
 void borrarArchivosBill();
 void borrarMedallas();
 void morir(char*);
-void resetearDeCero();
 void resetear();
 void reciboUnaVida();
 void pierdoUnaVida();

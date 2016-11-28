@@ -33,7 +33,7 @@ void osada_iniciar(){
 	// MAPEO EL DISCO
 	int fd_disco;
 	struct stat discoStat;
-	fd_disco = open("/home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/challenge.bin", O_RDWR);
+	fd_disco = open("/home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/tranki.bin", O_RDWR);
 	fstat(fd_disco, &discoStat);
 	miDisco.discoMapeado = mmap(0, discoStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_disco, 0);
 
@@ -71,9 +71,6 @@ void osada_iniciar(){
 
 	// CARGO LA TABLA DE ASIGNACIONES
 	int inicioTablaAsignaciones = (1 + 1024 + miDisco.header->bitmap_blocks) * 64;
-//	int tamanioTablaDeAsignaciones = miDisco.cantBloques.bloques_tablaDeAsignaciones * 64;
-//	miDisco.tablaDeAsignaciones = malloc(tamanioTablaDeAsignaciones);
-//	memcpy(miDisco.tablaDeAsignaciones, &miDisco.discoMapeado[inicioTablaAsignaciones], tamanioTablaDeAsignaciones);
 
 	osada_block_pointer *puente = (osada_block_pointer *)(miDisco.discoMapeado + inicioTablaAsignaciones);
 
@@ -96,20 +93,13 @@ int main(int argc, char **argv) {
 
 	//Levanto el disco Osada
 	 osada_iniciar();
-	 /*
-	 miDisco = osada_iniciar();
-	 int fd_disco;
-	 struct stat discoStat;
-	 fd_disco = open("/home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/challenge.bin", O_RDWR);
-	 fstat(fd_disco, &discoStat);
-	 miDisco.discoMapeado = mmap(0, discoStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_disco, 0);
-	*/
 
 	 // Inicio los semáforos
 	 int m;
 	 for (m = 0; m < 2048; m++){
 	 		 pthread_mutex_init(&misMutex[m], NULL);
 	 	 }
+	 pthread_mutex_init (&mutex_bloques, NULL);
 
 
 	int socketEscucha, retornoPoll;

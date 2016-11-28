@@ -56,6 +56,8 @@ disco_osada miDisco;
 
 pthread_mutex_t misMutex[2048];
 
+pthread_mutex_t mutex_bloques;
+
 /* Función para obtener el nombre de un archivo desde una tabla de archivos, en formato char * */
 char *getFileName(unsigned char *nombreArchivo);
 
@@ -146,7 +148,7 @@ char *osada_readdir(char *unDirectorio);
 
 int osada_open(char *unaRuta);
 
-void *osada_read(char *unaRuta);
+void *osada_read(char *unaRuta, int tamanioLectura, int offset);
 
 int osada_create(char *ruta);
 

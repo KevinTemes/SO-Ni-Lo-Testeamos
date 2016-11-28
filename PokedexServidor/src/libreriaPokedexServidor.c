@@ -126,8 +126,8 @@ void atenderConexion(void *numeroCliente){
 	int unCliente = *((int *) numeroCliente);
 	int status = 1;
 	int codOp, exito, nuevoTamanio;
-	int tamanioRuta, tamanioNombre, tamanioNuevoContenido;
-	off_t offset;
+	int tamanioRuta, tamanioNombre, tamanioNuevoContenido, tamanioLectura, offset;
+//	off_t offset;
 	char *ruta = string_new();
 	char *contenidoDir = string_new();
 	char *nombre = string_new();
@@ -193,6 +193,8 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &tamanioLectura, sizeof(int), MSG_WAITALL);
+				status = recv(clientesActivos[unCliente].socket, &offset, sizeof(int), MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				int j = buscarArchivo(ruta);
 				int tamanioArchivo = (int)miDisco.tablaDeArchivos[j].file_size;
@@ -203,11 +205,12 @@ void atenderConexion(void *numeroCliente){
 					send(clientesActivos[unCliente].socket, bufferContenido, sizeof(int), MSG_WAITALL);
 				}
 				else{
-					void *contenidoArchivo = osada_read(ruta);
-					bufferContenido = malloc(tamanioArchivo + sizeof(int));
-					memcpy(bufferContenido, &tamanioArchivo, sizeof(int));
-					memcpy(bufferContenido + sizeof(int), contenidoArchivo, tamanioArchivo);
-					send(clientesActivos[unCliente].socket, bufferContenido, sizeof(int) + tamanioArchivo, MSG_WAITALL);
+					void *contenidoArchivo = osada_read(ruta, tamanioLectura, offset);
+					bufferContenido = malloc(tamanioLectura + sizeof(int));
+					memcpy(bufferContenido, &tamanioLectura, sizeof(int));
+					memcpy(bufferContenido + sizeof(int), contenidoArchivo, tamanioLectura);
+					send(clientesActivos[unCliente].socket, bufferContenido, sizeof(int) + tamanioLectura, MSG_WAITALL);
+					free(contenidoArchivo);
 				}
 				*ruta = '\0';
 			//	free(buffer);
@@ -319,21 +322,13 @@ void atenderConexion(void *numeroCliente){
 
 
 			}
-			//free(buffer);
+
 		}
 
 	}
 	free(bufferContenido);
-	//free(contenido);
-	//free(nuevoContenido);
 	free(bufferDir);
 
-}
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-void actualizarBitmap(){
-	int inicioBitmap = miDisco.cantBloques.bloques_header * 64;
-	int tamanioBitmap = miDisco.cantBloques.bloques_bitmap * 64;
-	memmove(miDisco.discoMapeado + inicioBitmap, miDisco.bitmap, tamanioBitmap);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void actualizarTablaDeArchivos(){
@@ -341,14 +336,6 @@ void actualizarTablaDeArchivos(){
 	memcpy(miDisco.discoMapeado + inicioTabla, &miDisco.tablaDeArchivos, sizeof(osada_file) * 2048);
 
 }
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-void actualizarTablaDeAsignaciones(){
-	int inicioTabla = ((miDisco.cantBloques.bloques_header +miDisco.cantBloques.bloques_bitmap +
-			miDisco.cantBloques.bloques_tablaDeArchivos) * 64);
-	int tamanioTabla = miDisco.cantBloques.bloques_tablaDeAsignaciones * 64;
-	memcpy(miDisco.discoMapeado + inicioTabla, miDisco.tablaDeAsignaciones, tamanioTabla);
-}
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 unsigned int redondearDivision(unsigned int dividendo, unsigned int divisor){
 	return (dividendo + (divisor / 2) / divisor);
@@ -362,12 +349,15 @@ unsigned int primerBloqueBitmapLibre(){
 	int inicio = inicioDeDatosEnBloques();
 
 	int i;
+	pthread_mutex_lock(&mutex_bloques);
 	for(i = inicio; i <= bloquesDeDatos; i++){
 		if(!bitarray_test_bit(miDisco.bitmap, i)){
 			pos = i;
+			bitarray_set_bit(miDisco.bitmap, i);
 			break;
 		}
 	}
+	pthread_mutex_unlock(&mutex_bloques);
 
 
 	return pos;
@@ -491,8 +481,7 @@ int osada_open(char *ruta){
 	return exito;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
-void *osada_read(char *ruta){
+void *osada_read(char *ruta, int tamanioLectura, int offset){
 
 	int i = buscarArchivo(ruta);
 
@@ -501,88 +490,73 @@ void *osada_read(char *ruta){
 	if(miDisco.tablaDeArchivos[i].file_size == 0){
 		goto terminar;
 	}
+	void *buffer;
 
 	pthread_mutex_lock(&misMutex[i]);
 
-	void *buffer = malloc(miDisco.tablaDeArchivos[i].file_size);
-	div_t bloquesOcupados = div(miDisco.tablaDeArchivos[i].file_size, 64);
-	int tamanioActualBuffer = 0;
-	int inicioDatos = (miDisco.cantBloques.bloques_header
-				+ miDisco.cantBloques.bloques_bitmap
-				+ miDisco.cantBloques.bloques_tablaDeArchivos
-				+ miDisco.cantBloques.bloques_tablaDeAsignaciones) * 64;
-	void *desplazamiento;
-	if(bloquesOcupados.rem == 0){
-		while(siguienteBloque != -1){
-			desplazamiento = &miDisco.discoMapeado[inicioDatos + (siguienteBloque) * 64];
-			memcpy(buffer + tamanioActualBuffer, desplazamiento, 64);
+		buffer = malloc(tamanioLectura);
+		int tamanioActualBuffer = 0;
+		int inicioDatos = inicioDeDatos();
+		void *desplazamiento;
+		int datosPendientes = tamanioLectura;
+		int bloquesAsaltear = calcularBloquesNecesarios(offset);
+		int bloquesSalteados = 0;
+		int espacioEnElUltimoBloqueSalteado = hayLugarEnElUltimoBloque(offset);
+		int offset_bloque = 64 - espacioEnElUltimoBloqueSalteado;
 
-			tamanioActualBuffer += 64;
-			siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
-		}
-	}
-	else{
-		int bloquesCopiados = 0;
-		while(siguienteBloque != -1){
-			if(bloquesCopiados < bloquesOcupados.quot){
-				desplazamiento = &miDisco.discoMapeado[inicioDatos + (siguienteBloque * 64)];
-				memcpy(buffer + tamanioActualBuffer,desplazamiento, 64);
-				tamanioActualBuffer += 64;
+		while((datosPendientes > 0) && (siguienteBloque != -1)){
+
+			/* -- Me desplazo hasta el offset --*/
+			if(bloquesSalteados < bloquesAsaltear){
 				siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
-				bloquesCopiados++;
+				bloquesSalteados++;
 			}
+
+			/*-- Cuando llego al offset, copio el pedazo del bloque inicial --*/
+			else if((bloquesSalteados == bloquesAsaltear) && (offset_bloque < 64)){
+				desplazamiento = &miDisco.discoMapeado[inicioDatos + (siguienteBloque * 64)
+								 + offset_bloque];
+
+				/*-- Leo todos los bytes restantes del bloque --*/
+				if(datosPendientes >= espacioEnElUltimoBloqueSalteado){
+					memcpy(buffer + tamanioActualBuffer, desplazamiento, espacioEnElUltimoBloqueSalteado);
+					datosPendientes -= espacioEnElUltimoBloqueSalteado;
+					tamanioActualBuffer += espacioEnElUltimoBloqueSalteado;
+				}
+
+				/*-- Leo solo la cantidad de datos pendientes --*/
+				else{
+					memcpy(buffer + tamanioActualBuffer, desplazamiento, datosPendientes);
+					datosPendientes -= datosPendientes;
+					tamanioActualBuffer += datosPendientes;
+
+				}
+				bloquesSalteados++;
+				siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
+
+			}
+
+			/*-- Leo los bloques restantes --*/
 			else{
 				desplazamiento = &miDisco.discoMapeado[inicioDatos + (siguienteBloque * 64)];
-				memcpy(buffer + tamanioActualBuffer, desplazamiento, bloquesOcupados.rem);
+				if(datosPendientes >= 64){
+					memcpy(buffer + tamanioActualBuffer, desplazamiento, 64);
+					datosPendientes -= 64;
+					tamanioActualBuffer += 64;
+				}
+				else{
+					memcpy(buffer + tamanioActualBuffer, desplazamiento, datosPendientes);
+					datosPendientes -= datosPendientes;
+					tamanioActualBuffer += datosPendientes;
+				}
 				siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
-				tamanioActualBuffer += bloquesOcupados.rem;
-				bloquesCopiados++;
+
 			}
-
 		}
-	}
+
 
 	pthread_mutex_unlock(&misMutex[i]);
 
-terminar:
-return(buffer);
-}
- */
-
-void *osada_read(char *ruta){
-
-	int i = buscarArchivo(ruta);
-
-	//log_info(logPS, "Recibida solicitud de lectura (.read) del archivo %s", ruta);
-	int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
-	if(miDisco.tablaDeArchivos[i].file_size == 0){
-		goto terminar;
-	}
-
-	pthread_mutex_lock(&misMutex[i]);
-
-	void *buffer = malloc(miDisco.tablaDeArchivos[i].file_size);
-	int tamanioActualBuffer = 0;
-	int inicioDatos = inicioDeDatos();
-	void *desplazamiento;
-	int datosPendientes = miDisco.tablaDeArchivos[i].file_size;
-
-	while((datosPendientes > 0) && (siguienteBloque != -1)){
-		desplazamiento = &miDisco.discoMapeado[inicioDatos + (siguienteBloque * 64)];
-		if(datosPendientes >= 64){
-			memcpy(buffer + tamanioActualBuffer, desplazamiento, 64);
-			datosPendientes -= 64;
-			tamanioActualBuffer += 64;
-		}
-		else{
-			memcpy(buffer + tamanioActualBuffer, desplazamiento, datosPendientes);
-			datosPendientes--;
-			tamanioActualBuffer += datosPendientes;
-		}
-		siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
-	}
-
-	pthread_mutex_unlock(&misMutex[i]);
 
 terminar:
 return(buffer);
@@ -688,7 +662,7 @@ int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
 				datosPendientes = 0;
 			}
 
-			bitarray_set_bit(miDisco.bitmap, siguienteBloque);
+			//bitarray_set_bit(miDisco.bitmap, siguienteBloque);
 			aux = siguienteBloque;
 			miDisco.tablaDeAsignaciones[siguienteBloque] = primerBloqueBitmapLibre();
 			siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
@@ -739,9 +713,7 @@ int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
 	}
 
 	miDisco.tablaDeArchivos[i].lastmod = consultarTiempo();
-//	actualizarBitmap();
 	actualizarTablaDeArchivos();
-//	actualizarTablaDeAsignaciones();
 	exito = sizeAgregado;
 
 	pthread_mutex_unlock(&misMutex[i]);
@@ -878,9 +850,7 @@ int osada_truncate(char *ruta, int nuevoTamanio){
 	}
 	miDisco.tablaDeArchivos[i].file_size = nuevoTamanio;
 	miDisco.tablaDeArchivos[i].lastmod = consultarTiempo();
-	//actualizarBitmap();
 	actualizarTablaDeArchivos();
-	//actualizarTablaDeAsignaciones();
 
 	pthread_mutex_unlock(&misMutex[i]);
 
@@ -938,9 +908,7 @@ void crearArchivo(char *nombreArchivo, int parentDir, int bloqueInicial, int pos
 	nuevoArchivo.state = REGULAR;
 
 	miDisco.tablaDeArchivos[posTablaArchivos] = nuevoArchivo;
-	bitarray_set_bit(miDisco.bitmap, bloqueInicial);
 	actualizarTablaDeArchivos();
-//	actualizarBitmap();
 }
 
 
@@ -956,8 +924,6 @@ void borrarArchivo(int posicion){
 			siguienteBloque = aux;
 		}
 	actualizarTablaDeArchivos();
-//	actualizarBitmap();
-//	actualizarTablaDeAsignaciones();
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1057,3 +1023,4 @@ int inicioDeDatosEnBloques(){
 
 return inicio;
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////////
