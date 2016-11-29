@@ -605,11 +605,8 @@ void planificador(void* argu) {
 			while (queue_size(colaListos)) {
 				entrenador* ent;
 				ent = queue_pop(colaListos);
-				if(ent->fallecio){
-					matar(ent);
-				}else{
 				list_add(listaAux, ent);
-				}
+
 			}
 
 			list_sort(listaAux, (void*) esMasCerca);
@@ -629,6 +626,7 @@ void planificador(void* argu) {
 			int banderin = 1;
 			ent1 = (entrenador*) queue_pop(colaListos);
 
+			if(queue_size(ent1->colaAccion)){
 			int acto;
 			acto = (int) queue_peek(ent1->colaAccion);
 
@@ -802,6 +800,7 @@ void planificador(void* argu) {
 					}
 				}
 			}
+		}
 
 			if (ent1->fallecio) {
 				log_info(logs, "%c muere",ent1->simbolo);
