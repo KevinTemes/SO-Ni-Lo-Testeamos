@@ -81,7 +81,7 @@ pthread_mutex_t mutexMuerte = PTHREAD_MUTEX_INITIALIZER;
 void banquero() {
 
 	while (1) {
-		usleep(datosMapa2->tiempoChequeoDeadlock);
+		usleep(datosMapa2->tiempoChequeoDeadlock*1000);
 
 		if (list_size(entrenadoresEnCurso)) {
 			t_list* vectorT = list_create();
@@ -381,7 +381,7 @@ void planificador(void* argu) {
 	while (1) {
 		sem_wait(&sem_Listos); //semaforo de nuevos bloqueando que se saque un ent si la cola esta vacia
 
-		usleep(datosMapa2->retardoQ);
+		usleep(datosMapa2->retardoQ*1000);
 
 		int q = datosMapa2->quantum;
 
@@ -455,13 +455,13 @@ void planificador(void* argu) {
 					if (acto == '2' || acto == '4' || acto == '6' || acto == '8') {
 
 
-						usleep(datosMapa2->retardoQ);
+						usleep(datosMapa2->retardoQ*1000);
 
 						switch (acto) {
 
 						case '8':
 							if (entre->posy > 1 && !entre->fallecio) {
-								usleep(datosMapa2->retardoQ);
+								usleep(datosMapa2->retardoQ*1000);
 								entre->posy--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
@@ -473,7 +473,7 @@ void planificador(void* argu) {
 
 						case '2':
 							if (entre->posy < rows && !entre->fallecio) {
-								usleep(datosMapa2->retardoQ);
+								usleep(datosMapa2->retardoQ*1000);
 								entre->posy++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
@@ -486,7 +486,7 @@ void planificador(void* argu) {
 
 						case '4':
 							if (entre->posx > 1 && !entre->fallecio) {
-								usleep(datosMapa2->retardoQ);
+								usleep(datosMapa2->retardoQ*1000);
 								entre->posx--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
@@ -497,7 +497,7 @@ void planificador(void* argu) {
 							break;
 						case '6':
 							if (entre->posx < cols && !entre->fallecio) {
-								usleep(datosMapa2->retardoQ);
+								usleep(datosMapa2->retardoQ*1000);
 								entre->posx++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
@@ -513,7 +513,7 @@ void planificador(void* argu) {
 
 					if (acto == '9' && !entre->fallecio) {
 
-						usleep(datosMapa2->retardoQ);
+						usleep(datosMapa2->retardoQ*1000);
 						q = 0;
 						bloqueo = 1;
 
@@ -583,7 +583,7 @@ void planificador(void* argu) {
 			}
 
 			if (!bloqueo && !entre->fallecio) {
-				usleep(datosMapa2->retardoQ);
+				usleep(datosMapa2->retardoQ*1000);
 				//q = datosMapa->quantum;
 		    	log_info(logs,"termina el quantum del entrenador %c, vuelve a la cola de listos",entre->simbolo);
 				queue_push(colaListos, entre);
@@ -691,8 +691,8 @@ void planificador(void* argu) {
 						case '8':
 							if (ent1->posy > 1 && !ent1->fallecio) {
 								//				log_info(logs, "mueva arriba");
-								usleep(datosMapa2->retardoQ);
-								usleep(50000);
+								usleep(datosMapa2->retardoQ*1000);
+								sleep(50000);
 								ent1->posy--;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
@@ -704,7 +704,7 @@ void planificador(void* argu) {
 						case '2':
 							if (ent1->posy < rows && !ent1->fallecio) {
 								//				log_info(logs, "mueva abajo");
-								usleep(datosMapa2->retardoQ);
+								usleep(datosMapa2->retardoQ*1000);
 								ent1->posy++;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
@@ -716,7 +716,7 @@ void planificador(void* argu) {
 						case '4':
 							if (ent1->posx > 1 && !ent1->fallecio) {
 								//				log_info(logs, "mueva izquierda");
-								usleep(datosMapa2->retardoQ);
+								usleep(datosMapa2->retardoQ*1000);
 								ent1->posx--;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
@@ -727,7 +727,7 @@ void planificador(void* argu) {
 						case '6':
 							if (ent1->posx < cols && !ent1->fallecio) {
 								//				log_info(logs, "mueva derecha");
-								usleep(datosMapa2->retardoQ);
+								usleep(datosMapa2->retardoQ*1000);
 								ent1->posx++;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
@@ -741,7 +741,7 @@ void planificador(void* argu) {
 					}
 					if (acto == '9' && !ent1->fallecio) {
 
-						usleep(datosMapa->retardoQ);
+						usleep(datosMapa->retardoQ*1000);
 						bloqueo = 1;
                         banderin = 0;
 						ent1->flagLeAsignaronPokenest = 0;
@@ -805,7 +805,7 @@ void planificador(void* argu) {
 			}
 
 			if (!bloqueo && !ent1->fallecio) {
-				usleep(datosMapa2->retardoQ);
+				usleep(datosMapa2->retardoQ*1000);
 				queue_push(colaListos, ent1);
 				sem_post(&sem_Listos);
 			}
@@ -829,7 +829,7 @@ void bloqui(void* stru) {
 		sem_getvalue(&strub->sembloq, &dal);
 		log_info(logs, "Pasa el sem wait, el siguiente vale %d", dal);
 
-		usleep(datosMapa2->retardoQ);
+		usleep(datosMapa2->retardoQ*1000);
 		//SOLUCION RUDIMENTARISISISISISISISISISIISISISISISISIISISISISISIISISISISISIISISMA
 
 		if (dal == 0) {
