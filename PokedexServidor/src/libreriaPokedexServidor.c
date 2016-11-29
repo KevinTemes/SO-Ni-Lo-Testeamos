@@ -131,6 +131,7 @@ void atenderConexion(void *numeroCliente){
 
 	while(status !=0){
 
+		murioUnCliente:
 		if (status != 0) {
 			status = recv(clientesActivos[unCliente].socket, &codOp, sizeof(int), MSG_WAITALL);
 
@@ -139,24 +140,42 @@ void atenderConexion(void *numeroCliente){
 			case 0: // .getAttr
 
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				t_getattr archivo = osada_getattr(ruta);
 				respuesta = malloc(2 * sizeof(int));
 				memcpy(respuesta, &archivo.tipo_archivo, sizeof(int));
 				memcpy(respuesta + sizeof(int), &archivo.size, sizeof(int));
 				send(clientesActivos[unCliente].socket, respuesta, 2 * sizeof(int), MSG_WAITALL);
+
 				*ruta = '\0';
 				free(buffer);
+
 
 			break;
 
 			case 1: // .readdir (- ls)
 
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				ruta = convertirString(buffer, tamanioRuta);
 				contenidoDir = osada_readdir(ruta);
 				int tamanio = strlen(contenidoDir);
@@ -180,10 +199,26 @@ void atenderConexion(void *numeroCliente){
 			case 2: // .read
 
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				status = recv(clientesActivos[unCliente].socket, &tamanioLectura, sizeof(int), MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				status = recv(clientesActivos[unCliente].socket, &offset, sizeof(int), MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				ruta = convertirString(buffer, tamanioRuta);
 				int j = buscarArchivo(ruta);
 				int tamanioArchivo = (int)miDisco.tablaDeArchivos[j].file_size;
@@ -202,14 +237,22 @@ void atenderConexion(void *numeroCliente){
 					free(contenidoArchivo);
 				}
 				*ruta = '\0';
-			//	free(buffer);
 			break;
 
 			case 3: // .create (por ahora supongo que el nombre ya viene en la ruta)
 
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
+
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_create(ruta);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
@@ -220,13 +263,34 @@ void atenderConexion(void *numeroCliente){
 			case 4: // .write
 
 
+
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				status = recv(clientesActivos[unCliente].socket, &tamanioNuevoContenido, sizeof(int), MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				buffer = malloc(tamanioRuta);
 				nuevoContenido = malloc(tamanioNuevoContenido);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				status = recv(clientesActivos[unCliente].socket, nuevoContenido, tamanioNuevoContenido, MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				status = recv(clientesActivos[unCliente].socket, &offset, sizeof(int), MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_write(ruta, nuevoContenido, tamanioNuevoContenido, offset);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
@@ -236,8 +300,16 @@ void atenderConexion(void *numeroCliente){
 			case 5: // .unlink
 
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_unlink(ruta);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
@@ -248,8 +320,16 @@ void atenderConexion(void *numeroCliente){
 			case 6: // .mkdir
 
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_mkdir(ruta);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
@@ -260,8 +340,16 @@ void atenderConexion(void *numeroCliente){
 			case 7: // .rmdir
 
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_rmdir(ruta);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
@@ -272,11 +360,27 @@ void atenderConexion(void *numeroCliente){
 			case 8: // .rename
 
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				status = recv(clientesActivos[unCliente].socket, &tamanioNombre, sizeof(int), MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				buffer = malloc(tamanioRuta);
 				void *bufferNombre = malloc(tamanioNombre);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				status = recv(clientesActivos[unCliente].socket, bufferNombre, tamanioNombre, MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				ruta = convertirString(buffer, tamanioRuta);
 				nombre = convertirString(bufferNombre, tamanioNombre);
 				exito = osada_rename(ruta, nombre);
@@ -289,8 +393,16 @@ void atenderConexion(void *numeroCliente){
 			case 9: // .open
 
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_open(ruta);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
@@ -301,9 +413,21 @@ void atenderConexion(void *numeroCliente){
 			case 10: // .truncate
 
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				status = recv(clientesActivos[unCliente].socket, &nuevoTamanio, sizeof(int), MSG_WAITALL);
+				if(status == 0 || status == -1){
+					status = 0;
+					goto murioUnCliente;
+				}
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_truncate(ruta, nuevoTamanio);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
@@ -311,9 +435,7 @@ void atenderConexion(void *numeroCliente){
 
 
 			}
-
 		}
-
 	}
 	free(bufferContenido);
 	free(bufferDir);

@@ -119,11 +119,6 @@ int hayEspacioEnDisco(int tamanioActualArchivo, size_t tamanioAgregado, off_t of
 
 int ultimoBloqueAsignado(int filePos);
 
-/* copiado de un bloque de datos en un buffer */
-void copiarBloque(void *buffer, int bloque, int offset);
-
-void copiarBloqueIncompleto(void *buffer, int bloque, int offset, int tamanio);
-
 /* Funciones de modificación del disco OSADA*/
 void renombrar(char *nombre, int posicion);
 
