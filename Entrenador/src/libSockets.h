@@ -111,11 +111,13 @@ void* solicitarAtraparPokemon(t_calculoTiempo*,t_tiempoBloqueado*,char*);
 void* sacarTiempo(t_calculoTiempo*,t_tiempoBloqueado*,char*,char*,char*);
 void borrarArchivosBill();
 void borrarMedallas();
-void morir(char*);
 void resetear();
 void reciboUnaVida();
 void pierdoUnaVida();
 void handler(int n);
+void muerePorSignal();
+void muerePorDeadlock();
+void resetearDesdeCero();
 
 /* setup_listen(IP,PORT) *
  * Devuelve el socket que se consiguió para escuchar
