@@ -416,7 +416,7 @@ int main(int argc, char *argv[]) {
 	char *SERVER_IP = getenv("SERVER_IP");
 	char *SERVER_PUERTO = getenv("SERVER_PUERTO");
 
-	pokedexServidor = conectarCliente("127.0.0.1", "7777");
+	pokedexServidor = conectarCliente(SERVER_IP, SERVER_PUERTO);
 
 	log_info(log_Cliente, "PokeCliente conectado al servidor. Aguardando peticiones....");
 

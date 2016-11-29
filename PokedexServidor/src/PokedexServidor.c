@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
 
 	struct pollfd fileDescriptors[100];
 	int cantfds = 0;
-	socketEscucha = setup_listen("127.0.0.1", "7777");
+	socketEscucha = setup_listen(IP_ESCUCHA, PUERTO_ESCUCHA);
 	listen(socketEscucha, 1024);
 
 	fileDescriptors[0].fd = socketEscucha;
