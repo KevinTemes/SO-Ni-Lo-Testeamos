@@ -381,7 +381,7 @@ void planificador(void* argu) {
 	while (1) {
 		sem_wait(&sem_Listos); //semaforo de nuevos bloqueando que se saque un ent si la cola esta vacia
 
-		usleep(datosMapa2->retardoQ*1000);
+	//	usleep(datosMapa2->retardoQ*1000);
 
 		int q = datosMapa2->quantum;
 
@@ -604,7 +604,11 @@ void planificador(void* argu) {
 			while (queue_size(colaListos)) {
 				entrenador* ent;
 				ent = queue_pop(colaListos);
+				if(ent->fallecio){
+					matar(ent);
+				}else{
 				list_add(listaAux, ent);
+				}
 			}
 
 			list_sort(listaAux, (void*) esMasCerca);
@@ -624,9 +628,8 @@ void planificador(void* argu) {
 			int banderin = 1;
 			ent1 = (entrenador*) queue_pop(colaListos);
 
+            if(!ent1->fallecio){
 			int acto;
-
-
 			acto = (int) queue_peek(ent1->colaAccion);
 
 			if (isalpha(acto)) {
@@ -678,7 +681,7 @@ void planificador(void* argu) {
 
 				log_info(logs,"Se extrae al entrenador %c de la cola de listos para ejecucion hasta que corresponda traslado a cola de bloqueados",ent1->simbolo);
 
-				while (banderin && (!(ent1->fallecio))&& queue_size(ent1->colaAccion)) {
+				while (banderin && !(ent1->fallecio)&& queue_size(ent1->colaAccion)) {
 
 					acto = (int) queue_pop(ent1->colaAccion);
 
@@ -799,7 +802,7 @@ void planificador(void* argu) {
 			}
 
 			if (ent1->fallecio) {
-				log_info(logs, "%c muere",ent1->fallecio);
+				log_info(logs, "%c muere",ent1->simbolo);
 				matar(ent1);
 
 			}
@@ -809,7 +812,9 @@ void planificador(void* argu) {
 				queue_push(colaListos, ent1);
 				sem_post(&sem_Listos);
 			}
-
+            }else{
+            	matar(ent1);
+            }
 		}
 
 	}
@@ -1000,7 +1005,7 @@ int main(int argc, char* argv[]) {
 	//nombre de mapa
 	nombreMapa = argv[1];
 	char* papaya = string_new();
-	string_append(&papaya,argv[1]);
+	string_append(&papaya,nombreMapa);
 	string_append(&papaya,".log");
 	//inicializo listas
 
@@ -1022,7 +1027,7 @@ int main(int argc, char* argv[]) {
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-	remove("Mapa.log");
+	remove(papaya);
 	logs = log_create(papaya,"Mapa", false, log_level_from_string("INFO"));
 
 	free(papaya);
