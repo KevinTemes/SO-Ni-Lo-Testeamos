@@ -8,7 +8,7 @@ fi
 
 OSADADIR=$1
 OUTDIR="$OSADADIR/dir1/dir2"
-FILENAME="pkmnLogo.$$.txt"
+FILENAME="pkmnLogo.caca.txt"
 TMPPATH="/tmp"
 echo "Usando $OSADADIR..."
 

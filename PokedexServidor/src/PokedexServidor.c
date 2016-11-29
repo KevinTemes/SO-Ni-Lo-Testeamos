@@ -17,12 +17,12 @@
 t_log* logs;
 
 
-void osada_iniciar(){
+void osada_iniciar(char *osada_path){
 
 	// MAPEO EL DISCO
 	int fd_disco;
 	struct stat discoStat;
-	fd_disco = open("/home/utnso/workspace/tp-2016-2c-Ni-Lo-Testeamos/PokedexServidor/02-completa.bin", O_RDWR);
+	fd_disco = open(osada_path, O_RDWR);
 	fstat(fd_disco, &discoStat);
 	miDisco.discoMapeado = mmap(0, discoStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_disco, 0);
 
@@ -72,6 +72,10 @@ void osada_iniciar(){
 
 int main(int argc, char **argv) {
 
+//	printf("%d", argc);
+
+	char *osada_path = argv[1];
+
 
 	//LOGS
 	remove("PokeServidor.log");
@@ -80,7 +84,7 @@ int main(int argc, char **argv) {
 	puts("Log Pokedex Servidor creado exitosamente \n");
 
 	//Levanto el disco Osada
-	 osada_iniciar();
+	 osada_iniciar(osada_path);
 
 	 // Inicio los semáforos
 	 int m;
@@ -99,7 +103,7 @@ int main(int argc, char **argv) {
 
 	struct pollfd fileDescriptors[100];
 	int cantfds = 0;
-	socketEscucha = setup_listen(IP_ESCUCHA, PUERTO_ESCUCHA);
+	socketEscucha = setup_listen("127.0.0.1", "7777");
 	listen(socketEscucha, 1024);
 
 	fileDescriptors[0].fd = socketEscucha;

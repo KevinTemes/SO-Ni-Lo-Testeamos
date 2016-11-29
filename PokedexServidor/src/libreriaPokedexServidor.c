@@ -116,7 +116,6 @@ void atenderConexion(void *numeroCliente){
 	int status = 1;
 	int codOp, exito, nuevoTamanio;
 	int tamanioRuta, tamanioNombre, tamanioNuevoContenido, tamanioLectura, offset;
-//	off_t offset;
 	char *ruta = string_new();
 	char *contenidoDir = string_new();
 	char *nombre = string_new();
@@ -131,7 +130,7 @@ void atenderConexion(void *numeroCliente){
 
 	while(status !=0){
 
-		murioUnCliente:
+
 		if (status != 0) {
 			status = recv(clientesActivos[unCliente].socket, &codOp, sizeof(int), MSG_WAITALL);
 
@@ -142,14 +141,14 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				ruta = convertirString(buffer, tamanioRuta);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				t_getattr archivo = osada_getattr(ruta);
 				respuesta = malloc(2 * sizeof(int));
@@ -168,13 +167,13 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				ruta = convertirString(buffer, tamanioRuta);
 				contenidoDir = osada_readdir(ruta);
@@ -191,7 +190,9 @@ void atenderConexion(void *numeroCliente){
 					send(clientesActivos[unCliente].socket, bufferDir, sizeof(int) + tamanio, MSG_WAITALL);
 				}
 				*ruta = '\0';
+				*contenidoDir = '\0';
 				free(buffer);
+				free(bufferDir);
 
 
 			break;
@@ -201,23 +202,23 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				status = recv(clientesActivos[unCliente].socket, &tamanioLectura, sizeof(int), MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				status = recv(clientesActivos[unCliente].socket, &offset, sizeof(int), MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				ruta = convertirString(buffer, tamanioRuta);
 				int j = buscarArchivo(ruta);
@@ -244,14 +245,14 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_create(ruta);
@@ -267,29 +268,29 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				status = recv(clientesActivos[unCliente].socket, &tamanioNuevoContenido, sizeof(int), MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				buffer = malloc(tamanioRuta);
 				nuevoContenido = malloc(tamanioNuevoContenido);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				status = recv(clientesActivos[unCliente].socket, nuevoContenido, tamanioNuevoContenido, MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				status = recv(clientesActivos[unCliente].socket, &offset, sizeof(int), MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_write(ruta, nuevoContenido, tamanioNuevoContenido, offset);
@@ -302,13 +303,13 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_unlink(ruta);
@@ -322,13 +323,13 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_mkdir(ruta);
@@ -342,13 +343,13 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_rmdir(ruta);
@@ -362,24 +363,24 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				status = recv(clientesActivos[unCliente].socket, &tamanioNombre, sizeof(int), MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				buffer = malloc(tamanioRuta);
 				void *bufferNombre = malloc(tamanioNombre);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				status = recv(clientesActivos[unCliente].socket, bufferNombre, tamanioNombre, MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				ruta = convertirString(buffer, tamanioRuta);
 				nombre = convertirString(bufferNombre, tamanioNombre);
@@ -395,13 +396,13 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_open(ruta);
@@ -415,18 +416,18 @@ void atenderConexion(void *numeroCliente){
 				status = recv(clientesActivos[unCliente].socket, &tamanioRuta, sizeof(int), MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				buffer = malloc(tamanioRuta);
 				status = recv(clientesActivos[unCliente].socket, buffer, tamanioRuta, MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				status = recv(clientesActivos[unCliente].socket, &nuevoTamanio, sizeof(int), MSG_WAITALL);
 				if(status == 0 || status == -1){
 					status = 0;
-					goto murioUnCliente;
+					break;
 				}
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_truncate(ruta, nuevoTamanio);
@@ -437,8 +438,8 @@ void atenderConexion(void *numeroCliente){
 			}
 		}
 	}
-	free(bufferContenido);
-	free(bufferDir);
+	//free(bufferContenido);
+	//free(bufferDir);
 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -516,8 +517,6 @@ char *osada_readdir(char *unaRuta){
 
 	char *contenidoDir = string_new();
 	char *separador = ";";
-	char nullChar[1];
-//	nullChar[0] = '\0';
 	int parentBlock = buscarArchivo(unaRuta);
 	int numElems = 0;
 	int i;
@@ -534,7 +533,13 @@ char *osada_readdir(char *unaRuta){
 			if(miDisco.tablaDeArchivos[i].parent_directory == parentBlock
 					&& miDisco.tablaDeArchivos[i].state != DELETED){
 
-				string_append(&contenidoDir, miDisco.tablaDeArchivos[i].fname);
+				if(strlen(miDisco.tablaDeArchivos[i].fname) == 17){
+					char *nombreLargo = string_substring(miDisco.tablaDeArchivos[i].fname, 0, 17);
+					string_append(&contenidoDir, nombreLargo);
+				}
+				else{
+					string_append(&contenidoDir, miDisco.tablaDeArchivos[i].fname);
+				}
 				string_append(&contenidoDir, "\0");
 
 				// Concateno los nombres en un string, separados por la variable separador.
@@ -548,7 +553,7 @@ char *osada_readdir(char *unaRuta){
 		}
 
 	if(numElems == 0){
-		string_append(&contenidoDir, nullChar);
+		string_append(&contenidoDir, "\0");
 	}
 
 

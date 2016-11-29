@@ -2,6 +2,7 @@
 #define OSADA_H_
 
 #include <stdint.h>
+#include <stdio.h>
 #include <commons/bitarray.h>
 #include <pthread.h>
 #define OSADA_BLOCK_SIZE 64
