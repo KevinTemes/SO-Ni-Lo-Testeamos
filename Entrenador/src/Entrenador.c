@@ -120,7 +120,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 					log_info(logs,"Conectado al Mapa %s. Ingrese el mensaje que desee enviar, o cerrar para salir\n",mapa);
 
 
-					// cuando pase a otro mapa, o lo reinicia, vuelve a arrancar en (0;0)
+					// cuando pase a otro mapa, o lo reinicia, vuelve a arrancar en (1;1)
 					posActual->posXInicial=1;
 					posActual->posYInicial =1;
 					posicionesYDeadlocks->salirDeObjetivos = 0;
@@ -153,30 +153,31 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 							protocAManejar[0]='9';
 							send(servidor,protocAManejar,2,0);
 
-							solicitarAtraparPokemon(calculoTiempo,tiempo,mapa);
+							//if(posicionesYDeadlocks->cargarDeNuevoObjetivo!=2){
+								solicitarAtraparPokemon(calculoTiempo,tiempo,mapa);
 
-							if (posicionesYDeadlocks->cargarDeNuevoObjetivo== 0){
-								list_add((ent)->pokemonsPorMapaCapturados,caracterPoke);
-								log_info(logs,"Capture en el mapa %s a %s y lo agregue a la lista por mapa capturados\n", mapa,caracterPoke);
-								dictionary_remove(pokesDeCadaMapa,mapa);
-							}else if (posicionesYDeadlocks->cargarDeNuevoObjetivo==1){ // solo si resetea y tiene vidas lo hace
-								int i;
-								while(dictionary_get(pokesDeCadaMapa,mapa)!=NULL){
-									char* losQueQuedaron = dictionary_get(pokesDeCadaMapa,mapa);
-									list_add(ent->pokemonsPorMapaCapturados, losQueQuedaron);
-									log_info(logs,"Agrego al final de la lista por mapa capturados al poke %s que estaba en el dictionary de objetivos no realizados todavia\n",losQueQuedaron);
+								if (posicionesYDeadlocks->cargarDeNuevoObjetivo== 0){
+									list_add((ent)->pokemonsPorMapaCapturados,caracterPoke);
+									log_info(logs,"Capture en el mapa %s a %s y lo agregue a la lista por mapa capturados\n", mapa,caracterPoke);
 									dictionary_remove(pokesDeCadaMapa,mapa);
-								}
+								}else if (posicionesYDeadlocks->cargarDeNuevoObjetivo==1){ // solo si resetea y tiene vidas lo hace
+									int i;
+									while(dictionary_get(pokesDeCadaMapa,mapa)!=NULL){
+										char* losQueQuedaron = dictionary_get(pokesDeCadaMapa,mapa);
+										list_add(ent->pokemonsPorMapaCapturados, losQueQuedaron);
+										log_info(logs,"Agrego al final de la lista por mapa capturados al poke %s que estaba en el dictionary de objetivos no realizados todavia\n",losQueQuedaron);
+										dictionary_remove(pokesDeCadaMapa,mapa);
+									}
 
-								for(i=0;i<list_size(ent->pokemonsPorMapaCapturados);i++){
-									char* pokeAMeter = list_get(ent->pokemonsPorMapaCapturados,i);
-									log_info(logs,"Agrego este pokemon al diccionario %s para reiniciar el mapa que se encontraba",pokeAMeter);
-									log_info(logs, "Lo agregue en la posicion %d del diccionario\n",i);
-									dictionary_put(pokesDeCadaMapa,mapa,pokeAMeter); // vuelvo a meter todos los pokemons de ese mapa
+									for(i=0;i<list_size(ent->pokemonsPorMapaCapturados);i++){
+										char* pokeAMeter = list_get(ent->pokemonsPorMapaCapturados,i);
+										log_info(logs,"Agrego este pokemon al diccionario %s para reiniciar el mapa que se encontraba",pokeAMeter);
+										log_info(logs, "Lo agregue en la posicion %d del diccionario\n",i);
+										dictionary_put(pokesDeCadaMapa,mapa,pokeAMeter); // vuelvo a meter todos los pokemons de ese mapa
+									}
+									list_clean(ent->pokemonsPorMapaCapturados);
 								}
-								list_clean(ent->pokemonsPorMapaCapturados);
-
-							}
+							//}
 
 						} // cierro el while de los objetivos
 
@@ -250,13 +251,12 @@ void reciboUnaVida(){
 	sleep(1);
 	ent->cantidadInicialVidas++;
 	log_info(logs,"Me dieron una vida, ahora tengo %d vidas \n",ent->cantidadInicialVidas);
-	sleep(1);
 }
 
 void pierdoUnaVida(){
 	sleep(1);
-	morir("senial");
-	sleep(1);
+	//morir("senial");
+	muerePorSignal();
 }
 
 void* deserializoPokemon(t_calculoTiempo* calculoTiempo, t_tiempoBloqueado* tiempo, char* mapa, char* inicioBloq, char* finBloq){
@@ -316,64 +316,68 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 
 	int protocoloRec;
 
-	atrapaOEntraDeadlock:
+	//if(posicionesYDeadlocks->cargarDeNuevoObjetivo!=2){
 
-	recv(servidor,&(protocoloRec),sizeof(int),MSG_WAITALL);
+		atrapaOEntraDeadlock:
 
-	log_info(logs,"Recibo un 1 porque lo voy a atrapar o un 3 porque hay deadlock, y el protocolo recibido es %d",protocoloRec);
+		recv(servidor,&(protocoloRec),sizeof(int),MSG_WAITALL);
 
-		switch(protocoloRec){
-			case ATRAPA:
-				usleep(1000);
-				deserializoPokemon(calculoTiempo,tiempo,mapa,inicioBloq,finBloq);
-				return tiempo;
+			switch(protocoloRec){
+				case ATRAPA:
+					log_info(logs, "Recibí un 1, entonces voy a atrapar mi pokemon\n");
+					usleep(1000);
+					deserializoPokemon(calculoTiempo,tiempo,mapa,inicioBloq,finBloq);
+					return tiempo;
 
-			case DEADLOCK:
-				posicionesYDeadlocks->cantDeadlocks++;
+				case DEADLOCK:
+					log_info(logs,"Recibí un 3, entonces va a haber deadlock\n");
+					posicionesYDeadlocks->cantDeadlocks++;
 
-				t_pokemonDeserializado* elMasFuerte = (t_pokemonDeserializado*)agarrarPokeConMasNivel((ent)->listaNivAtrapados);
+					t_pokemonDeserializado* elMasFuerte = (t_pokemonDeserializado*)agarrarPokeConMasNivel((ent)->listaNivAtrapados);
 
-				//serializo mi pokemon, mando 5 7 Pikachu 33
-				char protocolo = '5';
-				int tamanioEspecieEnviar = strlen(elMasFuerte->especie);
-				int tamanioTotal = sizeof(char) + 2 *sizeof(int) + tamanioEspecieEnviar;
+					//serializo mi pokemon, mando 5 7 Pikachu 33
+					char protocolo = '5';
+					int tamanioEspecieEnviar = strlen(elMasFuerte->especie);
+					int tamanioTotal = sizeof(char) + 2 *sizeof(int) + tamanioEspecieEnviar;
 
-				void* miBuffer = malloc(tamanioTotal);
+					void* miBuffer = malloc(tamanioTotal);
 
-				//cargo los tamanios
-				memcpy(miBuffer, &protocolo, sizeof(char));
-				memcpy(miBuffer + sizeof(char), &tamanioEspecieEnviar, sizeof(int));
+					//cargo los tamanios
+					memcpy(miBuffer, &protocolo, sizeof(char));
+					memcpy(miBuffer + sizeof(char), &tamanioEspecieEnviar, sizeof(int));
 
-				//cargo lo que voy a mandar
-				memcpy(miBuffer + sizeof(char) +  sizeof(int), elMasFuerte->especie, tamanioEspecieEnviar);
-				memcpy(miBuffer + sizeof(char) +  sizeof(int) + tamanioEspecieEnviar, &(elMasFuerte->nivelPokemon), sizeof(int));
+					//cargo lo que voy a mandar
+					memcpy(miBuffer + sizeof(char) +  sizeof(int), elMasFuerte->especie, tamanioEspecieEnviar);
+					memcpy(miBuffer + sizeof(char) +  sizeof(int) + tamanioEspecieEnviar, &(elMasFuerte->nivelPokemon), sizeof(int));
 
-				log_info(logs,"Protocolo que mando %c, va a haber pelea por deadlock",protocolo);
-				log_info(logs,"tamanio de especie para pelear: %d",tamanioEspecieEnviar);
-				log_info(logs,"especie del mas fuerte para pelear %s",elMasFuerte->especie);
-				log_info(logs, "nivel del mas fuerte para pelear %d \n",elMasFuerte->nivelPokemon);
+					log_info(logs,"Protocolo que mando %c, va a haber pelea por deadlock",protocolo);
+					log_info(logs,"tamanio de especie para pelear: %d",tamanioEspecieEnviar);
+					log_info(logs,"especie del mas fuerte para pelear %s",elMasFuerte->especie);
+					log_info(logs, "nivel del mas fuerte para pelear %d \n",elMasFuerte->nivelPokemon);
 
-				send(servidor,miBuffer,tamanioTotal,0);
+					send(servidor,miBuffer,tamanioTotal,0);
 
-				free(miBuffer);
+					free(miBuffer);
 
-				int protocMoriOSobrevivi;
+					int protocMoriOSobrevivi;
 
-				recv(servidor,&(protocMoriOSobrevivi),sizeof(int),MSG_WAITALL);
-				log_info(logs,"Recibo 7 si mori o 0 si sobrevivi, y el protocolo recibido es: %d",protocMoriOSobrevivi);
+					recv(servidor,&(protocMoriOSobrevivi),sizeof(int),MSG_WAITALL);
+					log_info(logs,"Recibo 7 si mori o 0 si sobrevivi, y el protocolo recibido es: %d",protocMoriOSobrevivi);
 
-				if(protocMoriOSobrevivi==MORI){
+					if(protocMoriOSobrevivi==MORI){
 
-					morir("deadlock");
+						//morir("deadlock");
+						muerePorDeadlock();
 
-				} else if(protocMoriOSobrevivi==SOBREVIVI){
+					} else if(protocMoriOSobrevivi==SOBREVIVI){
 
-					log_info(logs,"Sobrevivi al deadlock\n");
+						log_info(logs,"Sobrevivi al deadlock\n");
 
-					goto atrapaOEntraDeadlock;
-				}
+						goto atrapaOEntraDeadlock;
+					}
 
-		}
+			}
+	//}
 
 	return NULL;
 }
@@ -578,79 +582,88 @@ void* moverseEnUnaDireccion(t_actualizarPos* posActual,int x, int y){
 }
 
 
-void morir(char* motivo){
+void resetearDesdeCero(){
+	char respuesta[3];
+	log_info(logs,"Numero de reintentos realizados hasta el momento: %d", ent->reintentos);
+	close(servidor);
+	do{
+		log_info(logs,"Desea reiniciar juego?");
+		fgets(respuesta, 3, stdin);
+		if (string_equals_ignore_case(respuesta,"si")){
+			log_info(logs,"Reseteando...\n");
+			resetear();
+			log_info(logs,"Borradas todas las medallas y todos los pokemons, empezando nueva aventura");
+
+			list_destroy_and_destroy_elements(ent->hojaDeViaje,free);
+			list_destroy_and_destroy_elements(ent->pokemonsPorMapaCapturados,free);
+			list_destroy((ent)->listaNivAtrapados);
+			list_destroy_and_destroy_elements(ips,free);
+			list_destroy_and_destroy_elements(puertos,free);
+
+			dictionary_destroy_and_destroy_elements(pokesDeCadaMapa,free);
+
+			if (!leerConfigEnt(configEntrenador,&ent, puntoMontaje)) {
+				log_error(logs,"Error al leer el archivo de configuracion de Metadata Entrenador");
+			}
+
+			log_info(logs,"Archivo de config Entrenador creado exitosamente!\n");
+			posicionesYDeadlocks->reintentosActualizados++;
+			ent->reintentos = posicionesYDeadlocks->reintentosActualizados;
+			log_info(logs,"Numero de reintentos realizados: %d \n",ent->reintentos);
+
+			horaInicio = empezarAventura();
+
+			posicionesYDeadlocks->pos = -1;
+			posicionesYDeadlocks->salirDeObjetivos = 1;
+			posicionesYDeadlocks->cargarDeNuevoObjetivo = 2;
+
+			return;
+
+			}else if(string_equals_ignore_case(respuesta,"no")) {
+				log_info(logs,"Cerrando programa\n");
+				exit(0);
+			}else{
+				log_info(logs,"Debe ingresar si o no sin importar mayusculas para realizar algo\n");
+			}
+
+	}while( !(string_equals_ignore_case(respuesta,"si")) || !(string_equals_ignore_case(respuesta,"no")));
+}
+
+
+void muerePorDeadlock(){
 	ent->cantidadInicialVidas = ent->cantidadInicialVidas-1;
 	posicionesYDeadlocks->cantMuertes = posicionesYDeadlocks->cantMuertes+1;
 	if (ent->cantidadInicialVidas>0){
-		if(!strcmp(motivo,"deadlock")){
-			log_info(logs,"Moriste por deadlock, vidas restantes: %d", ent->cantidadInicialVidas);
-			borrarArchivosBill();
-			log_info(logs,"Borrados archivos de pokemones del Dir de Bill exitosamente!");
-			//reconecto al mismo mapa, y reinicio el objetivo siempre desde cero
-			log_info(logs,"Reconectandose al mismo mapa que se encontraba\n");
-			// empiezo del mapa anterior
-			posicionesYDeadlocks->pos = posicionesYDeadlocks->pos -1;
-			// no dejo que siga iterando los objetivos
-			posicionesYDeadlocks->salirDeObjetivos = 1;
-			posicionesYDeadlocks->cargarDeNuevoObjetivo=1;
-			//printf("Posicion antes de iterar el for de mapas: %d\n",posicionesYDeadlocks->pos);
-			close(servidor);
-			return;
-			} else if (!strcmp(motivo,"senial")){
-				log_info(logs,"Moriste por la senial SIGTERM, vidas restantes: %d\n", ent->cantidadInicialVidas);
-				return;
-			}
-	} else if(ent->cantidadInicialVidas==0){
-		//close(servidor);
-		if(!strcmp(motivo,"deadlock")){
-			log_info(logs,"Perdiste tu ultima vida, fue por deadlock");
-		} else if (!strcmp(motivo,"senial")){
-			log_info(logs,"Perdiste tu ultima vida, fue por SIGTERM");
-		}
-		char respuesta[3];
-		log_info(logs,"Numero de reintentos realizados hasta el momento: %d", ent->reintentos);
+		log_info(logs,"Moriste por deadlock, vidas restantes: %d", ent->cantidadInicialVidas);
+		borrarArchivosBill();
+		log_info(logs,"Borrados archivos de pokemones del Dir de Bill exitosamente!");
+		//reconecto al mismo mapa, y reinicio el objetivo siempre desde cero
+		log_info(logs,"Reconectandose al mismo mapa que se encontraba\n");
+		// empiezo del mapa anterior
+		posicionesYDeadlocks->pos = posicionesYDeadlocks->pos -1;
+		// no dejo que siga iterando los objetivos
+		posicionesYDeadlocks->salirDeObjetivos = 1;
+		posicionesYDeadlocks->cargarDeNuevoObjetivo=1;
+		//printf("Posicion antes de iterar el for de mapas: %d\n",posicionesYDeadlocks->pos);
 		close(servidor);
-		do{
-			log_info(logs,"Desea reiniciar juego?");
-			fgets(respuesta, 3, stdin);
-			if (string_equals_ignore_case(respuesta,"si")){
-				log_info(logs,"Reseteando...\n");
-				resetear();
-				log_info(logs,"Borradas todas las medallas y todos los pokemons, empezando nueva aventura");
+		return;
+	} else if(ent->cantidadInicialVidas==0){
+		log_info(logs,"Perdiste tu ultima vida, fue por deadlock");
+		resetearDesdeCero();
+		return;
+	}
+}
 
-				list_destroy_and_destroy_elements(ent->hojaDeViaje,free);
-				list_destroy_and_destroy_elements(ent->pokemonsPorMapaCapturados,free);
-				list_destroy((ent)->listaNivAtrapados);
-				list_destroy_and_destroy_elements(ips,free);
-				list_destroy_and_destroy_elements(puertos,free);
-
-				dictionary_destroy_and_destroy_elements(pokesDeCadaMapa,free);
-
-				if (!leerConfigEnt(configEntrenador,&ent, puntoMontaje)) {
-					log_error(logs,"Error al leer el archivo de configuracion de Metadata Entrenador");
-				}
-
-				log_info(logs,"Archivo de config Entrenador creado exitosamente!\n");
-				posicionesYDeadlocks->reintentosActualizados++;
-				ent->reintentos = posicionesYDeadlocks->reintentosActualizados;
-				log_info(logs,"Numero de reintentos realizados: %d \n",ent->reintentos);
-
-				horaInicio = empezarAventura();
-
-				posicionesYDeadlocks->pos = -1;
-				posicionesYDeadlocks->salirDeObjetivos = 1;
-				posicionesYDeadlocks->cargarDeNuevoObjetivo = 2;
-
-				return;
-
-				}else if(string_equals_ignore_case(respuesta,"no")) {
-					log_info(logs,"Cerrando programa\n");
-					exit(0);
-				}else{
-					log_info(logs,"Debe ingresar si o no sin importar mayusculas para realizar algo\n");
-				}
-
-		}while( !(string_equals_ignore_case(respuesta,"si")) || !(string_equals_ignore_case(respuesta,"no")));
+void muerePorSignal(){
+	ent->cantidadInicialVidas = ent->cantidadInicialVidas-1;
+	posicionesYDeadlocks->cantMuertes = posicionesYDeadlocks->cantMuertes+1;
+	if (ent->cantidadInicialVidas>0){
+		log_info(logs,"Moriste por la senial SIGTERM, vidas restantes: %d\n", ent->cantidadInicialVidas);
+		return;
+	} else if(ent->cantidadInicialVidas==0){
+		log_info(logs,"Perdiste tu ultima vida, fue por SIGTERM");
+		resetearDesdeCero();
+		return;
 	}
 }
 
