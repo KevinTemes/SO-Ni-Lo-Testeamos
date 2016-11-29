@@ -999,6 +999,9 @@ int main(int argc, char* argv[]) {
 
 	//nombre de mapa
 	nombreMapa = argv[1];
+	char* papaya = string_new();
+	string_append(&papaya,argv[1]);
+	string_append(&papaya,".log");
 	//inicializo listas
 
 	pokemons = list_create();
@@ -1020,7 +1023,9 @@ int main(int argc, char* argv[]) {
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
 	remove("Mapa.log");
-	logs = log_create("Mapa.log", "Mapa", false, log_level_from_string("INFO"));
+	logs = log_create(papaya,"Mapa", false, log_level_from_string("INFO"));
+
+	free(papaya);
 
 // CONFIG
 
