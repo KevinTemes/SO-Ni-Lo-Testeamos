@@ -403,6 +403,7 @@ void planificador(void* argu) {
 
 			while (q && (!(entre->fallecio) && queue_size(entre->colaAccion))) {
 
+				usleep(datosMapa2->retardoQ*1000);
 
 				acto = (int) queue_pop(entre->colaAccion);
 				//log_info(logs,"funca3");
@@ -455,13 +456,13 @@ void planificador(void* argu) {
 					if (acto == '2' || acto == '4' || acto == '6' || acto == '8') {
 
 
-						usleep(datosMapa2->retardoQ*1000);
+
 
 						switch (acto) {
 
 						case '8':
 							if (entre->posy > 1 && !entre->fallecio) {
-								usleep(datosMapa2->retardoQ*1000);
+								//usleep(datosMapa2->retardoQ*1000);
 								entre->posy--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
@@ -473,7 +474,7 @@ void planificador(void* argu) {
 
 						case '2':
 							if (entre->posy < rows && !entre->fallecio) {
-								usleep(datosMapa2->retardoQ*1000);
+								//usleep(datosMapa2->retardoQ*1000);
 								entre->posy++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
@@ -486,7 +487,7 @@ void planificador(void* argu) {
 
 						case '4':
 							if (entre->posx > 1 && !entre->fallecio) {
-								usleep(datosMapa2->retardoQ*1000);
+								//usleep(datosMapa2->retardoQ*1000);
 								entre->posx--;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
@@ -497,7 +498,7 @@ void planificador(void* argu) {
 							break;
 						case '6':
 							if (entre->posx < cols && !entre->fallecio) {
-								usleep(datosMapa2->retardoQ*1000);
+								//usleep(datosMapa2->retardoQ*1000);
 								entre->posx++;
 								MoverPersonaje(items, entre->simbolo,
 										entre->posx, entre->posy);
@@ -628,7 +629,6 @@ void planificador(void* argu) {
 			int banderin = 1;
 			ent1 = (entrenador*) queue_pop(colaListos);
 
-            if(!ent1->fallecio){
 			int acto;
 			acto = (int) queue_peek(ent1->colaAccion);
 
@@ -683,6 +683,8 @@ void planificador(void* argu) {
 
 				while (banderin && !(ent1->fallecio)&& queue_size(ent1->colaAccion)) {
 
+					usleep(datosMapa2->retardoQ*1000);
+
 					acto = (int) queue_pop(ent1->colaAccion);
 
 					if (acto == '2' || acto == '4' || acto == '6'
@@ -694,8 +696,8 @@ void planificador(void* argu) {
 						case '8':
 							if (ent1->posy > 1 && !ent1->fallecio) {
 								//				log_info(logs, "mueva arriba");
-								usleep(datosMapa2->retardoQ*1000);
-								sleep(50000);
+								//usleep(datosMapa2->retardoQ*1000);
+
 								ent1->posy--;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
@@ -707,7 +709,7 @@ void planificador(void* argu) {
 						case '2':
 							if (ent1->posy < rows && !ent1->fallecio) {
 								//				log_info(logs, "mueva abajo");
-								usleep(datosMapa2->retardoQ*1000);
+								//usleep(datosMapa2->retardoQ*1000);
 								ent1->posy++;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
@@ -719,7 +721,7 @@ void planificador(void* argu) {
 						case '4':
 							if (ent1->posx > 1 && !ent1->fallecio) {
 								//				log_info(logs, "mueva izquierda");
-								usleep(datosMapa2->retardoQ*1000);
+								//usleep(datosMapa2->retardoQ*1000);
 								ent1->posx--;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
@@ -730,7 +732,7 @@ void planificador(void* argu) {
 						case '6':
 							if (ent1->posx < cols && !ent1->fallecio) {
 								//				log_info(logs, "mueva derecha");
-								usleep(datosMapa2->retardoQ*1000);
+								//usleep(datosMapa2->retardoQ*1000);
 								ent1->posx++;
 								MoverPersonaje(items, ent1->simbolo, ent1->posx,
 										ent1->posy);
@@ -812,9 +814,6 @@ void planificador(void* argu) {
 				queue_push(colaListos, ent1);
 				sem_post(&sem_Listos);
 			}
-            }else{
-            	matar(ent1);
-            }
 		}
 
 	}
