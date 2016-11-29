@@ -514,7 +514,7 @@ void planificador(void* argu) {
 
 					if (acto == '9' && !entre->fallecio) {
 
-						usleep(datosMapa2->retardoQ*1000);
+						//usleep(datosMapa2->retardoQ*1000);
 						q = 0;
 						bloqueo = 1;
 
@@ -584,7 +584,7 @@ void planificador(void* argu) {
 			}
 
 			if (!bloqueo && !entre->fallecio) {
-				usleep(datosMapa2->retardoQ*1000);
+				//usleep(datosMapa2->retardoQ*1000);
 				//q = datosMapa->quantum;
 		    	log_info(logs,"termina el quantum del entrenador %c, vuelve a la cola de listos",entre->simbolo);
 				queue_push(colaListos, entre);
@@ -606,7 +606,6 @@ void planificador(void* argu) {
 				entrenador* ent;
 				ent = queue_pop(colaListos);
 				list_add(listaAux, ent);
-
 			}
 
 			list_sort(listaAux, (void*) esMasCerca);
@@ -744,7 +743,7 @@ void planificador(void* argu) {
 					}
 					if (acto == '9' && !ent1->fallecio) {
 
-						usleep(datosMapa->retardoQ*1000);
+						//usleep(datosMapa->retardoQ*1000);
 						bloqueo = 1;
                         banderin = 0;
 						ent1->flagLeAsignaronPokenest = 0;
@@ -809,7 +808,7 @@ void planificador(void* argu) {
 			}
 
 			if (!bloqueo && !ent1->fallecio) {
-				usleep(datosMapa2->retardoQ*1000);
+			//	usleep(datosMapa2->retardoQ*1000);
 				queue_push(colaListos, ent1);
 				sem_post(&sem_Listos);
 			}
@@ -832,7 +831,7 @@ void bloqui(void* stru) {
 		sem_getvalue(&strub->sembloq, &dal);
 		log_info(logs, "Pasa el sem wait, el siguiente vale %d", dal);
 
-		usleep(datosMapa2->retardoQ*1000);
+	//	usleep(datosMapa2->retardoQ*1000);
 		//SOLUCION RUDIMENTARISISISISISISISISISIISISISISISISIISISISISISIISISISISISIISISMA
 
 		if (dal == 0) {
