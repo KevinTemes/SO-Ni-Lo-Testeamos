@@ -2,7 +2,7 @@
 
 if [ "$#" -ne 2 ] || [ ! -d $1 ] ; then
 	echo "Uso: $0 [Punto de Montaje de OSADA] [Tamanio en KBs]"
-	echo 
+	echo
 	exit 33
 fi
 
@@ -12,5 +12,4 @@ BIGFILE="bigfile.bin"
 
 echo "Usando $OSADADIR..."
 
-echo "dd if=/dev/urandom of=$OSADADIR/$BIGFILE bs=1024 count=$KBCOUNT"
-
+dd if=/dev/urandom of=$OSADADIR/$BIGFILE bs=1024 count=$KBCOUNT
