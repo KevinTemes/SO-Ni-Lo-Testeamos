@@ -376,7 +376,29 @@ static int cliente_rmdir(const char* path){
 //////////////////////////////////////////////////////////////////////////////
 int cliente_truncate(const char * path, off_t offset) {
 
-	log_info(log_Cliente, "Truncado del archivo %s exitoso.", path);
+	log_info(log_Cliente, "Solicitud de truncado del archivo %s", path);
+	int exito;
+	int protocolo = 10;
+	int largoRuta = strlen(path);
+	int tamanio = offset;
+	void *buffer = malloc(largoRuta + (3 * sizeof(int)));
+	memcpy(buffer, &protocolo, sizeof(int));
+	memcpy(buffer + sizeof(int), &largoRuta, sizeof(int));
+	memcpy(buffer + (2 * sizeof(int)), path, largoRuta);
+	memcpy(buffer + (2 * sizeof(int)) + largoRuta, &tamanio, sizeof(int));
+
+	send(pokedexServidor, buffer, (3 * sizeof(int)) + largoRuta, MSG_WAITALL);
+
+	recv(pokedexServidor, &exito, sizeof(int), MSG_WAITALL);
+
+	if(exito == 0){
+		log_info(log_Cliente, "Truncado del archivo %s exitoso.", path);
+	}
+	else{
+		log_error(log_Cliente, "Error al truncar el archivo %s (espacio en disco insuficiente?)", path);
+	}
+
+	free(buffer);
 	return 0;
 }
 
