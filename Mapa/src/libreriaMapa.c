@@ -339,9 +339,9 @@ void atenderConexion(void *numeroCliente) {
 				((ent1->pokePeleador)->especie) = (char*) bufferCosaUno;
 				((ent1->pokePeleador)->especie)[tamanioUno] = '\0';
 
-	/*			log_info(logs, "poke peleador de %c es %s", ent1->simbolo,(ent1->pokePeleador)->especie);
+				log_info(logs, "poke peleador de %c es %s", ent1->simbolo,(ent1->pokePeleador)->especie);
 				((ent1->pokePeleador)->nivel) = nivel;
-				log_info(logs, "nivel del poke peleador de %c es %d",ent1->simbolo, (ent1->pokePeleador)->nivel); */
+				log_info(logs, "nivel del poke peleador de %c es %d",ent1->simbolo, (ent1->pokePeleador)->nivel);
 
 			//	free(bufferCosaUno);
 
