@@ -194,16 +194,16 @@ void banquero() {
 					return x;
 				}
 
+				entrenador* es = hp;
 				t_list* listin = list_create();
-				list_add(listin, hp);
+				list_add(listin, es);
 				list_add(deadlocks, listin);
 
-				while (list_find(entrenadoresEnDeadlock, (void*) entrencontrado)
-						!= NULL) {
-					entrenador* hp;
-					hp = list_remove_by_condition(entrenadoresEnDeadlock,
-							(void*) entrencontrado);
-					list_add(listin, hp);
+				while (list_find(entrenadoresEnDeadlock, (void*) entrencontrado)!= NULL) {
+					entrenador* jota;
+					hp = list_remove_by_condition(entrenadoresEnDeadlock,(void*) entrencontrado);
+					jota = hp;
+					list_add(listin, jota);
 				}
 
 			}
