@@ -5,4 +5,4 @@ cd nilotesteamos/tp-2016-2c-Ni-Lo-Testeamos/Mapa/src
 
 gcc Mapa.c libreriaMapa.c libreriaMapa.h libSockets.c libSockets.h -o mapa -lcommons -lfuse -lnivel-gui -lcurses -lpthread -lpkmn-battle
 
-./mapa Azul /home/nilotesteamos/mnt/01-base
+./mapa Home /home/utnso/nilotesteamos/mnt
