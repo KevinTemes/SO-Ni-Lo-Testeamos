@@ -124,11 +124,10 @@ void atenderConexion(void *numeroCliente){
 	void *buffer, *bufferDir, *nuevoContenido, 	*bufferContenido;;
 	void *respuesta;
 
-	remove("Servidor.log");
-	log_Servidor = log_create("Servidor.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
+//	remove("Servidor.log");
+//	log_Servidor = log_create("Servidor.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
 
-	printf("PokeCliente #%d conectado! esperando solicitudes... \n",
-			clientesActivos[unCliente].cliente);
+	log_info(log_Servidor, "PokeCliente #%d conectado al servidor", clientesActivos[unCliente].cliente);
 
 	while(status !=0){
 
@@ -491,10 +490,13 @@ int buscarPosicionLibre(){
 t_getattr osada_getattr(char *unaRuta){
 	t_getattr atributos;
 	int posicion = buscarArchivo(unaRuta);
+	log_info(log_Servidor, "Recibida solicitud .getattr sobre la ruta %s", unaRuta);
 
 	if (posicion == 65535){
 		atributos.tipo_archivo = 2;
 		atributos.size = 0;
+
+		log_info(log_Servidor, "Solicitud .getattr sobre la ruta %s completa.", unaRuta);
 	}
 	else if(posicion == -1){
 		atributos.tipo_archivo = 0;
@@ -504,12 +506,18 @@ t_getattr osada_getattr(char *unaRuta){
 		if(miDisco.tablaDeArchivos[posicion].state == REGULAR){
 			atributos.tipo_archivo = 1;
 			atributos.size = (int) miDisco.tablaDeArchivos[posicion].file_size;
+
+			log_info(log_Servidor, "Solicitud .getattr sobre la ruta %s completa.", unaRuta);
 		}
 		else if(miDisco.tablaDeArchivos[posicion].state == DIRECTORY){
 			atributos.tipo_archivo = 2;
 			atributos.size = 0;
+
+			log_info(log_Servidor, "Solicitud .getattr sobre la ruta %s completa.", unaRuta);
 		}
 	}
+
+
 
 return atributos;
 }
@@ -523,8 +531,10 @@ char *osada_readdir(char *unaRuta){
 	int numElems = 0;
 	int i;
 
+	log_info(log_Servidor, "Solicitud de lectura de directorio (.readdir) sobre la ruta %s", unaRuta);
+
 	if(parentBlock == 999999){
-		printf("no existe el directorio o subdirectorio especificado\n");
+		log_error(log_Servidor, "no existe el directorio o subdirectorio especificado\n");
 		exit(0);
 	}
 
@@ -558,6 +568,7 @@ char *osada_readdir(char *unaRuta){
 		string_append(&contenidoDir, "\0");
 	}
 
+	log_info(log_Servidor, "Operacion .readdir sobre la ruta %s finalizada.", unaRuta);
 
 return contenidoDir;
 
@@ -569,7 +580,6 @@ int osada_open(char *ruta){
 	log_info(log_Servidor, "Solicitud para abrir archivo (.open) %s", ruta);
 	int exito = -1;
 	t_getattr archivo = osada_getattr(ruta);
-	//log_info(log_Servidor, "Se intento efectuar un open del archivo %s", ruta);
 	if(archivo.tipo_archivo != 0){
 		exito = 0;
 	}
@@ -759,7 +769,7 @@ int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
 				datosPendientes = 0;
 			}
 
-			//bitarray_set_bit(miDisco.bitmap, siguienteBloque);
+			bitarray_set_bit(miDisco.bitmap, siguienteBloque);
 			aux = siguienteBloque;
 			miDisco.tablaDeAsignaciones[siguienteBloque] = primerBloqueBitmapLibre();
 			siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
@@ -1120,5 +1130,18 @@ int inicioDeDatosEnBloques(){
 			+ miDisco.cantBloques.bloques_tablaDeAsignaciones;
 
 return inicio;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+void chequearBitmap(){
+	char *root = "/";
+	char *contDir = osada_readdir(root);
+	if(strlen(contDir) == 0){
+		int i;
+		int inicio = inicioDeDatosEnBloques();
+		int fin = miDisco.header->fs_blocks;
+		for(i = inicio; i <= fin; i++){
+			bitarray_clean_bit(miDisco.bitmap, i);
+		}
+	}
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -14,7 +14,7 @@
 #define BACKLOG 100
 /* para testear sockets */
 
-extern t_log* log_Servidor;
+// extern t_log* log_Servidor;
 
 
 void osada_iniciar(char *osada_path){
