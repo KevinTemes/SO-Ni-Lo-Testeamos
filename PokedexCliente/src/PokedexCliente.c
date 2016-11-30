@@ -33,18 +33,9 @@ typedef struct{
 //-----------------------------------------------------
 int pokedexServidor;
 int protocolo;
-//-----------------------------------------------------
-
 t_log *log_Cliente;
-
-//-----------------------------------------------------
-
-/* defines para testear sockets */
-#define IP "127.0.0.1"
-#define PUERTO "7777"
-#define PACKAGESIZE 1024
-
 //--------------------------------------------------------------------------------
+
 
 /* Implementacion de GetAttributes para fuse*/
 int cliente_getattr(const char *path, struct stat *stbuf) {
@@ -416,7 +407,7 @@ int main(int argc, char *argv[]) {
 	char *SERVER_IP = getenv("SERVER_IP");
 	char *SERVER_PUERTO = getenv("SERVER_PUERTO");
 
-	pokedexServidor = conectarCliente("127.0.0.1", "7777");
+	pokedexServidor = conectarCliente(SERVER_IP, SERVER_PUERTO);
 
 	log_info(log_Cliente, "PokeCliente conectado al servidor. Aguardando peticiones....");
 
