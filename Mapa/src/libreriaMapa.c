@@ -37,6 +37,7 @@ extern t_list* items;
 extern t_list* disponibles;
 extern t_list* listaContenedora;
 extern t_list* colaDeListosImp;
+extern t_list* colaDeBloqImp;
 
 /////////////////////////////////////////////////////////////////////////////
 void* recibirDatos(int conexion, int tamanio) {
@@ -361,6 +362,48 @@ void atenderConexion(void *numeroCliente) {
 
 	}
 	pthread_mutex_lock(&mutexMurte);
+	int auxiliar234;
+		for (auxiliar234=0;auxiliar234<list_size(ent1->pokemones);auxiliar234++) {
+			metaDataPokemon* pok;
+			bloq* bli;
+			tabla* d;
+
+			pok = list_get(ent1->pokemones, auxiliar234);
+		//	log_info(logs,"se libera al pokemon %s del entrenador %c EN LIBPOK",pok->especie,ent1->simbolo);
+			bool esLaPokenest3(tabla* a) {
+				return pok->especie[0] == a->pokenest;
+			}
+			d = list_find(disponibles, (void*) esLaPokenest3);
+			d->valor++;
+			sumarRecurso2(items, d->pokenest);
+	    	nivel_gui_dibujar(items, nombreMapa);
+			pok->estaOcupado = 0;
+
+			bool esLad(bloq* ver) {
+				return ver->pokenest == pok->especie[0];
+			}
+
+
+			int iiiuax;
+			for (iiiuax = 0; iiiuax < list_size(disponibles); iiiuax++) {
+				tabla* e;
+				e = list_get(disponibles, iiiuax);
+				log_info(logs, "Disponible de %c es %d", e->pokenest, e->valor);
+			}
+
+
+
+			bli = list_find(listaContenedora, (void*) esLad);
+
+			sem_post(&(bli->sembloq));
+			//sem_post(&(bli->sembloq));
+
+
+			int vale;
+			sem_getvalue(&(bli->sembloq),&vale);
+			log_info(logs, "postea semaforo pokemon de %c y su valor es %d", bli->pokenest,vale);
+
+		}
 	ent1->fallecio = 1;
 	queue_clean(ent1->colaAccion);
 	BorrarItem(items, ent1->simbolo);
@@ -370,6 +413,8 @@ void atenderConexion(void *numeroCliente) {
 		}
 
 		list_remove_by_condition(entrenadoresEnCurso, (void*) esEntrenador);
+		list_remove_by_condition(colaDeListosImp, (void*) esEntrenador);
+		list_remove_by_condition(colaDeBloqImp, (void*) esEntrenador);
 
 		int peo;
 			for (peo = 0; peo < list_size(ent1->asignados); peo++) {
@@ -381,48 +426,7 @@ void atenderConexion(void *numeroCliente) {
 				b->valor = 0;
 			}
 
-	int auxiliar234;
-	for (auxiliar234=0;auxiliar234<list_size(ent1->pokemones);auxiliar234++) {
-		metaDataPokemon* pok;
-		bloq* bli;
-		tabla* d;
 
-		pok = list_get(ent1->pokemones, auxiliar234);
-	//	log_info(logs,"se libera al pokemon %s del entrenador %c EN LIBPOK",pok->especie,ent1->simbolo);
-		bool esLaPokenest3(tabla* a) {
-			return pok->especie[0] == a->pokenest;
-		}
-		d = list_find(disponibles, (void*) esLaPokenest3);
-		d->valor++;
-		sumarRecurso2(items, d->pokenest);
-    	nivel_gui_dibujar(items, nombreMapa);
-		pok->estaOcupado = 0;
-
-		bool esLad(bloq* ver) {
-			return ver->pokenest == pok->especie[0];
-		}
-
-
-		int iiiuax;
-		for (iiiuax = 0; iiiuax < list_size(disponibles); iiiuax++) {
-			tabla* e;
-			e = list_get(disponibles, iiiuax);
-			log_info(logs, "Disponible de %c es %d", e->pokenest, e->valor);
-		}
-
-
-
-		bli = list_find(listaContenedora, (void*) esLad);
-
-		sem_post(&(bli->sembloq));
-		//sem_post(&(bli->sembloq));
-
-
-		int vale;
-		sem_getvalue(&(bli->sembloq),&vale);
-		log_info(logs, "postea semaforo pokemon de %c y su valor es %d", bli->pokenest,vale);
-
-	}
 	list_destroy(ent1->pokemones);
     pthread_mutex_unlock(&mutexMurte);
 	log_info(logi, "entrenador fallece");
