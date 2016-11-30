@@ -58,6 +58,8 @@ pthread_mutex_t misMutex[2048];
 
 pthread_mutex_t mutex_bloques;
 
+t_log* log_Servidor;
+
 /* Función para obtener el nombre de un archivo desde una tabla de archivos, en formato char * */
 char *getFileName(unsigned char *nombreArchivo);
 
@@ -130,11 +132,9 @@ void crearDirectorio(char *nombreArchivo, char *ruta, int pos);
 
 void borrarDirectorio(int posicion);
 
-void actualizarBitmap();
+void chequearBitmap();
 
 void actualizarTablaDeArchivos();
-
-void actualizarTablaDeAsignaciones();
 
 /* implementaciones de operaciones del filesystema osada */
 t_getattr osada_getattr(char *unaRuta);
