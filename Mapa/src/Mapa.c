@@ -52,7 +52,8 @@ t_list* pokenests; //MATADO
 t_list* disponibles; //MATADO
 t_list* items;
 t_list* entrenadoresEnCurso; //MATADO
-
+t_list* colaDeListosImp;
+t_list* colaDeBloqImp;
 t_list* listaContenedora; //MATADO
 t_list* deadlocks; //MATADO
 //colas
@@ -81,7 +82,7 @@ pthread_mutex_t mutexMuerte = PTHREAD_MUTEX_INITIALIZER;
 void banquero() {
 
 	while (1) {
-		usleep(datosMapa2->tiempoChequeoDeadlock*1000);
+		usleep(datosMapa2->tiempoChequeoDeadlock * 1000);
 
 		if (list_size(entrenadoresEnCurso)) {
 			t_list* vectorT = list_create();
@@ -192,9 +193,7 @@ void banquero() {
 					}
 					return x;
 				}
-				log_info(logs,
-						"Remueve a %c de entrenadores que se suponen en deadlock",
-						hp->simbolo);
+
 				t_list* listin = list_create();
 				list_add(listin, hp);
 				list_add(deadlocks, listin);
@@ -204,11 +203,51 @@ void banquero() {
 					entrenador* hp;
 					hp = list_remove_by_condition(entrenadoresEnDeadlock,
 							(void*) entrencontrado);
-					log_info(logs, "%c se encuentra en el mismo deadlock",
-							hp->simbolo);
 					list_add(listin, hp);
 				}
 
+			}
+
+
+			if(list_size(deadlocks)){
+				int comproba=0;
+				t_list* listitw;
+				int eaf;
+				for(eaf=0; eaf<list_size(deadlocks);eaf++){
+					listitw = list_get(deadlocks,eaf);
+					if(list_size(listitw)>1){
+						comproba=1;
+					}
+				}
+				if(comproba){
+					log_info(logs,"Hubo deadlock, tablas usadas:");
+					log_info(logs,"Asignacion:");
+					int auxileg;
+					for(auxileg=0;auxileg<list_size(entrenadoresEnCurso);auxileg++){
+						entrenador* entw;
+						entw = list_get(entrenadoresEnCurso,auxileg);
+						log_info(logs,"Entrenador %c",entw->simbolo);
+						int casielUlti;
+						for(casielUlti=0;casielUlti<list_size(entw->asignados);casielUlti++){
+							tabla* tablilla;
+							tablilla = list_get(entw->asignados,casielUlti);
+							log_info(logs,"%c%d",tablilla->pokenest,tablilla->valor);
+						}
+					}
+					log_info(logs,"Solicitud:");
+					int auxilog;
+										for(auxilog=0;auxilog<list_size(entrenadoresEnCurso);auxilog++){
+											entrenador* entw;
+											entw = list_get(entrenadoresEnCurso,auxilog);
+											log_info(logs,"Entrenador %c",entw->simbolo);
+											int casielUlti;
+											for(casielUlti=0;casielUlti<list_size(entw->asignados);casielUlti++){
+												tabla* tablilla;
+												tablilla = list_get(entw->asignados,casielUlti);
+												log_info(logs,"%c%d",tablilla->pokenest,tablilla->valor);
+											}
+										}
+				}
 			}
 
 			if (list_size(deadlocks)) {
@@ -221,19 +260,28 @@ void banquero() {
 						for (efefe = 0; efefe < list_size(liste); efefe++) {
 							entrenador* pef;
 							pef = list_get(liste, efefe);
-							log_info(logs, "entrenadores en deadlock #%d: %c",
-									ef, pef->simbolo);
-							int accione = 3;
-							//int efe;
-							send((clientesActivos[pef->numeroCliente]).socket,
-									&accione, sizeof(int), 0);
-							//			log_info(logs, "%d", efe);
+							log_info(logs, "entrenador %c en deadlock #%d ",
+									 pef->simbolo,ef);
+						/*	log_info(logs,"sus campos de asignacion y solicitud");
+							log_info(logs,"asignacion:");
+							int paxu;
+							for(paxu=0;paxu<list_size(pef->asignados);paxu++){
+								tabla* asigneishon;
+								asigneishon = list_get(pef->asignados,paxu);
+								log_info(logs,"%c%d",asigneishon->pokenest,asigneishon->valor);
+							}
+							int poxu;
+							for(poxu=0;poxu<list_size(pef->solicitud);poxu++){
+								tabla* asignoishon;
+								asignoishon = list_get(pef->solicitud,poxu);
+								log_info(logs,"%c%d",asignoishon->pokenest,asignoishon->valor);
+							}
+							//			log_info(logs, "%d", efe); */
 						}
 					} else {
 						entrenador* pof;
 						pof = list_get(liste, 0);
-						log_info(logs,
-								"entrenador %c en inanicion",
+						log_info(logs, "entrenador %c en inanicion",
 								pof->simbolo);
 					}
 
@@ -263,6 +311,19 @@ void banquero() {
 						listota = list_get(deadlocks, yotromas);
 
 						if (list_size(listota) > 1) {
+
+							int elultiaux;
+							for (elultiaux = 0; elultiaux < list_size(listota);
+									elultiaux++) {
+								entrenador* elent;
+								elent = list_get(listota, elultiaux);
+								int accione = 3;
+								//int efe;
+								send(
+										(clientesActivos[elent->numeroCliente]).socket,
+										&accione, sizeof(int), 0);
+
+							}
 							int ultimo;
 							for (ultimo = 0; ultimo < list_size(listota);
 									ultimo++) {
@@ -331,6 +392,9 @@ void banquero() {
 							}
 							entrenador* muerto;
 							muerto = list_get(listota, 0);
+							log_info(logs,
+									"Seleccionado el entrenador %c como victima",
+									muerto->simbolo);
 							int auxiliar23;
 							for (auxiliar23 = 0;
 									auxiliar23 < list_size(muerto->solicitud);
@@ -381,7 +445,7 @@ void planificador(void* argu) {
 	while (1) {
 		sem_wait(&sem_Listos); //semaforo de nuevos bloqueando que se saque un ent si la cola esta vacia
 
-	//	usleep(datosMapa2->retardoQ*1000);
+		//	usleep(datosMapa2->retardoQ*1000);
 
 		int q = datosMapa2->quantum;
 
@@ -389,214 +453,300 @@ void planificador(void* argu) {
 
 		if (!strcmp(datosMapa2->algoritmo, "RR")) {
 
+			//log_info(logs,"RR");
 			int acto;
 			entrenador* entre;
 
 			int bloqueo = 0;
-			entre = queue_pop(colaListos);
 
-			if(queue_size(entre->colaAccion)){
+			if (queue_size(colaListos)) {
+				entre = queue_pop(colaListos);
 
-				log_info(logs,"Extrae entrenador %c de la cola de listos y ejecuta",entre->simbolo);
+				if (queue_size(entre->colaAccion)) {
 
-			}
-
-			while (q && (!(entre->fallecio) && queue_size(entre->colaAccion))) {
-
-				usleep(datosMapa2->retardoQ*1000);
-
-				acto = (int) queue_pop(entre->colaAccion);
-				//log_info(logs,"funca3");
-
-				if (isalpha(acto) && !entre->fallecio) {
-					int ka;
-					for (ka = 0; ka < list_size(pokenests); ka++) {
-						metaDataPokeNest* datosPokenest;
-						datosPokenest = (metaDataPokeNest*) list_get(pokenests,
-								ka);
-						if (datosPokenest->caracterPokeNest[0] == acto) {
-
-							//log_info(logs, "antes del send %s",datosPokenest->posicion);
-
-							char** posicionPoke;
-							posicionPoke = string_split(datosPokenest->posicion,
-									";");
-
-							entre->posPokex = atoi(posicionPoke[0]);
-							entre->posPokey = atoi(posicionPoke[1]);
-							entre->pokenestAsignado =
-									datosPokenest->caracterPokeNest[0];
-							entre->flagLeAsignaronPokenest = 1;
-
-							ka = list_size(pokenests);
-
-							//serializo las coordenadas
-							int tamanioTotal = 2 * sizeof(int);
-							void* miBuffer = malloc(tamanioTotal);
-
-							memcpy(miBuffer, &(entre->posPokex), sizeof(int));
-							memcpy(miBuffer + sizeof(int), &(entre->posPokey),
-									sizeof(int));
-
-							// lo mando
-							send((clientesActivos[entre->numeroCliente]).socket,
-									miBuffer, tamanioTotal, 0);
-
-							free(miBuffer);
-
-
-						}
-					}
+					log_info(logs,
+							"Extrae entrenador %c de la cola de listos y ejecuta",
+							entre->simbolo);
 
 				}
 
-				//8 es 56, 2 es 50, 4 es 52, 6 es 54
+				while (q
+						&& (!(entre->fallecio) && queue_size(entre->colaAccion))) {
 
-				if (isdigit(acto) && !(entre->fallecio)) {
-					if (acto == '2' || acto == '4' || acto == '6' || acto == '8') {
+					usleep(datosMapa2->retardoQ * 1000);
 
+					acto = (int) queue_pop(entre->colaAccion);
+					//log_info(logs,"funca3");
 
+					if (isalpha(acto) && !entre->fallecio) {
+						int ka;
+						for (ka = 0; ka < list_size(pokenests); ka++) {
+							metaDataPokeNest* datosPokenest;
+							datosPokenest = (metaDataPokeNest*) list_get(
+									pokenests, ka);
+							if (datosPokenest->caracterPokeNest[0] == acto) {
 
+								//log_info(logs, "antes del send %s",datosPokenest->posicion);
 
-						switch (acto) {
+								char** posicionPoke;
+								posicionPoke = string_split(
+										datosPokenest->posicion, ";");
 
-						case '8':
-							if (entre->posy > 1 && !entre->fallecio) {
-								//usleep(datosMapa2->retardoQ*1000);
-								entre->posy--;
-								MoverPersonaje(items, entre->simbolo,
-										entre->posx, entre->posy);
-								nivel_gui_dibujar(items, argument);
-								q--;
-								log_info(logs, "valor de quantum para ejecucion de %c: %d ", entre->simbolo,q);
+								entre->posPokex = atoi(posicionPoke[0]);
+								entre->posPokey = atoi(posicionPoke[1]);
+								entre->pokenestAsignado =
+										datosPokenest->caracterPokeNest[0];
+								entre->flagLeAsignaronPokenest = 1;
+
+								ka = list_size(pokenests);
+
+								//serializo las coordenadas
+								int tamanioTotal = 2 * sizeof(int);
+								void* miBuffer = malloc(tamanioTotal);
+
+								memcpy(miBuffer, &(entre->posPokex),
+										sizeof(int));
+								memcpy(miBuffer + sizeof(int),
+										&(entre->posPokey), sizeof(int));
+
+								// lo mando
+								send(
+										(clientesActivos[entre->numeroCliente]).socket,
+										miBuffer, tamanioTotal, 0);
+
+								free(miBuffer);
+
 							}
-							break;
-
-						case '2':
-							if (entre->posy < rows && !entre->fallecio) {
-								//usleep(datosMapa2->retardoQ*1000);
-								entre->posy++;
-								MoverPersonaje(items, entre->simbolo,
-										entre->posx, entre->posy);
-
-								nivel_gui_dibujar(items, argument);
-								q--;
-								log_info(logs, "valor de quantum para ejecucion de %c: %d ", entre->simbolo,q);
-							}
-							break;
-
-						case '4':
-							if (entre->posx > 1 && !entre->fallecio) {
-								//usleep(datosMapa2->retardoQ*1000);
-								entre->posx--;
-								MoverPersonaje(items, entre->simbolo,
-										entre->posx, entre->posy);
-								nivel_gui_dibujar(items, argument);
-								q--;
-								log_info(logs, "valor de quantum para ejecucion de %c: %d ", entre->simbolo,q);
-							}
-							break;
-						case '6':
-							if (entre->posx < cols && !entre->fallecio) {
-								//usleep(datosMapa2->retardoQ*1000);
-								entre->posx++;
-								MoverPersonaje(items, entre->simbolo,
-										entre->posx, entre->posy);
-								nivel_gui_dibujar(items, argument);
-
-								q--;
-								log_info(logs, "valor de quantum para ejecucion de %c: %d ", entre->simbolo,q);
-							}
-							break;
-
 						}
+
 					}
 
-					if (acto == '9' && !entre->fallecio) {
+					//8 es 56, 2 es 50, 4 es 52, 6 es 54
 
-						//usleep(datosMapa2->retardoQ*1000);
-						q = 0;
-						bloqueo = 1;
+					if (isdigit(acto) && !(entre->fallecio)) {
+						if (acto == '2' || acto == '4' || acto == '6'
+								|| acto == '8') {
 
-						entre->flagLeAsignaronPokenest = 0;
+							switch (acto) {
 
-						pokimons* p;
+							case '8':
+								if (entre->posy > 1 && !entre->fallecio) {
+									//usleep(datosMapa2->retardoQ*1000);
+									entre->posy--;
+									MoverPersonaje(items, entre->simbolo,
+											entre->posx, entre->posy);
+									nivel_gui_dibujar(items, argument);
+									q--;
+									log_info(logs,
+											"valor de quantum para ejecucion de %c: %d ",
+											entre->simbolo, q);
+								}
+								break;
 
-						bool esLaPokenest(pokimons *parametro1) {
-							return entre->pokenestAsignado
-									== parametro1->pokinest;
+							case '2':
+								if (entre->posy < rows && !entre->fallecio) {
+									//usleep(datosMapa2->retardoQ*1000);
+									entre->posy++;
+									MoverPersonaje(items, entre->simbolo,
+											entre->posx, entre->posy);
+
+									nivel_gui_dibujar(items, argument);
+									q--;
+									log_info(logs,
+											"valor de quantum para ejecucion de %c: %d ",
+											entre->simbolo, q);
+								}
+								break;
+
+							case '4':
+								if (entre->posx > 1 && !entre->fallecio) {
+									//usleep(datosMapa2->retardoQ*1000);
+									entre->posx--;
+									MoverPersonaje(items, entre->simbolo,
+											entre->posx, entre->posy);
+									nivel_gui_dibujar(items, argument);
+									q--;
+									log_info(logs,
+											"valor de quantum para ejecucion de %c: %d ",
+											entre->simbolo, q);
+								}
+								break;
+							case '6':
+								if (entre->posx < cols && !entre->fallecio) {
+									//usleep(datosMapa2->retardoQ*1000);
+									entre->posx++;
+									MoverPersonaje(items, entre->simbolo,
+											entre->posx, entre->posy);
+									nivel_gui_dibujar(items, argument);
+
+									q--;
+									log_info(logs,
+											"valor de quantum para ejecucion de %c: %d ",
+											entre->simbolo, q);
+								}
+								break;
+
+							}
 						}
-						p = list_find(pokemons, (void*) esLaPokenest);
 
-						int saux;
-						int captu = 0;
-						for (saux = 0;
-								saux < list_size(p->listaPokemons) && captu == 0;
-								saux++) {
-							metaDataPokemon* pokem;
-							pokem = list_get(p->listaPokemons, saux);
+						if (acto == '9' && !entre->fallecio) {
 
-							if (!pokem->estaOcupado) {
+							//usleep(datosMapa2->retardoQ*1000);
+							q = 0;
+							bloqueo = 1;
+
+							entre->flagLeAsignaronPokenest = 0;
+
+							pokimons* p;
+
+							bool esLaPokenest(pokimons *parametro1) {
+								return entre->pokenestAsignado
+										== parametro1->pokinest;
+							}
+							p = list_find(pokemons, (void*) esLaPokenest);
+
+							int saux;
+							int captu = 0;
+							for (saux = 0;
+									saux < list_size(p->listaPokemons)
+											&& captu == 0; saux++) {
+								metaDataPokemon* pokem;
+								pokem = list_get(p->listaPokemons, saux);
+
+								if (!pokem->estaOcupado) {
+									bloq* e;
+									bool esBloq(bloq* param) {
+										return param->pokenest
+												== pokem->especie[0];
+									}
+									e = list_find(listaContenedora,
+											(void*) esBloq);
+									log_info(logs,
+											"entrenador %c va a la cola de bloqueados,pokenest %c",
+											entre->simbolo, e->pokenest);
+
+									bool esesnt(entrenador* ap) {
+										return ap->simbolo == entre->simbolo;
+									}
+									list_remove_by_condition(colaDeListosImp,
+											(void*) esesnt);
+									log_info(logs,
+											"entrenadores en cola de listos:");
+									int auxilie;
+									for (auxilie = 0;
+											auxilie < list_size(colaDeListosImp);
+											auxilie++) {
+										entrenador* entprint;
+										entprint = list_get(colaDeListosImp,
+												auxilie);
+										log_info(logs, "entrenador %c",
+												entprint->simbolo);
+									}
+
+									list_add(colaDeBloqImp, entre);
+									log_info(logs,
+											"entrenadores en cola de bloqueados:");
+									int auxiliere;
+									for (auxiliere = 0;
+											auxiliere < list_size(colaDeBloqImp);
+											auxiliere++) {
+										entrenador* entprint;
+										entprint = list_get(colaDeBloqImp,
+												auxiliere);
+										log_info(logs, "entrenador %c",
+												entprint->simbolo);
+									}
+
+									queue_push(e->colabloq, entre);
+									captu = 1;
+									sem_post(&(e->sem2));
+								}
+
+							}
+							if (!captu) {
+								tabla* tab;
 								bloq* e;
 								bool esBloq(bloq* param) {
-									return param->pokenest == pokem->especie[0];
+									return param->pokenest
+											== entre->pokenestAsignado;
+								}
+								bool esLaPokenest2(tabla* a) {
+									return entre->pokenestAsignado
+											== a->pokenest;
 								}
 								e = list_find(listaContenedora, (void*) esBloq);
-								log_info(logs, "entrenador %c va a la cola de bloqueados,pokenest %c", entre->simbolo, e->pokenest);
+								tab = list_find(entre->solicitud,
+										(void*) esLaPokenest2);
+
+								tab->valor = tab->valor + 1;
+
+								entre->sumo = 1;
+								//entre->entroBloqueados = 1;
+								log_info(logs,
+										"entrenador %c va a la cola de bloqueados,pokenest %c",
+										entre->simbolo, e->pokenest);
+								bool esesnt(entrenador* ap) {
+									return ap->simbolo == entre->simbolo;
+								}
+								list_remove_by_condition(colaDeListosImp,
+										(void*) esesnt);
+								log_info(logs,
+										"entrenadores en cola de listos:");
+								int auxilie;
+								for (auxilie = 0;
+										auxilie < list_size(colaDeListosImp);
+										auxilie++) {
+									entrenador* entprint;
+									entprint = list_get(colaDeListosImp,
+											auxilie);
+									log_info(logs, "entrenador %c",
+											entprint->simbolo);
+								}
+
+								list_add(colaDeBloqImp, entre);
+								log_info(logs,
+										"entrenadores en cola de bloqueados:");
+								int auxiliere;
+								for (auxiliere = 0;
+										auxiliere < list_size(colaDeBloqImp);
+										auxiliere++) {
+									entrenador* entprint;
+									entprint = list_get(colaDeBloqImp,
+											auxiliere);
+									log_info(logs, "entrenador %c",
+											entprint->simbolo);
+								}
+
 								queue_push(e->colabloq, entre);
-								captu = 1;
 								sem_post(&(e->sem2));
 							}
 
 						}
-						if (!captu) {
-							tabla* tab;
-							bloq* e;
-							bool esBloq(bloq* param) {
-								return param->pokenest
-										== entre->pokenestAsignado;
-							}
-							bool esLaPokenest2(tabla* a) {
-								return entre->pokenestAsignado == a->pokenest;
-							}
-							e = list_find(listaContenedora, (void*) esBloq);
-							tab = list_find(entre->solicitud,
-									(void*) esLaPokenest2);
-
-							tab->valor = tab->valor + 1;
-
-							entre->sumo = 1;
-							//entre->entroBloqueados = 1;
-							log_info(logs, "entrenador %c va a la cola de bloqueados,pokenest %c", entre->simbolo, e->pokenest);
-							queue_push(e->colabloq, entre);
-							sem_post(&(e->sem2));
-						}
-
 					}
 				}
+
+				if (entre->fallecio) {
+					log_info(logs, "%c muere", entre->simbolo);
+					matar(entre);
+					//entre->fallecio=0;
+
+				}
+
+				if (!bloqueo && !entre->fallecio) {
+					//usleep(datosMapa2->retardoQ*1000);
+					//q = datosMapa->quantum;
+					queue_push(colaListos, entre);
+					sem_post(&sem_Listos);
+
+				}
 			}
-
-			if (entre->fallecio) {
-				log_info(logs, "%c muere", entre->simbolo);
-				matar(entre);
-				//entre->fallecio=0;
-
-			}
-
-			if (!bloqueo && !entre->fallecio) {
-				//usleep(datosMapa2->retardoQ*1000);
-				//q = datosMapa->quantum;
-		    	log_info(logs,"termina el quantum del entrenador %c, vuelve a la cola de listos",entre->simbolo);
-				queue_push(colaListos, entre);
-				sem_post(&sem_Listos);
-
-			}
-
 		}
 
 ////////////////////////////////////////////////////////EMPIEZA SRDF////////////////////////////
 
 		if (!strcmp(datosMapa2->algoritmo, "SRDF")) {
+
+			//log_info(logs,"SRDF");
 
 			t_list* listaAux = list_create();
 
@@ -623,197 +773,258 @@ void planificador(void* argu) {
 
 			int bloqueo = 0;
 			int banderin = 1;
-			ent1 = (entrenador*) queue_pop(colaListos);
 
-			if(queue_size(ent1->colaAccion)){
-			int acto;
-			acto = (int) queue_peek(ent1->colaAccion);
+			if (queue_size(colaListos)) {
 
-			if (isalpha(acto)) {
-				log_info(logs,"Se extrae al entrenador %c de la cola de listos para asignar pokenest",ent1->simbolo);
-				queue_pop(ent1->colaAccion);
-				int ka;
-				for (ka = 0; ka < list_size(pokenests); ka++) {
-					metaDataPokeNest* datosPokenest;
-					datosPokenest = (metaDataPokeNest*) list_get(pokenests, ka);
-					if (datosPokenest->caracterPokeNest[0] == acto) {
+				ent1 = (entrenador*) queue_pop(colaListos);
 
-						//log_info(logs, "antes del send %s",datosPokenest->posicion);
+				int acto;
 
-						char** posicionPoke;
-						posicionPoke = string_split(datosPokenest->posicion,
-								";");
+				acto = (int) queue_peek(ent1->colaAccion);
 
-						ent1->posPokex = atoi(posicionPoke[0]);
-						ent1->posPokey = atoi(posicionPoke[1]);
-						ent1->pokenestAsignado =
-								datosPokenest->caracterPokeNest[0];
-						ent1->flagLeAsignaronPokenest = 1;
+				if (isalpha(acto)) {
+					log_info(logs,
+							"Se extrae al entrenador %c de la cola de listos para asignar pokenest",
+							ent1->simbolo);
+					queue_pop(ent1->colaAccion);
+					int ka;
+					for (ka = 0; ka < list_size(pokenests); ka++) {
+						metaDataPokeNest* datosPokenest;
+						datosPokenest = (metaDataPokeNest*) list_get(pokenests,
+								ka);
+						if (datosPokenest->caracterPokeNest[0] == acto) {
 
-						ka = list_size(pokenests);
+							//log_info(logs, "antes del send %s",datosPokenest->posicion);
 
-						//serializo las coordenadas
-						int tamanioTotal = 2 * sizeof(int);
-						void* miBuffer = malloc(tamanioTotal);
+							char** posicionPoke;
+							posicionPoke = string_split(datosPokenest->posicion,
+									";");
 
-						memcpy(miBuffer, &(ent1->posPokex), sizeof(int));
-						memcpy(miBuffer + sizeof(int), &(ent1->posPokey),
-								sizeof(int));
+							ent1->posPokex = atoi(posicionPoke[0]);
+							ent1->posPokey = atoi(posicionPoke[1]);
+							ent1->pokenestAsignado =
+									datosPokenest->caracterPokeNest[0];
+							ent1->flagLeAsignaronPokenest = 1;
 
-						// lo mando
-						send((clientesActivos[ent1->numeroCliente]).socket,
-								miBuffer, tamanioTotal, 0);
+							ka = list_size(pokenests);
 
-						free(miBuffer);
-						//log_info(logs, "Se envio coordenadas: %d", pedo);
+							//serializo las coordenadas
+							int tamanioTotal = 2 * sizeof(int);
+							void* miBuffer = malloc(tamanioTotal);
 
+							memcpy(miBuffer, &(ent1->posPokex), sizeof(int));
+							memcpy(miBuffer + sizeof(int), &(ent1->posPokey),
+									sizeof(int));
+
+							// lo mando
+							send((clientesActivos[ent1->numeroCliente]).socket,
+									miBuffer, tamanioTotal, 0);
+
+							free(miBuffer);
+							//log_info(logs, "Se envio coordenadas: %d", pedo);
+
+						}
 					}
+
 				}
 
-			}
+				//8 es 56, 2 es 50, 4 es 52, 6 es 54
 
-			//8 es 56, 2 es 50, 4 es 52, 6 es 54
+				if (isdigit(acto)) {
 
-			if (isdigit(acto)) {
+					log_info(logs,
+							"Se extrae al entrenador %c de la cola de listos para ejecucion hasta que corresponda traslado a cola de bloqueados",
+							ent1->simbolo);
 
-				log_info(logs,"Se extrae al entrenador %c de la cola de listos para ejecucion hasta que corresponda traslado a cola de bloqueados",ent1->simbolo);
+					while (banderin && !(ent1->fallecio)
+							&& queue_size(ent1->colaAccion)) {
 
-				while (banderin && !(ent1->fallecio)&& queue_size(ent1->colaAccion)) {
+						usleep(datosMapa2->retardoQ * 1000);
 
-					usleep(datosMapa2->retardoQ*1000);
+						acto = (int) queue_pop(ent1->colaAccion);
 
-					acto = (int) queue_pop(ent1->colaAccion);
+						if (acto == '2' || acto == '4' || acto == '6'
+								|| acto == '8') {
 
-					if (acto == '2' || acto == '4' || acto == '6'
-							|| acto == '8') {
+							switch (acto) {
 
+							case '8':
+								if (ent1->posy > 1 && !ent1->fallecio) {
+									//				log_info(logs, "mueva arriba");
+									//usleep(datosMapa2->retardoQ*1000);
 
-						switch (acto) {
+									ent1->posy--;
+									MoverPersonaje(items, ent1->simbolo,
+											ent1->posx, ent1->posy);
+									nivel_gui_dibujar(items, argument);
 
-						case '8':
-							if (ent1->posy > 1 && !ent1->fallecio) {
-								//				log_info(logs, "mueva arriba");
-								//usleep(datosMapa2->retardoQ*1000);
+								}
+								break;
 
-								ent1->posy--;
-								MoverPersonaje(items, ent1->simbolo, ent1->posx,
-										ent1->posy);
-								nivel_gui_dibujar(items, argument);
+							case '2':
+								if (ent1->posy < rows && !ent1->fallecio) {
+									//				log_info(logs, "mueva abajo");
+									//usleep(datosMapa2->retardoQ*1000);
+									ent1->posy++;
+									MoverPersonaje(items, ent1->simbolo,
+											ent1->posx, ent1->posy);
+									nivel_gui_dibujar(items, argument);
+
+								}
+								break;
+
+							case '4':
+								if (ent1->posx > 1 && !ent1->fallecio) {
+									//				log_info(logs, "mueva izquierda");
+									//usleep(datosMapa2->retardoQ*1000);
+									ent1->posx--;
+									MoverPersonaje(items, ent1->simbolo,
+											ent1->posx, ent1->posy);
+									nivel_gui_dibujar(items, argument);
+
+								}
+								break;
+							case '6':
+								if (ent1->posx < cols && !ent1->fallecio) {
+									//				log_info(logs, "mueva derecha");
+									//usleep(datosMapa2->retardoQ*1000);
+									ent1->posx++;
+									MoverPersonaje(items, ent1->simbolo,
+											ent1->posx, ent1->posy);
+									nivel_gui_dibujar(items, argument);
+
+								}
+								break;
 
 							}
-							break;
-
-						case '2':
-							if (ent1->posy < rows && !ent1->fallecio) {
-								//				log_info(logs, "mueva abajo");
-								//usleep(datosMapa2->retardoQ*1000);
-								ent1->posy++;
-								MoverPersonaje(items, ent1->simbolo, ent1->posx,
-										ent1->posy);
-								nivel_gui_dibujar(items, argument);
-
-							}
-							break;
-
-						case '4':
-							if (ent1->posx > 1 && !ent1->fallecio) {
-								//				log_info(logs, "mueva izquierda");
-								//usleep(datosMapa2->retardoQ*1000);
-								ent1->posx--;
-								MoverPersonaje(items, ent1->simbolo, ent1->posx,
-										ent1->posy);
-								nivel_gui_dibujar(items, argument);
-
-							}
-							break;
-						case '6':
-							if (ent1->posx < cols && !ent1->fallecio) {
-								//				log_info(logs, "mueva derecha");
-								//usleep(datosMapa2->retardoQ*1000);
-								ent1->posx++;
-								MoverPersonaje(items, ent1->simbolo, ent1->posx,
-										ent1->posy);
-								nivel_gui_dibujar(items, argument);
-
-							}
-							break;
 
 						}
+						if (acto == '9' && !ent1->fallecio) {
 
-					}
-					if (acto == '9' && !ent1->fallecio) {
+							//usleep(datosMapa->retardoQ*1000);
+							bloqueo = 1;
+							banderin = 0;
+							ent1->flagLeAsignaronPokenest = 0;
 
-						//usleep(datosMapa->retardoQ*1000);
-						bloqueo = 1;
-                        banderin = 0;
-						ent1->flagLeAsignaronPokenest = 0;
+							pokimons* p;
+							bool esLaPokenest(pokimons *parametro1) {
+								return ent1->pokenestAsignado
+										== parametro1->pokinest;
+							}
+							p = list_find(pokemons, (void*) esLaPokenest);
 
-						pokimons* p;
-						bool esLaPokenest(pokimons *parametro1) {
-							return ent1->pokenestAsignado
-									== parametro1->pokinest;
-						}
-						p = list_find(pokemons, (void*) esLaPokenest);
+							int saux;
+							int captu = 0;
+							for (saux = 0;
+									saux < list_size(p->listaPokemons)
+											&& captu == 0; saux++) {
+								metaDataPokemon* pokem;
+								pokem = list_get(p->listaPokemons, saux);
+								if (!pokem->estaOcupado) {
+									bloq* e;
+									bool esBloq(bloq* param) {
+										return param->pokenest
+												== pokem->especie[0];
+									}
+									e = list_find(listaContenedora,
+											(void*) esBloq);
+									log_info(logs,
+											"entrenador %c va a la cola de bloqueados,pokenest %c",
+											ent1->simbolo, e->pokenest);
 
-						int saux;
-						int captu = 0;
-						for (saux = 0;
-								saux < list_size(p->listaPokemons) && captu == 0;
-								saux++) {
-							metaDataPokemon* pokem;
-							pokem = list_get(p->listaPokemons, saux);
-							if (!pokem->estaOcupado) {
+									bool esesnt(entrenador* ap){
+																		return ap->simbolo == ent1->simbolo;
+																	}
+																	list_remove_by_condition(colaDeListosImp, (void*)esesnt);
+																	log_info(logs, "entrenadores en cola de listos:");
+																						int auxilie;
+																						for(auxilie=0;auxilie<list_size(colaDeListosImp);auxilie++){
+																							entrenador* entprint;
+																							entprint = list_get(colaDeListosImp,auxilie);
+																							log_info(logs, "entrenador %c",entprint->simbolo);
+																						}
+
+																    list_add(colaDeBloqImp, ent1);
+																    log_info(logs, "entrenadores en cola de bloqueados:");
+																    int auxiliere;
+																    for(auxiliere=0;auxiliere<list_size(colaDeBloqImp);auxiliere++){
+																    	entrenador* entprint;
+																		entprint = list_get(colaDeBloqImp,auxiliere);
+																		log_info(logs, "entrenador %c",entprint->simbolo);
+																    }
+
+
+									queue_push(e->colabloq, ent1);
+									captu = 1;
+									sem_post(&(e->sem2));
+
+								}
+
+							}
+							if (!captu) {
+								tabla* tab;
 								bloq* e;
 								bool esBloq(bloq* param) {
-									return param->pokenest == pokem->especie[0];
+									return param->pokenest
+											== ent1->pokenestAsignado;
+								}
+								bool esLaPokenest2(tabla* a) {
+									return ent1->pokenestAsignado == a->pokenest;
 								}
 								e = list_find(listaContenedora, (void*) esBloq);
-								log_info(logs, "entrenador %c va a la cola de bloqueados,pokenest %c", ent1->simbolo, e->pokenest);
+								tab = list_find(ent1->solicitud,
+										(void*) esLaPokenest2);
+								tab->valor = tab->valor + 1;
+								//ent1->entroBloqueados = 1;
+								log_info(logs,
+										"entrenador %c va a la cola de bloqueados,pokenest %c",
+										ent1->simbolo, e->pokenest);
+
+
+								bool esesnt(entrenador* ap){
+																	return ap->simbolo == ent1->simbolo;
+																}
+																list_remove_by_condition(colaDeListosImp, (void*)esesnt);
+																log_info(logs, "entrenadores en cola de listos:");
+																					int auxilie;
+																					for(auxilie=0;auxilie<list_size(colaDeListosImp);auxilie++){
+																						entrenador* entprint;
+																						entprint = list_get(colaDeListosImp,auxilie);
+																						log_info(logs, "entrenador %c",entprint->simbolo);
+																					}
+
+															    list_add(colaDeBloqImp, ent1);
+															    log_info(logs, "entrenadores en cola de bloqueados:");
+															    int auxiliere;
+															    for(auxiliere=0;auxiliere<list_size(colaDeBloqImp);auxiliere++){
+															    	entrenador* entprint;
+																	entprint = list_get(colaDeBloqImp,auxiliere);
+																	log_info(logs, "entrenador %c",entprint->simbolo);
+															    }
+
+
 								queue_push(e->colabloq, ent1);
-								captu = 1;
+
 								sem_post(&(e->sem2));
 
 							}
-
-						}
-						if (!captu) {
-							tabla* tab;
-							bloq* e;
-							bool esBloq(bloq* param) {
-								return param->pokenest == ent1->pokenestAsignado;
-							}
-							bool esLaPokenest2(tabla* a) {
-								return ent1->pokenestAsignado == a->pokenest;
-							}
-							e = list_find(listaContenedora, (void*) esBloq);
-							tab = list_find(ent1->solicitud,
-									(void*) esLaPokenest2);
-							tab->valor = tab->valor + 1;
-							//ent1->entroBloqueados = 1;
-							log_info(logs, "entrenador %c va a la cola de bloqueados,pokenest %c", ent1->simbolo, e->pokenest);
-							queue_push(e->colabloq, ent1);
-
-							sem_post(&(e->sem2));
-
 						}
 					}
 				}
+
+				if (ent1->fallecio) {
+					log_info(logs, "%c muere", ent1->simbolo);
+					matar(ent1);
+
+				}
+
+				if (!bloqueo && !ent1->fallecio) {
+					//	usleep(datosMapa2->retardoQ*1000);
+					queue_push(colaListos, ent1);
+					sem_post(&sem_Listos);
+				}
 			}
 		}
-
-			if (ent1->fallecio) {
-				log_info(logs, "%c muere",ent1->simbolo);
-				matar(ent1);
-
-			}
-
-			if (!bloqueo && !ent1->fallecio) {
-			//	usleep(datosMapa2->retardoQ*1000);
-				queue_push(colaListos, ent1);
-				sem_post(&sem_Listos);
-			}
-		}
-
 	}
 
 }
@@ -831,7 +1042,7 @@ void bloqui(void* stru) {
 		sem_getvalue(&strub->sembloq, &dal);
 		log_info(logs, "Pasa el sem wait, el siguiente vale %d", dal);
 
-	//	usleep(datosMapa2->retardoQ*1000);
+		//	usleep(datosMapa2->retardoQ*1000);
 		//SOLUCION RUDIMENTARISISISISISISISISISIISISISISISISIISISISISISIISISISISISIISISMA
 
 		if (dal == 0) {
@@ -959,21 +1170,50 @@ void bloqui(void* stru) {
 
 					//		log_info(logs,"%c captura el pokemon %c la tabla de asignacion en ese campo es %d y la dispo %d ",ent1->simbolo, pokem->especie[0], t->valor,dispo1->valor);
 					list_add(ent1->pokemones, pokem);
-					//		log_info(logs, "%c capturo efectivamente a %s",ent1->simbolo, pokem->especie);
-					int m;
-					for (m = 0; m < list_size(ent1->pokemones); m++) {
-						metaDataPokemon* q;
-						q = list_get(ent1->pokemones, m);
-						log_info(logs, "hasta ahora estan capturados por %c %s",
-								ent1->simbolo, q->especie);
-					}
+					log_info(logs, "%c capturo efectivamente a %s",
+							ent1->simbolo, pokem->especie);
+					//int m;
+					/*for (m = 0; m < list_size(ent1->pokemones); m++) {
+					 metaDataPokemon* q;
+					 q = list_get(ent1->pokemones, m);
+					 log_info(logs, "hasta ahora estan capturados por %c %s",
+					 ent1->simbolo, q->especie);
+					 }*/
 
 					//log_info(logs, "llego a bloqueados");
 					//postea semaforo pokemon de P y su valor es 2
 					restarRecurso(items, poki->pokinest);
 					nivel_gui_dibujar(items, nombreMapa);
 
-					//		log_info(logs,"entrenador %c sale de la cola de %c y entra a listos",ent1->simbolo, strub->pokenest);
+					log_info(logs,
+							"entrenador %c sale de la cola de %c y entra a listos",
+							ent1->simbolo, strub->pokenest);
+
+
+					bool esesnt(entrenador* ap){
+														return ap->simbolo == ent1->simbolo;
+													}
+													list_remove_by_condition(colaDeBloqImp, (void*)esesnt);
+													list_add(colaDeListosImp, ent1);
+													log_info(logs, "entrenadores en cola de listos:");
+																		int auxilie;
+																		for(auxilie=0;auxilie<list_size(colaDeListosImp);auxilie++){
+																			entrenador* entprint;
+																			entprint = list_get(colaDeListosImp,auxilie);
+																			log_info(logs, "entrenador %c",entprint->simbolo);
+																		}
+
+
+												    log_info(logs, "entrenadores en cola de bloqueados:");
+												    int auxiliere;
+												    for(auxiliere=0;auxiliere<list_size(colaDeBloqImp);auxiliere++){
+												    	entrenador* entprint;
+														entprint = list_get(colaDeBloqImp,auxiliere);
+														log_info(logs, "entrenador %c",entprint->simbolo);
+												    }
+
+
+
 					queue_push(colaListos, ent1);
 					sem_post(&sem_Listos);
 
@@ -1002,8 +1242,8 @@ int main(int argc, char* argv[]) {
 	//nombre de mapa
 	nombreMapa = argv[1];
 	char* papaya = string_new();
-	string_append(&papaya,nombreMapa);
-	string_append(&papaya,".log");
+	string_append(&papaya, nombreMapa);
+	string_append(&papaya, ".log");
 	//inicializo listas
 
 	pokemons = list_create();
@@ -1013,6 +1253,8 @@ int main(int argc, char* argv[]) {
 	entrenadoresEnCurso = list_create();
 	listaContenedora = list_create();
 	deadlocks = list_create();
+	colaDeListosImp = list_create();
+	colaDeBloqImp = list_create();
 	//inicializo colas
 	colaListos = queue_create();
 	//inicializo semaforos
@@ -1025,7 +1267,7 @@ int main(int argc, char* argv[]) {
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
 	remove(papaya);
-	logs = log_create(papaya,"Mapa", false, log_level_from_string("INFO"));
+	logs = log_create(papaya, "Mapa", false, log_level_from_string("INFO"));
 
 	free(papaya);
 
@@ -1113,7 +1355,7 @@ int main(int argc, char* argv[]) {
 	for (auxili3 = 0; auxili3 < list_size(listaContenedora); auxili3++) {
 		bloq* stru;
 		stru = list_get(listaContenedora, auxili3);
-		pthread_create(&(stru->hilobloq), &attr, (void*) bloqui, (void*) stru);
+		pthread_create(&(stru->hilobloq), NULL, (void*) bloqui, (void*) stru);
 	}
 
 	//hilo deteccion de deadlock
@@ -1177,8 +1419,8 @@ int main(int argc, char* argv[]) {
 				numeroCliente = &nroCliente;
 
 				//    pthread_create(&hiloImprimirGiladas[n],NULL, imprimirGiladas, infoCliente);
-				pthread_create(&hiloAtenderConexiones[n], NULL, atenderConexion,
-						numeroCliente);
+				pthread_create(&hiloAtenderConexiones[n], &attr,
+						atenderConexion, numeroCliente);
 
 				cliente++;
 				n++;
