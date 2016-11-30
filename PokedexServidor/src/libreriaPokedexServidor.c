@@ -7,6 +7,8 @@
 
 #include "libreriaPokedexServidor.h"
 
+t_log* log_Servidor;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int buscarArchivo(char *unaRuta){
@@ -123,7 +125,7 @@ void atenderConexion(void *numeroCliente){
 	void *respuesta;
 
 	remove("Servidor.log");
-	logPS = log_create("Servidor.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
+	log_Servidor = log_create("Servidor.log", "libreriaPokedexServidor", false, log_level_from_string("INFO"));
 
 	printf("PokeCliente #%d conectado! esperando solicitudes... \n",
 			clientesActivos[unCliente].cliente);
@@ -563,9 +565,11 @@ return contenidoDir;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int osada_open(char *ruta){
+
+	log_info(log_Servidor, "Solicitud para abrir archivo (.open) %s", ruta);
 	int exito = -1;
 	t_getattr archivo = osada_getattr(ruta);
-	//log_info(logPS, "Se intento efectuar un open del archivo %s", ruta);
+	//log_info(log_Servidor, "Se intento efectuar un open del archivo %s", ruta);
 	if(archivo.tipo_archivo != 0){
 		exito = 0;
 	}
@@ -577,7 +581,7 @@ void *osada_read(char *ruta, int tamanioLectura, int offset){
 
 	int i = buscarArchivo(ruta);
 
-	//log_info(logPS, "Recibida solicitud de lectura (.read) del archivo %s", ruta);
+	log_info(log_Servidor, "Solicitud de lectura (.read) del archivo %s", ruta);
 	int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
 	if(miDisco.tablaDeArchivos[i].file_size == 0){
 		goto terminar;
@@ -657,7 +661,7 @@ return(buffer);
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int osada_create(char *ruta){
 
-	//log_info(logPS, "Recibida solicitud de creación (.create) del archivo %s", ruta);
+	log_info(log_Servidor, "Solicitud de creacion (.create) del archivo %s", ruta);
 	int exito = 1;
 
 	int existe = buscarArchivo(ruta);
@@ -680,21 +684,21 @@ int osada_create(char *ruta){
 	}
 
 	if(exito == 0){
-		//log_info(logPS, "El archivo %s se creo exitosamente", ruta);
+		log_info(log_Servidor, "El archivo %s se creo exitosamente", ruta);
 	}
 	else{
 		if(bloqueLibre < 0){
-			log_error(logPS, "Error al crear el archivo %s: espacio en disco insuficiente", ruta);
+			log_error(log_Servidor, "Error al crear el archivo %s: espacio en disco insuficiente", ruta);
 		}
 		if(posTablaArchivos < 0){
-			log_error(logPS, "Error al crear el archivo %s: se ha alcanzado el número máximo de"
+			log_error(log_Servidor, "Error al crear el archivo %s: se ha alcanzado el número máximo de"
 					"archivos soportados por el sistema", ruta);
 		}
 		if(largo > 17){
-			log_error(logPS, "Error al crear el archivo %s: el nombre del archivo no es válido"
+			log_error(log_Servidor, "Error al crear el archivo %s: el nombre del archivo no es válido"
 					"(longitud superior a 17 caracteres)", ruta);
 		}
-		log_error(logPS, "No se pudo crear el archivo");
+		log_error(log_Servidor, "No se pudo crear el archivo");
 	}
 
 terminar:
@@ -703,6 +707,7 @@ return exito;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
 
+	log_info(log_Servidor, "Solicitud de escritura (.write) del archivo %s", ruta);
 	int exito = -1;
 	int i = buscarArchivo(ruta);
 	int tamanioActualArchivo = miDisco.tablaDeArchivos[i].file_size;
@@ -763,6 +768,9 @@ int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
 
 		miDisco.tablaDeArchivos[i].file_size = offset + sizeAgregado;
 		miDisco.tablaDeAsignaciones[aux] = -1;
+
+		log_info(log_Servidor, "Cantidad de bytes escritos: %d", sizeAgregado);
+		log_info(log_Servidor, "Tamanio del archivo despues de escritura: %d", miDisco.tablaDeArchivos[i].file_size);
 	}
 
 	/*-- CASO TRUNCATE (Offset en cero, el archivo se achica) --*/
@@ -801,7 +809,7 @@ int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
 		}
 
 		miDisco.tablaDeArchivos[i].file_size = sizeAgregado;
-
+		log_info(log_Servidor, "Tamanio del archivo despues de la escritura: %d", miDisco.tablaDeArchivos[i].file_size );
 	}
 
 	miDisco.tablaDeArchivos[i].lastmod = consultarTiempo();
@@ -817,7 +825,7 @@ return exito;
 int osada_unlink(char *ruta){
 
 	int exito = -1;
-	//log_info(logPS, "Recibida solicitud de borrado (.unlink) del archivo %s", ruta);
+	log_info(log_Servidor, "Solicitud de borrado (.unlink) del archivo %s", ruta);
 	int i = buscarArchivo(ruta);
 	if(i >= -1){
 		pthread_mutex_lock(&misMutex[i]);
@@ -828,10 +836,10 @@ int osada_unlink(char *ruta){
 	}
 
 	if(exito == 0){
-		//log_info(logPS, "El archivo %s se ha borrado exitosamente", ruta);
+		log_info(log_Servidor, "El archivo %s se ha borrado exitosamente", ruta);
 	}
 	else{
-		log_error(logPS, "Error al borrar el archivo %s", ruta);
+		log_error(log_Servidor, "Error al borrar el archivo %s", ruta);
 	}
 	return exito;
 }
@@ -839,7 +847,7 @@ int osada_unlink(char *ruta){
 int osada_mkdir(char *ruta){
 
 	int exito = -1;
-	//log_info(logPS, "Solicitud de creación de directorio (.mkdir): %s", ruta);
+	log_info(log_Servidor, "Solicitud de creacion (.mkdir) del directorio %s", ruta);
 	int posTablaArchivos = buscarPosicionLibre();
 	char *nombreDir = obtenerNombre(ruta);
 	int largo = strlen(nombreDir);
@@ -853,16 +861,14 @@ int osada_mkdir(char *ruta){
 	}
 
 	if(exito == 0){
-		//log_info(logPS, "El directorio  %s se creo exitosamente", ruta);
+		log_info(log_Servidor, "El directorio  %s se creo exitosamente", ruta);
 	}
 	else{
 		if(posTablaArchivos < 0){
-			//log_info(logPS, "Error al crear el directorio: espacio insuficiente en la tabla de"
-			//		"archivos");
+			log_error(log_Servidor, "Error al crear el directorio: espacio insuficiente en la tabla de archivos");
 		}
 		if(largo > 17){
-			//log_info(logPS, "Error al crear el directorio: nombre de directorio inválido"
-			//		" (supera los 17 caracteres)");
+			log_error(log_Servidor, "Error al crear el directorio: nombre de directorio inválido (supera los 17 caracteres)");
 		}
 	}
 
@@ -872,14 +878,14 @@ int osada_mkdir(char *ruta){
 int osada_rmdir(char *ruta){
 
 	int exito;
-	//log_info(logPS, "Recibida solicitud de borrado (.rmdir)del directorio %s", ruta);
+	log_info(log_Servidor, "Solicitud de borrado (.rmdir) del directorio %s", ruta);
 
 	int i = buscarArchivo(ruta);
 	pthread_mutex_lock(&misMutex[i]);
 	borrarDirectorio(i);
 	pthread_mutex_unlock(&misMutex[i]);
-	exito = 0; // hay chances de error? validar
-	//log_info(logPS, "El directorio %s se ha borrado exitosamente", ruta);
+	exito = 0;
+	log_info(log_Servidor, "El directorio %s se ha borrado exitosamente", ruta);
 
 	return exito;
 }
@@ -888,7 +894,7 @@ int osada_rename(char *ruta, char *nuevoNombre){
 
 	int i;
 	int exito = 1;
-	//log_info(logPS, "Recibida solicitud de cambio de nombre (.rename) en la ruta %s", ruta);
+	log_info(log_Servidor, "Solicitud de renombrado (.rename) del archivo %s", ruta);
 	char *nombre = obtenerNombre(nuevoNombre);
 	if(strlen(nombre) <= 17){
 		i = buscarArchivo(ruta);
@@ -904,12 +910,12 @@ int osada_rename(char *ruta, char *nuevoNombre){
 	}
 
 	if(exito == 0){
-		//log_info(logPS, "El archivo  %s se ha renombrado exitosamente. "
-		//	"Nuevo nombre:%s", ruta, miDisco.tablaDeArchivos[i].fname);
+		log_info(log_Servidor, "El archivo  %s se ha renombrado exitosamente."
+				" Nuevo nombre: %s", ruta, miDisco.tablaDeArchivos[i].fname);
 	}
 	else{
-		log_error(logPS, "Error al renombrar el archivo %s: el nombre solicitado es inválido.",
-				ruta);
+		log_error(log_Servidor, "Error al renombrar el archivo %s:"
+				" el nombre solicitado es invalido.", ruta);
 	}
 	return exito;
 }
@@ -922,7 +928,7 @@ int osada_truncate(char *ruta, int nuevoTamanio){
 	int contador = 0;
 	int aux;
 
-	//log_info(logPS, "Se inicio la operacion (.truncate) sobre el archivo %s", ruta);
+	log_info(log_Servidor, "Solicitud de truncado (.truncado) del archivo %s", ruta);
 
 	pthread_mutex_lock(&misMutex[i]);
 

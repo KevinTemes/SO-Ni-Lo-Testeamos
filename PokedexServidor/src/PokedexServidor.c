@@ -14,7 +14,7 @@
 #define BACKLOG 100
 /* para testear sockets */
 
-t_log* logs;
+extern t_log* log_Servidor;
 
 
 void osada_iniciar(char *osada_path){
@@ -72,15 +72,13 @@ void osada_iniciar(char *osada_path){
 
 int main(int argc, char **argv) {
 
-//	printf("%d", argc);
-
 	char *osada_path = argv[1];
 
 
 	//LOGS
-	remove("PokeServidor.log");
+	remove("Servidor.log");
 	puts("Creando archivo de logueo PokeServidor...\n");
-	logs = log_create("PokeServidor.log", "PokedexServidor", true, log_level_from_string("INFO"));
+	log_Servidor = log_create("Servidor.log", "PokedexServidor", true, log_level_from_string("INFO"));
 	puts("Log Pokedex Servidor creado exitosamente \n");
 
 	//Levanto el disco Osada
