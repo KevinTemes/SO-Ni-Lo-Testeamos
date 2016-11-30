@@ -731,7 +731,7 @@ int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
 
 	pthread_mutex_lock(&misMutex[i]);
 
-	/*--- CASO APPEND (OFFSET = TAMANIO ACTUAL DEL ARCHIVO) ---*/
+	// CASO APPEND (OFFSET = TAMANIO ACTUAL DEL ARCHIVO)
 	if(tamanioActualArchivo == offset){
 
 		int espacioEnUltimoBloque = hayLugarEnElUltimoBloque(tamanioActualArchivo);
@@ -741,7 +741,7 @@ int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
 		int datosPendientes = sizeAgregado;
 		int aux;
 
-		/*--  SI EL ULTIMO BLOQUE NO ESTA COMPLETO, LO RELLENO --*/
+		//  SI EL ULTIMO BLOQUE NO ESTA COMPLETO, LO RELLENO
 
 		if(espacioEnUltimoBloque > 0){
 			desplazamiento = nuevoContenido + datosCopiados;
@@ -754,7 +754,7 @@ int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
 		aux = siguienteBloque;
 		siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
 
-		/*--  Asigno bloque, escribo bloque, repeat, profit --*/
+		//  Asigno bloque, escribo bloque, repeat, profit
 
 		while(datosPendientes > 0){
 			desplazamiento = nuevoContenido + datosCopiados;
@@ -783,7 +783,7 @@ int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
 		log_info(log_Servidor, "Tamanio del archivo despues de escritura: %d", miDisco.tablaDeArchivos[i].file_size);
 	}
 
-	/*-- CASO TRUNCATE (Offset en cero, el archivo se achica) --*/
+	// CASO TRUNCATE (Offset en cero, el archivo se achica)
 
 	if(offset == 0 && sizeAgregado < tamanioActualArchivo){
 		int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
@@ -792,7 +792,7 @@ int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
 		int datosPendientes = sizeAgregado;
 		int aux;
 
-		/*-- Verifico si el tamaño que me pasan es menor al de un bloque-- */
+		// Verifico si el tamaño que me pasan es menor al de un bloque
 
 		while(datosPendientes > 0){
 			desplazamiento = nuevoContenido + datosCopiados;
@@ -933,6 +933,7 @@ int osada_rename(char *ruta, char *nuevoNombre){
 int osada_truncate(char *ruta, int nuevoTamanio){
 	int exito = -1;
 	int i = buscarArchivo(ruta);
+	int tamanioActual = miDisco.tablaDeArchivos[i].file_size;
 	int bloques = calcularBloquesNecesarios(nuevoTamanio);
 	int siguienteBloque = miDisco.tablaDeArchivos[i].first_block;
 	int contador = 0;
@@ -942,29 +943,79 @@ int osada_truncate(char *ruta, int nuevoTamanio){
 
 	pthread_mutex_lock(&misMutex[i]);
 
-	while(contador <= bloques){
+/*	if(nuevoTamanio == 0){ // Truncado a cero
 		aux = siguienteBloque;
 		siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
-		contador++;
+		miDisco.tablaDeAsignaciones[aux] = -1;
+
+		while(siguienteBloque != -1){ // Limpio los bloques restantes
+			aux = miDisco.tablaDeAsignaciones[siguienteBloque];
+			bitarray_clean_bit(miDisco.bitmap, siguienteBloque);
+			miDisco.tablaDeAsignaciones[siguienteBloque] = -1;
+			siguienteBloque = aux;
+		}
+
+
+		exito = 0;
+
+	} */
+
+	if(tamanioActual > nuevoTamanio){ // Reduzco el tamaño
+
+		while(contador <= bloques){ //Avanzo hasta el último bloque que me va a quedar
+			aux = siguienteBloque;
+			siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
+			contador++;
+		}
+
+		miDisco.tablaDeAsignaciones[aux] = -1;
+		while(siguienteBloque != -1){ // Limpio los bloques restantes
+			aux = miDisco.tablaDeAsignaciones[siguienteBloque];
+			bitarray_clean_bit(miDisco.bitmap, siguienteBloque);
+			miDisco.tablaDeAsignaciones[siguienteBloque] = -1;
+			siguienteBloque = aux;
+
+		}
+		exito = 0;
+
 	}
 
-	miDisco.tablaDeAsignaciones[aux] = -1;
-	while(siguienteBloque != -1){
-		aux = miDisco.tablaDeAsignaciones[siguienteBloque];
-		bitarray_clean_bit(miDisco.bitmap, siguienteBloque);
-		miDisco.tablaDeAsignaciones[siguienteBloque] = -1;
+
+	else{ // Agrando el archivo
+
+		while(siguienteBloque != -1){
+			aux = siguienteBloque;
+			siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
+			contador++;
+		}
+
+		int bloquesNuevos = bloques - contador;
+		int hayLugar = hayBloquesLibres(bloquesNuevos);
+		if(hayLugar < 0){
+			goto terminar;
+		}
 		siguienteBloque = aux;
 
+		while(bloquesNuevos != 0){
+			miDisco.tablaDeAsignaciones[siguienteBloque] = primerBloqueBitmapLibre();
+			aux = siguienteBloque;
+			bitarray_set_bit(miDisco.bitmap, siguienteBloque);
+			siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
+			bloquesNuevos--;
+		}
+
+		miDisco.tablaDeAsignaciones[aux] = -1;
+		exito = 0;
+		terminar:
+		exito = -1;
 	}
+
 	miDisco.tablaDeArchivos[i].file_size = nuevoTamanio;
 	miDisco.tablaDeArchivos[i].lastmod = consultarTiempo();
 	actualizarTablaDeArchivos();
 
 	pthread_mutex_unlock(&misMutex[i]);
 
-
-
-	exito = 0;
 
 	return exito;
 }
