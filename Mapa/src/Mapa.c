@@ -82,7 +82,7 @@ pthread_mutex_t mutexMuerte = PTHREAD_MUTEX_INITIALIZER;
 void banquero() {
 
 	while (1) {
-		usleep(datosMapa2->tiempoChequeoDeadlock * 1000);
+		usleep(datosMapa2->tiempoChequeoDeadlock);
 
 		if (list_size(entrenadoresEnCurso)) {
 			t_list* vectorT = list_create();
@@ -113,6 +113,7 @@ void banquero() {
 					}
 					if (flago == 0) {
 						en->estaMarcado = 1;
+						//log_info(logs,"entrenador %c no esta en riesgo de deadlock por el momemnto",en->simbolo);
 					}
 
 				}
@@ -124,6 +125,7 @@ void banquero() {
 				tabla* ta;
 				tabla* b;
 				an = list_get(entrenadoresEnCurso, auu);
+				//	log_info(logs, "saca entrenador en curso");
 
 				if (!an->fallecio) {
 					if (!an->estaMarcado) {
@@ -132,7 +134,12 @@ void banquero() {
 						int val = 1;
 						for (j = 0; j < list_size(an->solicitud) && val; j++) {
 							ta = list_get(an->solicitud, j);
+							log_info(logs, "solicitud de %c en %c %d",
+									an->simbolo, ta->pokenest, ta->valor);
 							b = list_get(vectorT, j);
+							log_info(logs,
+									"y el valor del vector auxiliar ahi es %d %c",
+									b->valor, b->pokenest);
 							val = ta->valor <= b->valor;
 						}
 						if (val) {
@@ -144,6 +151,10 @@ void banquero() {
 							for (x = 0; x < list_size(an->asignados); x++) {
 								fa = list_get(an->asignados, x);
 								fe = list_get(vectorT, x);
+								log_info(logs,
+										"suma %c de %c%d con %c%d asignados",
+										an->simbolo, fa->pokenest, fa->valor,
+										fe->pokenest, fe->valor);
 								fe->valor = fa->valor + fe->valor;
 								auu = 0;
 							}
@@ -193,61 +204,26 @@ void banquero() {
 					}
 					return x;
 				}
-
-				entrenador* es = hp;
+				log_info(logs,
+						"Remueve a %c de entEnDed y lo agreaga a deadlocks",
+						hp->simbolo);
+				entrenador* ente;
 				t_list* listin = list_create();
-				list_add(listin, es);
+				ente = hp;
+				list_add(listin, ente);
 				list_add(deadlocks, listin);
 
-				while (list_find(entrenadoresEnDeadlock, (void*) entrencontrado)!= NULL) {
-					entrenador* jota;
-					jota = list_remove_by_condition(entrenadoresEnDeadlock,(void*) entrencontrado);
-					hp = jota;
-					list_add(listin, jota);
+				while (list_find(entrenadoresEnDeadlock, (void*) entrencontrado)
+						!= NULL) {
+					entrenador* jp;
+					jp = list_remove_by_condition(entrenadoresEnDeadlock,
+							(void*) entrencontrado);
+					hp = jp;
+					log_info(logs, "Remueve a %c de entete y agrega",
+							hp->simbolo);
+					list_add(listin, hp);
 				}
 
-			}
-
-
-			if(list_size(deadlocks)){
-				int comproba=0;
-				t_list* listitw;
-				int eaf;
-				for(eaf=0; eaf<list_size(deadlocks);eaf++){
-					listitw = list_get(deadlocks,eaf);
-					if(list_size(listitw)>1){
-						comproba=1;
-					}
-				}
-				if(comproba){
-					log_info(logs,"Hubo deadlock, tablas usadas:");
-					log_info(logs,"Asignacion:");
-					int auxileg;
-					for(auxileg=0;auxileg<list_size(entrenadoresEnCurso);auxileg++){
-						entrenador* entw;
-						entw = list_get(entrenadoresEnCurso,auxileg);
-						log_info(logs,"Entrenador %c",entw->simbolo);
-						int casielUlti;
-						for(casielUlti=0;casielUlti<list_size(entw->asignados);casielUlti++){
-							tabla* tablilla;
-							tablilla = list_get(entw->asignados,casielUlti);
-							log_info(logs,"%c%d",tablilla->pokenest,tablilla->valor);
-						}
-					}
-					log_info(logs,"Solicitud:");
-					int auxilog;
-										for(auxilog=0;auxilog<list_size(entrenadoresEnCurso);auxilog++){
-											entrenador* entw;
-											entw = list_get(entrenadoresEnCurso,auxilog);
-											log_info(logs,"Entrenador %c",entw->simbolo);
-											int casielUlti;
-											for(casielUlti=0;casielUlti<list_size(entw->asignados);casielUlti++){
-												tabla* tablilla;
-												tablilla = list_get(entw->asignados,casielUlti);
-												log_info(logs,"%c%d",tablilla->pokenest,tablilla->valor);
-											}
-										}
-				}
 			}
 
 			if (list_size(deadlocks)) {
@@ -260,28 +236,21 @@ void banquero() {
 						for (efefe = 0; efefe < list_size(liste); efefe++) {
 							entrenador* pef;
 							pef = list_get(liste, efefe);
-							log_info(logs, "entrenador %c en deadlock #%d ",
-									 pef->simbolo,ef);
-						/*	log_info(logs,"sus campos de asignacion y solicitud");
-							log_info(logs,"asignacion:");
-							int paxu;
-							for(paxu=0;paxu<list_size(pef->asignados);paxu++){
-								tabla* asigneishon;
-								asigneishon = list_get(pef->asignados,paxu);
-								log_info(logs,"%c%d",asigneishon->pokenest,asigneishon->valor);
+							log_info(logs, "entrenadores en deadlock #%d: %c",
+									ef, pef->simbolo);
+							int accione = 3;
+							//int efe;
+							if(datosMapa2->batalla){
+							send((clientesActivos[pef->numeroCliente]).socket,
+									&accione, sizeof(int), 0);
+							//			log_info(logs, "%d", efe);
 							}
-							int poxu;
-							for(poxu=0;poxu<list_size(pef->solicitud);poxu++){
-								tabla* asignoishon;
-								asignoishon = list_get(pef->solicitud,poxu);
-								log_info(logs,"%c%d",asignoishon->pokenest,asignoishon->valor);
-							}
-							//			log_info(logs, "%d", efe); */
 						}
 					} else {
 						entrenador* pof;
 						pof = list_get(liste, 0);
-						log_info(logs, "entrenador %c en inanicion",
+						log_info(logs,
+								"entrenador %c es re trucho, esta en inanicion",
 								pof->simbolo);
 					}
 
@@ -311,19 +280,6 @@ void banquero() {
 						listota = list_get(deadlocks, yotromas);
 
 						if (list_size(listota) > 1) {
-
-							int elultiaux;
-							for (elultiaux = 0; elultiaux < list_size(listota);
-									elultiaux++) {
-								entrenador* elent;
-								elent = list_get(listota, elultiaux);
-								int accione = 3;
-								//int efe;
-								send(
-										(clientesActivos[elent->numeroCliente]).socket,
-										&accione, sizeof(int), 0);
-
-							}
 							int ultimo;
 							for (ultimo = 0; ultimo < list_size(listota);
 									ultimo++) {
@@ -392,9 +348,6 @@ void banquero() {
 							}
 							entrenador* muerto;
 							muerto = list_get(listota, 0);
-							log_info(logs,
-									"Seleccionado el entrenador %c como victima",
-									muerto->simbolo);
 							int auxiliar23;
 							for (auxiliar23 = 0;
 									auxiliar23 < list_size(muerto->solicitud);
