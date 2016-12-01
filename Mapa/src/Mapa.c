@@ -187,9 +187,9 @@ void banquero() {
 					int h3;
 					int x = 0;
 					for (h3 = 0; h3 < list_size(parametro->asignados); h3++) {
-						tab = list_get(hp->asignados, h3);
-						teb = list_get(parametro->solicitud, h3);
-						if (tab->valor >= teb->valor) {
+						tab = list_get(parametro->asignados, h3);
+						teb = list_get(hp->solicitud, h3);
+						if (tab->valor >= teb->valor && tab->valor != 0 && teb->valor != 0) {
 							x = 1;
 						}
 
