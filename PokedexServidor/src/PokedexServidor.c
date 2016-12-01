@@ -82,7 +82,7 @@ int main(int argc, char **argv) {
 	//LOGS
 	remove("Servidor.log");
 	puts("Creando archivo de logueo PokeServidor...\n");
-	log_Servidor = log_create("Servidor.log", "PokedexServidor", false, log_level_from_string("INFO"));
+	log_Servidor = log_create("Servidor.log", "PokedexServidor", true, log_level_from_string("INFO"));
 	puts("Log Pokedex Servidor creado exitosamente \n");
 
 	//Levanto el disco Osada
