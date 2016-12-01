@@ -28,6 +28,9 @@ int buscarArchivo(char *unaRuta){
 			}
 			a++;
 		}
+		for(a = 0; separadas[a] != NULL; a++){
+			free(separadas[a]);
+		}
 		free(separadas);
 	}
 terminar:
@@ -109,6 +112,7 @@ char *convertirString(void *buffer, int tamanioRuta){
 	puente = (char *)buffer;
 	nuevaRuta = string_substring_until(puente, tamanioRuta);
 	nuevaRuta[tamanioRuta] = '\0';
+	//free(puente);
 	return nuevaRuta;
 }
 
@@ -157,8 +161,9 @@ void atenderConexion(void *numeroCliente){
 				memcpy(respuesta + sizeof(int), &archivo.size, sizeof(int));
 				send(clientesActivos[unCliente].socket, respuesta, 2 * sizeof(int), MSG_WAITALL);
 
-				*ruta = '\0';
+				free(respuesta);
 				free(buffer);
+				free(ruta);
 
 
 			break;
@@ -190,10 +195,12 @@ void atenderConexion(void *numeroCliente){
 					memcpy(bufferDir + sizeof(int), contenidoDir, tamanio);
 					send(clientesActivos[unCliente].socket, bufferDir, sizeof(int) + tamanio, MSG_WAITALL);
 				}
-				*ruta = '\0';
-				*contenidoDir = '\0';
+				//*ruta = '\0';
+				//*contenidoDir = '\0';
 				free(buffer);
 				free(bufferDir);
+				free(ruta);
+				free(contenidoDir);
 
 
 			break;
@@ -237,8 +244,11 @@ void atenderConexion(void *numeroCliente){
 					memcpy(bufferContenido + sizeof(int), contenidoArchivo, tamanioLectura);
 					send(clientesActivos[unCliente].socket, bufferContenido, sizeof(int) + tamanioLectura, MSG_WAITALL);
 					free(contenidoArchivo);
+					free(bufferContenido);
 				}
 				*ruta = '\0';
+				free(ruta);
+				free(buffer);
 			break;
 
 			case 3: // .create (por ahora supongo que el nombre ya viene en la ruta)
@@ -259,6 +269,7 @@ void atenderConexion(void *numeroCliente){
 				exito = osada_create(ruta);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
 				free(buffer);
+				free(ruta);
 
 			break;
 
@@ -296,6 +307,9 @@ void atenderConexion(void *numeroCliente){
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_write(ruta, nuevoContenido, tamanioNuevoContenido, offset);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
+				free(buffer);
+				free(nuevoContenido);
+				free(ruta);
 
 			break;
 
@@ -316,6 +330,7 @@ void atenderConexion(void *numeroCliente){
 				exito = osada_unlink(ruta);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
 				free(buffer);
+				free(ruta);
 
 			break;
 
@@ -336,6 +351,7 @@ void atenderConexion(void *numeroCliente){
 				exito = osada_mkdir(ruta);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
 				free(buffer);
+				free(ruta);
 
 			break;
 
@@ -356,6 +372,7 @@ void atenderConexion(void *numeroCliente){
 				exito = osada_rmdir(ruta);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
 				free(buffer);
+				free(ruta);
 
 			break;
 
@@ -389,6 +406,7 @@ void atenderConexion(void *numeroCliente){
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
 				free(buffer);
 				free(bufferNombre);
+				free(ruta);
 
 			break;
 
@@ -409,6 +427,7 @@ void atenderConexion(void *numeroCliente){
 				exito = osada_open(ruta);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
 				free(buffer);
+				free(ruta);
 
 			break;
 
@@ -433,6 +452,7 @@ void atenderConexion(void *numeroCliente){
 				ruta = convertirString(buffer, tamanioRuta);
 				exito = osada_truncate(ruta, nuevoTamanio);
 				send(clientesActivos[unCliente].socket, &exito, sizeof(int), MSG_WAITALL);
+				free(ruta);
 
 
 

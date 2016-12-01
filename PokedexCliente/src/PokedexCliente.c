@@ -134,6 +134,12 @@ static int cliente_readdir(const char *path, void *buf, fuse_fill_dir_t filler,o
 
 			log_info(log_Cliente, "Operacion .readdir exitosa. Contenidos del directorio %s obtenidos.", path);
 		}
+		for(i = 0; archivos[i] != NULL; i++){
+			free(archivos[i]);
+		}
+		free(archivos);
+		free(listadoConcatenado);
+
 		free(leAnswer);
 	}
 
@@ -264,6 +270,7 @@ static int cliente_write(const char* path,const char *buf, size_t size, off_t of
 	else{
 		log_error(log_Cliente, "No se pudo escribir el archivo %s (espacio en disco insuficiente?)", path);
 	}
+	free(buffer);
 	return res;
 }
 //////////////////////////////////////////////////////////////////////////////
