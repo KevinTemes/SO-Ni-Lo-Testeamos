@@ -153,31 +153,29 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 							protocAManejar[0]='9';
 							send(servidor,protocAManejar,2,0);
 
-							//if(posicionesYDeadlocks->cargarDeNuevoObjetivo!=2){
-								solicitarAtraparPokemon(calculoTiempo,tiempo,mapa);
+							solicitarAtraparPokemon(calculoTiempo,tiempo,mapa);
 
-								if (posicionesYDeadlocks->cargarDeNuevoObjetivo== 0){
-									list_add((ent)->pokemonsPorMapaCapturados,caracterPoke);
-									log_info(logs,"Capture en el mapa %s a %s y lo agregue a la lista por mapa capturados\n", mapa,caracterPoke);
+							if (posicionesYDeadlocks->cargarDeNuevoObjetivo== 0){
+								list_add((ent)->pokemonsPorMapaCapturados,caracterPoke);
+								log_info(logs,"Capture en el mapa %s a %s y lo agregue a la lista por mapa capturados\n", mapa,caracterPoke);
+								dictionary_remove(pokesDeCadaMapa,mapa);
+							}else if (posicionesYDeadlocks->cargarDeNuevoObjetivo==1){ // solo si resetea y tiene vidas lo hace
+								int i;
+								while(dictionary_get(pokesDeCadaMapa,mapa)!=NULL){
+									char* losQueQuedaron = dictionary_get(pokesDeCadaMapa,mapa);
+									list_add(ent->pokemonsPorMapaCapturados, losQueQuedaron);
+									log_info(logs,"Agrego al final de la lista por mapa capturados al poke %s que estaba en el dictionary de objetivos no realizados todavia\n",losQueQuedaron);
 									dictionary_remove(pokesDeCadaMapa,mapa);
-								}else if (posicionesYDeadlocks->cargarDeNuevoObjetivo==1){ // solo si resetea y tiene vidas lo hace
-									int i;
-									while(dictionary_get(pokesDeCadaMapa,mapa)!=NULL){
-										char* losQueQuedaron = dictionary_get(pokesDeCadaMapa,mapa);
-										list_add(ent->pokemonsPorMapaCapturados, losQueQuedaron);
-										log_info(logs,"Agrego al final de la lista por mapa capturados al poke %s que estaba en el dictionary de objetivos no realizados todavia\n",losQueQuedaron);
-										dictionary_remove(pokesDeCadaMapa,mapa);
-									}
-
-									for(i=0;i<list_size(ent->pokemonsPorMapaCapturados);i++){
-										char* pokeAMeter = list_get(ent->pokemonsPorMapaCapturados,i);
-										log_info(logs,"Agrego este pokemon al diccionario %s para reiniciar el mapa que se encontraba",pokeAMeter);
-										log_info(logs, "Lo agregue en la posicion %d del diccionario\n",i);
-										dictionary_put(pokesDeCadaMapa,mapa,pokeAMeter); // vuelvo a meter todos los pokemons de ese mapa
-									}
-									list_clean(ent->pokemonsPorMapaCapturados);
 								}
-							//}
+
+								for(i=0;i<list_size(ent->pokemonsPorMapaCapturados);i++){
+									char* pokeAMeter = list_get(ent->pokemonsPorMapaCapturados,i);
+									log_info(logs,"Agrego este pokemon al diccionario %s para reiniciar el mapa que se encontraba",pokeAMeter);
+									log_info(logs, "Lo agregue en la posicion %d del diccionario\n",i);
+									dictionary_put(pokesDeCadaMapa,mapa,pokeAMeter); // vuelvo a meter todos los pokemons de ese mapa
+								}
+								list_clean(ent->pokemonsPorMapaCapturados);
+							}
 
 						} // cierro el while de los objetivos
 
