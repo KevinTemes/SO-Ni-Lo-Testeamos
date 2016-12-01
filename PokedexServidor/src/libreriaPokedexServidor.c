@@ -558,7 +558,7 @@ char *osada_readdir(char *unaRuta){
 		exit(0);
 	}
 
-
+	pthread_mutex_lock(&misMutex[parentBlock]);
 	// Busco todos los archivos hijos de ese directorio padre, y me copio el nombre de cada uno
 	for (i = 0; i <= 2047; i++){
 
@@ -583,6 +583,7 @@ char *osada_readdir(char *unaRuta){
 			}
 
 		}
+	pthread_mutex_unlock(&misMutex[parentBlock]);
 
 	if(numElems == 0){
 		string_append(&contenidoDir, "\0");
@@ -859,10 +860,13 @@ int osada_unlink(char *ruta){
 	int exito = -1;
 	log_info(log_Servidor, "Solicitud de borrado (.unlink) del archivo %s", ruta);
 	int i = buscarArchivo(ruta);
+	int parentDir = miDisco.tablaDeArchivos[i].parent_directory;
 	if(i >= -1){
+		pthread_mutex_lock(&misMutex[parentDir]);
 		pthread_mutex_lock(&misMutex[i]);
 		borrarArchivo(i);
 		pthread_mutex_unlock(&misMutex[i]);
+		pthread_mutex_unlock(&misMutex[parentDir]);
 
 		exito = 0;
 	}
@@ -913,9 +917,12 @@ int osada_rmdir(char *ruta){
 	log_info(log_Servidor, "Solicitud de borrado (.rmdir) del directorio %s", ruta);
 
 	int i = buscarArchivo(ruta);
+	int parentDir = miDisco.tablaDeArchivos[i].parent_directory;
+	pthread_mutex_lock(&misMutex[parentDir]);
 	pthread_mutex_lock(&misMutex[i]);
 	borrarDirectorio(i);
 	pthread_mutex_unlock(&misMutex[i]);
+	pthread_mutex_unlock(&misMutex[parentDir]);
 	exito = 0;
 	log_info(log_Servidor, "El directorio %s se ha borrado exitosamente", ruta);
 
