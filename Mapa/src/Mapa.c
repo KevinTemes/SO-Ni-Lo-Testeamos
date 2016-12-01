@@ -262,9 +262,17 @@ void banquero() {
 							log_info(logs, "entrenadores en deadlock #%d: %c",
 									ef, pef->simbolo);
 							int accione = 3;
-							//int efe;
+							int batalla = 8;
+							int nobatalla = 5;
 							send((clientesActivos[pef->numeroCliente]).socket,
 									&accione, sizeof(int), 0);
+							if(datosMapa->batalla){
+								send((clientesActivos[pef->numeroCliente]).socket,
+																	&batalla, sizeof(int), 0);
+							}else{
+								send((clientesActivos[pef->numeroCliente]).socket,
+																	&nobatalla, sizeof(int), 0);
+							}
 							//			log_info(logs, "%d", efe);
 
 						}
