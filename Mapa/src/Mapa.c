@@ -201,8 +201,8 @@ void banquero() {
 
 				while (list_find(entrenadoresEnDeadlock, (void*) entrencontrado)!= NULL) {
 					entrenador* jota;
-					hp = list_remove_by_condition(entrenadoresEnDeadlock,(void*) entrencontrado);
-					jota = hp;
+					jota = list_remove_by_condition(entrenadoresEnDeadlock,(void*) entrencontrado);
+					hp = jota;
 					list_add(listin, jota);
 				}
 
