@@ -31,10 +31,13 @@ char* protocAManejar;
 char* configEntrenador;
 char* horaInicio;
 
+#define SOBREVIVI 0
 #define ATRAPA 1
 #define DEADLOCK 3
+#define NOBATALLA 5
 #define MORI 7
-#define SOBREVIVI 0
+#define BATALLA 8
+
 
 int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso/workspace/pokedex
 	char* nombreEnt = argv[1];
@@ -253,7 +256,6 @@ void reciboUnaVida(){
 
 void pierdoUnaVida(){
 	sleep(1);
-	//morir("senial");
 	muerePorSignal();
 }
 
@@ -314,8 +316,6 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 
 	int protocoloRec;
 
-	//if(posicionesYDeadlocks->cargarDeNuevoObjetivo!=2){
-
 		atrapaOEntraDeadlock:
 
 		recv(servidor,&(protocoloRec),sizeof(int),MSG_WAITALL);
@@ -331,51 +331,55 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 					log_info(logs,"Recibí un 3, entonces va a haber deadlock\n");
 					posicionesYDeadlocks->cantDeadlocks++;
 
-					t_pokemonDeserializado* elMasFuerte = (t_pokemonDeserializado*)agarrarPokeConMasNivel((ent)->listaNivAtrapados);
+					int protocolitoRecibido;
 
-					//serializo mi pokemon, mando 5 7 Pikachu 33
-					char protocolo = '5';
-					int tamanioEspecieEnviar = strlen(elMasFuerte->especie);
-					int tamanioTotal = sizeof(char) + 2 *sizeof(int) + tamanioEspecieEnviar;
-
-					void* miBuffer = malloc(tamanioTotal);
-
-					//cargo los tamanios
-					memcpy(miBuffer, &protocolo, sizeof(char));
-					memcpy(miBuffer + sizeof(char), &tamanioEspecieEnviar, sizeof(int));
-
-					//cargo lo que voy a mandar
-					memcpy(miBuffer + sizeof(char) +  sizeof(int), elMasFuerte->especie, tamanioEspecieEnviar);
-					memcpy(miBuffer + sizeof(char) +  sizeof(int) + tamanioEspecieEnviar, &(elMasFuerte->nivelPokemon), sizeof(int));
-
-					log_info(logs,"Protocolo que mando %c, va a haber pelea por deadlock",protocolo);
-					log_info(logs,"tamanio de especie para pelear: %d",tamanioEspecieEnviar);
-					log_info(logs,"especie del mas fuerte para pelear %s",elMasFuerte->especie);
-					log_info(logs, "nivel del mas fuerte para pelear %d \n",elMasFuerte->nivelPokemon);
-
-					send(servidor,miBuffer,tamanioTotal,0);
-
-					free(miBuffer);
-
-					int protocMoriOSobrevivi;
-
-					recv(servidor,&(protocMoriOSobrevivi),sizeof(int),MSG_WAITALL);
-					log_info(logs,"Recibo 7 si mori o 0 si sobrevivi, y el protocolo recibido es: %d",protocMoriOSobrevivi);
-
-					if(protocMoriOSobrevivi==MORI){
-
-						//morir("deadlock");
-						muerePorDeadlock();
-
-					} else if(protocMoriOSobrevivi==SOBREVIVI){
-
-						log_info(logs,"Sobrevivi al deadlock\n");
-
+					if(protocolitoRecibido ==NOBATALLA){
 						goto atrapaOEntraDeadlock;
-					}
+					} else if (protocolitoRecibido==BATALLA){
 
+
+						t_pokemonDeserializado* elMasFuerte = (t_pokemonDeserializado*)agarrarPokeConMasNivel((ent)->listaNivAtrapados);
+
+						//serializo mi pokemon, mando 5 7 Pikachu 33
+						char protocolo = '5';
+						int tamanioEspecieEnviar = strlen(elMasFuerte->especie);
+						int tamanioTotal = sizeof(char) + 2 *sizeof(int) + tamanioEspecieEnviar;
+
+						void* miBuffer = malloc(tamanioTotal);
+
+						//cargo los tamanios
+						memcpy(miBuffer, &protocolo, sizeof(char));
+						memcpy(miBuffer + sizeof(char), &tamanioEspecieEnviar, sizeof(int));
+
+						//cargo lo que voy a mandar
+						memcpy(miBuffer + sizeof(char) +  sizeof(int), elMasFuerte->especie, tamanioEspecieEnviar);
+						memcpy(miBuffer + sizeof(char) +  sizeof(int) + tamanioEspecieEnviar, &(elMasFuerte->nivelPokemon), sizeof(int));
+
+						log_info(logs,"Protocolo que mando %c, va a haber pelea por deadlock",protocolo);
+						log_info(logs,"tamanio de especie para pelear: %d",tamanioEspecieEnviar);
+						log_info(logs,"especie del mas fuerte para pelear %s",elMasFuerte->especie);
+						log_info(logs, "nivel del mas fuerte para pelear %d \n",elMasFuerte->nivelPokemon);
+
+						send(servidor,miBuffer,tamanioTotal,0);
+
+						free(miBuffer);
+
+
+						recv(servidor,&(protocolitoRecibido),sizeof(int),MSG_WAITALL);
+						log_info(logs,"Recibo 7 si mori o 0 si sobrevivi, y el protocolo recibido es: %d",protocolitoRecibido);
+
+						if(protocolitoRecibido==MORI){
+
+							muerePorDeadlock();
+
+						} else if(protocolitoRecibido==SOBREVIVI){
+
+							log_info(logs,"Sobrevivi al deadlock\n");
+
+							goto atrapaOEntraDeadlock;
+						}
+					}
 			}
-	//}
 
 	return NULL;
 }
