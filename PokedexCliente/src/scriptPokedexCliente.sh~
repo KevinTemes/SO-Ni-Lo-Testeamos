@@ -1,8 +1,0 @@
-#!/bin/bash
-
-cd
-cd workspace/tp-2016-2c-Ni-Lo-Testeamos/PokedexCliente/src
-
-gcc libSockets.c libSockets.h PokedexCliente.c -o pokeCliente -lcommons -lfuse -lpthread
-
-./pokeCliente /home/utnso/workspace/pokedex -s -f -d
