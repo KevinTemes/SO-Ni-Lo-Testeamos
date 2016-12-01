@@ -39,7 +39,6 @@ char* configMapa;
 //variables del mapa
 int nE = 0; //numero entrenador
 metaDataComun* datosMapa; //MATADO
-metaDataComun* datosMapa2;
 int rows; // nro de filas
 int cols; // nro de columnas
 
@@ -82,7 +81,7 @@ pthread_mutex_t mutexMuerte = PTHREAD_MUTEX_INITIALIZER;
 void banquero() {
 
 	while (1) {
-		usleep(datosMapa2->tiempoChequeoDeadlock);
+		usleep(datosMapa->tiempoChequeoDeadlock * 1000);
 
 		if (list_size(entrenadoresEnCurso)) {
 			t_list* vectorT = list_create();
@@ -134,12 +133,7 @@ void banquero() {
 						int val = 1;
 						for (j = 0; j < list_size(an->solicitud) && val; j++) {
 							ta = list_get(an->solicitud, j);
-							log_info(logs, "solicitud de %c en %c %d",
-									an->simbolo, ta->pokenest, ta->valor);
 							b = list_get(vectorT, j);
-							log_info(logs,
-									"y el valor del vector auxiliar ahi es %d %c",
-									b->valor, b->pokenest);
 							val = ta->valor <= b->valor;
 						}
 						if (val) {
@@ -151,10 +145,6 @@ void banquero() {
 							for (x = 0; x < list_size(an->asignados); x++) {
 								fa = list_get(an->asignados, x);
 								fe = list_get(vectorT, x);
-								log_info(logs,
-										"suma %c de %c%d con %c%d asignados",
-										an->simbolo, fa->pokenest, fa->valor,
-										fe->pokenest, fe->valor);
 								fe->valor = fa->valor + fe->valor;
 								auu = 0;
 							}
@@ -188,15 +178,17 @@ void banquero() {
 
 			while (list_size(entrenadoresEnDeadlock)) {
 				entrenador* hp;
-				hp = list_remove(entrenadoresEnDeadlock, 0);
+				entrenador* ente;
+				hp = list_get(entrenadoresEnDeadlock, 0);
+				ente = list_remove(entrenadoresEnDeadlock,0);
 				bool entrencontrado(entrenador* parametro) {
 					tabla* tab;
 					tabla* teb;
 					int h3;
 					int x = 0;
 					for (h3 = 0; h3 < list_size(parametro->asignados); h3++) {
-						tab = list_get(parametro->asignados, h3);
-						teb = list_get(hp->solicitud, h3);
+						tab = list_get(hp->asignados, h3);
+						teb = list_get(parametro->solicitud, h3);
 						if (tab->valor >= teb->valor) {
 							x = 1;
 						}
@@ -204,27 +196,58 @@ void banquero() {
 					}
 					return x;
 				}
-				log_info(logs,
-						"Remueve a %c de entEnDed y lo agreaga a deadlocks",
-						hp->simbolo);
-				entrenador* ente;
 				t_list* listin = list_create();
-				ente = hp;
 				list_add(listin, ente);
 				list_add(deadlocks, listin);
 
-				while (list_find(entrenadoresEnDeadlock, (void*) entrencontrado)
-						!= NULL) {
+				while (list_find(entrenadoresEnDeadlock, (void*) entrencontrado) != NULL) {
 					entrenador* jp;
-					jp = list_remove_by_condition(entrenadoresEnDeadlock,
-							(void*) entrencontrado);
+					jp = list_remove_by_condition(entrenadoresEnDeadlock,(void*) entrencontrado);
 					hp = jp;
-					log_info(logs, "Remueve a %c de entete y agrega",
-							hp->simbolo);
-					list_add(listin, hp);
+					list_add(listin,jp);
 				}
 
 			}
+			if(list_size(deadlocks)){
+							int comproba=0;
+							t_list* listitw;
+							int eaf;
+							for(eaf=0; eaf<list_size(deadlocks);eaf++){
+								listitw = list_get(deadlocks,eaf);
+								if(list_size(listitw)>1){
+									comproba=1;
+								}
+							}
+							if(comproba){
+								log_info(logs,"Hubo deadlock, tablas usadas:");
+								log_info(logs,"Asignacion:");
+								int auxileg;
+								for(auxileg=0;auxileg<list_size(entrenadoresEnCurso);auxileg++){
+									entrenador* entw;
+									entw = list_get(entrenadoresEnCurso,auxileg);
+									log_info(logs,"Entrenador %c",entw->simbolo);
+									int casielUlti;
+									for(casielUlti=0;casielUlti<list_size(entw->asignados);casielUlti++){
+										tabla* tablilla;
+										tablilla = list_get(entw->asignados,casielUlti);
+										log_info(logs,"%c%d",tablilla->pokenest,tablilla->valor);
+									}
+								}
+								log_info(logs,"Solicitud:");
+								int auxilog;
+													for(auxilog=0;auxilog<list_size(entrenadoresEnCurso);auxilog++){
+														entrenador* entw;
+														entw = list_get(entrenadoresEnCurso,auxilog);
+														log_info(logs,"Entrenador %c",entw->simbolo);
+														int casielUlti;
+														for(casielUlti=0;casielUlti<list_size(entw->solicitud);casielUlti++){
+															tabla* tablilla;
+															tablilla = list_get(entw->solicitud,casielUlti);
+															log_info(logs,"%c%d",tablilla->pokenest,tablilla->valor);
+														}
+													}
+							}
+						}
 
 			if (list_size(deadlocks)) {
 				t_list* liste;
@@ -240,18 +263,15 @@ void banquero() {
 									ef, pef->simbolo);
 							int accione = 3;
 							//int efe;
-							if(datosMapa2->batalla){
 							send((clientesActivos[pef->numeroCliente]).socket,
 									&accione, sizeof(int), 0);
 							//			log_info(logs, "%d", efe);
-							}
+
 						}
 					} else {
 						entrenador* pof;
 						pof = list_get(liste, 0);
-						log_info(logs,
-								"entrenador %c es re trucho, esta en inanicion",
-								pof->simbolo);
+						log_info(logs,"entrenador %c esta en inanicion %d", pof->simbolo, ef);
 					}
 
 				}
@@ -271,7 +291,8 @@ void banquero() {
 //				log_info(logs,f
 				//					"entrenadores ordenados, hora de la batalla pokemon");
 
-				if (datosMapa2->batalla) {
+				if (datosMapa->batalla) {
+					t_pkmn_factory* facto = create_pkmn_factory();
 					int yotromas;
 					for (yotromas = 0; yotromas < list_size(deadlocks);
 							yotromas++) {
@@ -288,7 +309,7 @@ void banquero() {
 
 							while (list_size(listota) > 1) {
 
-								t_pkmn_factory* facto = create_pkmn_factory();
+
 								t_pokemon* pokegold;
 								t_pokemon* pokesilver;
 								t_pokemon* pokeperdedor;
@@ -320,9 +341,6 @@ void banquero() {
 											(silver->pokePeleador)->nivel);
 									pokeperdedor = pkmn_battle(pokegold,
 											pokesilver);
-									log_info(logs, "Perdedor de tipo %s",
-											pkmn_type_to_string(
-													pokeperdedor->type));
 									int accionar = 0;
 									if (!strcmp(pokegold->species,
 											pokeperdedor->species)
@@ -345,6 +363,7 @@ void banquero() {
 												gold->simbolo);
 									}
 								}
+
 							}
 							entrenador* muerto;
 							muerto = list_get(listota, 0);
@@ -367,6 +386,7 @@ void banquero() {
 
 						}
 					}
+					destroy_pkmn_factory(facto);
 				}
 
 				list_destroy(entrenadoresEnDeadlock);
@@ -400,11 +420,11 @@ void planificador(void* argu) {
 
 		//	usleep(datosMapa2->retardoQ*1000);
 
-		int q = datosMapa2->quantum;
+		int q = datosMapa->quantum;
 
 /////////////////////////////////////////ROUND ROBIN/////////////////////////////////////////////////////////////
 
-		if (!strcmp(datosMapa2->algoritmo, "RR")) {
+		if (!strcmp(datosMapa->algoritmo, "RR")) {
 
 			//log_info(logs,"RR");
 			int acto;
@@ -426,7 +446,7 @@ void planificador(void* argu) {
 				while (q
 						&& (!(entre->fallecio) && queue_size(entre->colaAccion))) {
 
-					usleep(datosMapa2->retardoQ * 1000);
+					usleep(datosMapa->retardoQ * 1000);
 
 					acto = (int) queue_pop(entre->colaAccion);
 					//log_info(logs,"funca3");
@@ -697,7 +717,7 @@ void planificador(void* argu) {
 
 ////////////////////////////////////////////////////////EMPIEZA SRDF////////////////////////////
 
-		if (!strcmp(datosMapa2->algoritmo, "SRDF")) {
+		if (!strcmp(datosMapa->algoritmo, "SRDF")) {
 
 			//log_info(logs,"SRDF");
 
@@ -792,7 +812,7 @@ void planificador(void* argu) {
 					while (banderin && !(ent1->fallecio)
 							&& queue_size(ent1->colaAccion)) {
 
-						usleep(datosMapa2->retardoQ * 1000);
+						usleep(datosMapa->retardoQ * 1000);
 
 						acto = (int) queue_pop(ent1->colaAccion);
 
@@ -1227,7 +1247,6 @@ int main(int argc, char* argv[]) {
 // CONFIG
 
 	datosMapa = malloc(sizeof(metaDataComun));
-	datosMapa2 = malloc(sizeof(metaDataComun));
 	//datosPokenest = malloc(sizeof(metaDataPokeNest));
 	//datosPokemon = malloc(sizeof(metaDataPokemon));
 
@@ -1235,9 +1254,8 @@ int main(int argc, char* argv[]) {
 
 	leerConfiguracion();
 
-	leerConfiguracion2();
 
-	signal(SIGUSR2, leerConfiguracion2);
+	signal(SIGUSR2, leerConfiguracion);
 //por ahora
 	char* configPokenest = string_from_format("%s/Mapas/%s/PokeNests", argv[2],
 			argv[1]);

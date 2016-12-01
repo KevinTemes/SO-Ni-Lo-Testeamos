@@ -19,7 +19,7 @@ extern metaDataComun* datosMapa2;
 
 
 
-void leerConfiguracion2() {
+/*void leerConfiguracion2() {
 	t_config* archivoConfiguracion = config_create(configMapa); //Crea struct de configuracion
 	if (archivoConfiguracion == NULL) {
 
@@ -57,7 +57,7 @@ void leerConfiguracion2() {
 			config_destroy(archivoConfiguracion);
 		}
 	}
-}
+}*/
 
 
 void leerConfiguracion() {
@@ -75,35 +75,35 @@ void leerConfiguracion() {
 
 			datosMapa->tiempoChequeoDeadlock = config_get_int_value(
 					archivoConfiguracion, "TiempoChequeoDeadlock");
-			//log_info(logs,"TiempoChequeo %d\n",(*datos)->tiempoChequeoDeadlock);
+			log_info(logs,"TiempoChequeo %d\n",datosMapa->tiempoChequeoDeadlock);
 
 			datosMapa->batalla = config_get_int_value(archivoConfiguracion,
 					"Batalla");
-			//log_info(logs,"batalla %d\n",(*datos)->batalla);
+			log_info(logs,"batalla %d\n",datosMapa->batalla);
 
 			char* algoritmo = string_new();
 			string_append(&algoritmo,
 					config_get_string_value(archivoConfiguracion, "algoritmo"));
 			datosMapa->algoritmo = algoritmo;
-			//log_info(logs,"algoritmo  %s\n",(*datos)->algoritmo);
+			log_info(logs,"algoritmo  %s\n",datosMapa->algoritmo);
 
 			datosMapa->quantum = config_get_int_value(archivoConfiguracion,
 					"quantum");
-			//log_info(logs,"quantum  %d\n",(*datos)->quantum);
+			log_info(logs,"quantum  %d\n",datosMapa->quantum);
 
 			datosMapa->retardoQ = config_get_int_value(archivoConfiguracion,
 					"retardo");
-			//log_info(logs,"retardo  %d\n",(*datos)->retardoQ);
+			log_info(logs,"retardo  %d\n",datosMapa->retardoQ);
 
 			char* ip = string_new();
 			string_append(&ip,
 					config_get_string_value(archivoConfiguracion, "IP"));
 			datosMapa->ip = ip;
-			//log_info(logs,"ip  %s\n",(*datos)->ip);
+			log_info(logs,"ip  %s\n",datosMapa->ip);
 
 			datosMapa->puerto = config_get_int_value(archivoConfiguracion,
 					"Puerto");
-			//log_info(logs,"puerto %d\n",(*datos)->puerto);
+			log_info(logs,"puerto %d\n",datosMapa->puerto);
 
 			config_destroy(archivoConfiguracion);
 		}
