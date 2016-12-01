@@ -789,15 +789,17 @@ int osada_write(char *ruta, void *nuevoContenido, int sizeAgregado, int offset){
 				datosPendientes = 0;
 			}
 
-			bitarray_set_bit(miDisco.bitmap, siguienteBloque);
-			aux = siguienteBloque;
-			miDisco.tablaDeAsignaciones[siguienteBloque] = primerBloqueBitmapLibre();
-			siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
+			//bitarray_set_bit(miDisco.bitmap, siguienteBloque);
+			if(datosPendientes != 0){
+				aux = siguienteBloque;
+				miDisco.tablaDeAsignaciones[siguienteBloque] = primerBloqueBitmapLibre();
+				siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
+			}
 
 		}
 
 		miDisco.tablaDeArchivos[i].file_size = offset + sizeAgregado;
-		miDisco.tablaDeAsignaciones[aux] = -1;
+		miDisco.tablaDeAsignaciones[siguienteBloque] = -1;
 
 		log_info(log_Servidor, "Cantidad de bytes escritos: %d", sizeAgregado);
 		log_info(log_Servidor, "Tamanio del archivo despues de escritura: %d", miDisco.tablaDeArchivos[i].file_size);
@@ -963,23 +965,6 @@ int osada_truncate(char *ruta, int nuevoTamanio){
 
 	pthread_mutex_lock(&misMutex[i]);
 
-/*	if(nuevoTamanio == 0){ // Truncado a cero
-		aux = siguienteBloque;
-		siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
-		miDisco.tablaDeAsignaciones[aux] = -1;
-
-		while(siguienteBloque != -1){ // Limpio los bloques restantes
-			aux = miDisco.tablaDeAsignaciones[siguienteBloque];
-			bitarray_clean_bit(miDisco.bitmap, siguienteBloque);
-			miDisco.tablaDeAsignaciones[siguienteBloque] = -1;
-			siguienteBloque = aux;
-		}
-
-
-		exito = 0;
-
-	} */
-
 	if(tamanioActual > nuevoTamanio){ // Reduzco el tamaño
 
 		while(contador <= bloques){ //Avanzo hasta el último bloque que me va a quedar
@@ -1019,7 +1004,6 @@ int osada_truncate(char *ruta, int nuevoTamanio){
 		while(bloquesNuevos != 0){
 			miDisco.tablaDeAsignaciones[siguienteBloque] = primerBloqueBitmapLibre();
 			aux = siguienteBloque;
-			bitarray_set_bit(miDisco.bitmap, siguienteBloque);
 			siguienteBloque = miDisco.tablaDeAsignaciones[siguienteBloque];
 			bloquesNuevos--;
 		}

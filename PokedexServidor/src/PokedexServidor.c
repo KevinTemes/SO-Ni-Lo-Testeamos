@@ -65,8 +65,12 @@ void osada_iniciar(char *osada_path){
 
 	miDisco.tablaDeAsignaciones = puente;
 
-
-
+	 // MARCO COMO OCUPADOS LOS BLOQUES INICIALES CORRESPONDIENTES A LAS ESTRUCTURAS
+	 int i;
+	 int j = inicioDeDatosEnBloques();
+	 for(i = 0; i <= j; i++){
+	 	bitarray_set_bit(miDisco.bitmap, i);
+	 }
 
 }
 
@@ -78,7 +82,7 @@ int main(int argc, char **argv) {
 	//LOGS
 	remove("Servidor.log");
 	puts("Creando archivo de logueo PokeServidor...\n");
-	log_Servidor = log_create("Servidor.log", "PokedexServidor", true, log_level_from_string("INFO"));
+	log_Servidor = log_create("Servidor.log", "PokedexServidor", false, log_level_from_string("INFO"));
 	puts("Log Pokedex Servidor creado exitosamente \n");
 
 	//Levanto el disco Osada
