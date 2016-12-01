@@ -332,11 +332,15 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 					posicionesYDeadlocks->cantDeadlocks++;
 
 					int protocolitoRecibido;
+					recv(servidor,&(protocolitoRecibido),sizeof(int),MSG_WAITALL);
+					log_info(logs,"Recibo 5 si no hay batalla, o 8 si hay batalla, y el protocolo recibido es: %d",protocolitoRecibido);
 
 					if(protocolitoRecibido ==NOBATALLA){
+						log_info(logs, "No hay batalla, no le mando al mas fuerte porque no hay pelea \n");
 						goto atrapaOEntraDeadlock;
 					} else if (protocolitoRecibido==BATALLA){
 
+						log_info(logs,"Hay batalla pokemon");
 
 						t_pokemonDeserializado* elMasFuerte = (t_pokemonDeserializado*)agarrarPokeConMasNivel((ent)->listaNivAtrapados);
 
