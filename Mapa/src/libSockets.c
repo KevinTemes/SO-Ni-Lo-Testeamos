@@ -33,21 +33,21 @@ void leerConfiguracion2() {
 		} else {
 
 			datosMapa2->tiempoChequeoDeadlock = config_get_int_value(archivoConfiguracion, "TiempoChequeoDeadlock");
-			//printf("TiempoChequeo %d\n",(*datos)->tiempoChequeoDeadlock);
+			//log_info(logs,"TiempoChequeo %d\n",(*datos)->tiempoChequeoDeadlock);
 			log_info(logs,"Tiempo de chequeo vale: %d",datosMapa2->tiempoChequeoDeadlock);
 
 			datosMapa2->batalla = config_get_int_value(archivoConfiguracion,"Batalla");
-			//printf("batalla %d\n",(*datos)->batalla);
+			//log_info(logs,"batalla %d\n",(*datos)->batalla);
 			log_info(logs,"Batalla activada? %d",datosMapa2->batalla);
 
 			char* algoritmo = string_new();
 			string_append(&algoritmo,config_get_string_value(archivoConfiguracion, "algoritmo"));
 			datosMapa2->algoritmo = algoritmo;
-			//printf("algoritmo  %s\n",(*datos)->algoritmo);
+			//log_info(logs,"algoritmo  %s\n",(*datos)->algoritmo);
 			log_info(logs,"Algoritmo: %s",datosMapa2->algoritmo);
 
 			datosMapa2->quantum = config_get_int_value(archivoConfiguracion,"quantum");
-			//printf("quantum  %d\n",(*datos)->quantum);
+			//log_info(logs,"quantum  %d\n",(*datos)->quantum);
 			log_info(logs,"Quantum: %d",datosMapa2->quantum);
 
 			datosMapa2->retardoQ = config_get_int_value(archivoConfiguracion,"retardo");
@@ -75,35 +75,35 @@ void leerConfiguracion() {
 
 			datosMapa->tiempoChequeoDeadlock = config_get_int_value(
 					archivoConfiguracion, "TiempoChequeoDeadlock");
-			//printf("TiempoChequeo %d\n",(*datos)->tiempoChequeoDeadlock);
+			//log_info(logs,"TiempoChequeo %d\n",(*datos)->tiempoChequeoDeadlock);
 
 			datosMapa->batalla = config_get_int_value(archivoConfiguracion,
 					"Batalla");
-			//printf("batalla %d\n",(*datos)->batalla);
+			//log_info(logs,"batalla %d\n",(*datos)->batalla);
 
 			char* algoritmo = string_new();
 			string_append(&algoritmo,
 					config_get_string_value(archivoConfiguracion, "algoritmo"));
 			datosMapa->algoritmo = algoritmo;
-			//printf("algoritmo  %s\n",(*datos)->algoritmo);
+			//log_info(logs,"algoritmo  %s\n",(*datos)->algoritmo);
 
 			datosMapa->quantum = config_get_int_value(archivoConfiguracion,
 					"quantum");
-			//printf("quantum  %d\n",(*datos)->quantum);
+			//log_info(logs,"quantum  %d\n",(*datos)->quantum);
 
 			datosMapa->retardoQ = config_get_int_value(archivoConfiguracion,
 					"retardo");
-			//printf("retardo  %d\n",(*datos)->retardoQ);
+			//log_info(logs,"retardo  %d\n",(*datos)->retardoQ);
 
 			char* ip = string_new();
 			string_append(&ip,
 					config_get_string_value(archivoConfiguracion, "IP"));
 			datosMapa->ip = ip;
-			//printf("ip  %s\n",(*datos)->ip);
+			//log_info(logs,"ip  %s\n",(*datos)->ip);
 
 			datosMapa->puerto = config_get_int_value(archivoConfiguracion,
 					"Puerto");
-			//printf("puerto %d\n",(*datos)->puerto);
+			//log_info(logs,"puerto %d\n",(*datos)->puerto);
 
 			config_destroy(archivoConfiguracion);
 		}
@@ -127,15 +127,17 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 			dispo = malloc(sizeof(tabla)); //MATADO
 			datos = malloc(sizeof(metaDataPokeNest)); //MATADO
 
+			log_info(logs,"esto lo printea\n");
 
-			if (dir->d_type == DT_DIR && (strcmp(dir->d_name, ".") != 0) && (strcmp(dir->d_name, "..") != 0)) {
+			if ((strcmp(dir->d_name, ".") != 0) && (strcmp(dir->d_name, "..") != 0)) {
 
 				char* ruta = string_new();
 				string_append(&ruta,string_from_format("%s/%s/metadata", name,dir->d_name));
 				t_config* archivoConfigPokenest = config_create(ruta);
 				free(ruta);
 
-				printf("%s\n", dir->d_name);
+				//log_info(logs,"el d_name es %s\n", dir->d_name);
+				//log_info(logs,"el d_type es %c\n",dir->d_type);
 
 				if (archivoConfigPokenest == NULL) {
 					return 0;
@@ -157,7 +159,7 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 								config_get_string_value(archivoConfigPokenest,
 										"Posicion"));
 						datos->posicion = posicion;
-						printf("%s\n",datos->posicion);
+						//log_info(logs,"%s\n",datos->posicion);
 
 						char* simbolo = string_new();
 						string_append(&simbolo,
@@ -177,13 +179,14 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 									string_from_format("%s/%s", name,
 											dir->d_name));
 							while ((entry = readdir(dirp)) != NULL) {
-								if (entry->d_type == DT_REG) {
+								if ((strcmp(entry->d_name,"metadata")!=0) && (strcmp(entry->d_name,".")!=0) && (strcmp(entry->d_name,"..")!=0)) {
+
 									file_count++;
 								}
 							}
 							closedir(dirp);
-							datos->cantPokemons = (file_count - 1);
-							dispo->valor = (file_count-1);
+							datos->cantPokemons = (file_count);
+							dispo->valor = (file_count);
 						}
 
 						list_add(pokenests, (void*) datos);
@@ -204,8 +207,8 @@ int leerConfigPokenest(char *name, t_list *pokenests) {
 
 					   for(ka=0; ka<list_size(pokenests); ka++){
 					    	    a = (tabla*) list_get(disponibles,ka);
-					    	    printf("%c\n",a->pokenest);
-					    	    printf("%d\n",a->valor);
+					    	    //log_info(logs,"%c\n",a->pokenest);
+					    	    //log_info(logs,"%d\n",a->valor);
 					    }
 
 		closedir(d);
@@ -226,20 +229,21 @@ int leerPokemons(char *name, t_list *pokemons) {
 		pokimons* po;
 		while ((dir = readdir(d)) != NULL ) {
 
-			if (dir->d_type == DT_DIR && (strcmp(dir->d_name, ".") != 0) && (strcmp(dir->d_name, "..") != 0)) {
+			if ((strcmp(dir->d_name, ".") != 0) && (strcmp(dir->d_name, "..") != 0)) {
 				bloq* strubloq;
 				strubloq = malloc(sizeof(bloq));
                 po=malloc(sizeof(pokimons));
                 po->listaPokemons=list_create();
                 char simbol = dir->d_name[0];
                 po->pokinest=simbol;
+                log_info(logs,"Simbolo %c \n", po->pokinest);
                 strubloq->colabloq=queue_create();
                 sem_init(&(strubloq->sembloq),0,0);
                 sem_init(&(strubloq->sem2),0,0);
                 strubloq->pokenest=dir->d_name[0];
                 log_info(logs,"Carga de info en pokenest %c",dir->d_name[0]);
 
-				//printf("%s\n", dir->d_name);
+				//log_info(logs,"%s\n", dir->d_name);
 						{
 							DIR * dirp;
 							struct dirent * entry;
@@ -248,9 +252,9 @@ int leerPokemons(char *name, t_list *pokemons) {
 
 							while ((entry = readdir(dirp)) != NULL) {
 								metaDataPokemon* poke;
-								if (entry->d_type == DT_REG && (strcmp(entry->d_name, "metadata") != 0)) {
+								if ((strcmp(entry->d_name, "metadata") != 0) && (strcmp(entry->d_name, ".") != 0) && (strcmp(entry->d_name, "..") != 0)) {
 
-									printf("%s\n",entry->d_name);
+									log_info(logs,"esto es %s\n",entry->d_name);
 									poke = malloc(sizeof(metaDataPokemon));
 								    char* ruta = string_new();
 								    string_append(&ruta,string_from_format("%s/%s/%s", name,dir->d_name,entry->d_name));
@@ -258,27 +262,27 @@ int leerPokemons(char *name, t_list *pokemons) {
 									free(ruta);
 
 									poke->nivel = config_get_int_value(archivoConfigPokenest,"Nivel");
-									//printf("nivel: %d\n",poke->nivel);
+									log_info(logs,"nivel: %d\n",poke->nivel);
 
 									char* speci = string_new();
 								    string_append(&speci, dir->d_name);
 									poke ->especie = speci;
-									//printf("especie: %s\n", poke->especie);
+									log_info(logs,"especie: %s\n", poke->especie);
 
 									char* arc = string_new();
 									string_append(&arc, entry->d_name);
 									poke ->nombreArch = arc;
-									//printf("nombreArchivo: %s\n", poke->nombreArch);
+									log_info(logs,"nombreArchivo: %s\n", poke->nombreArch);
 
 									poke->estaOcupado = 0;
 
 									list_add(po->listaPokemons,poke);
 
 									sem_post(&(strubloq->sembloq));
-									log_info(logs,"Se postea semaforo de %c",strubloq->pokenest);
+									log_info(logs,"Se postea semaforo de %c\n",strubloq->pokenest);
 									int vale;
 									sem_getvalue(&(strubloq->sembloq),&vale);
-									log_info(logs,"Valor del mismo: %d",vale);
+									log_info(logs,"Valor del mismo: %d\n",vale);
 
 									config_destroy(archivoConfigPokenest);
 								}
@@ -351,7 +355,7 @@ struct addrinfo* cargarInfoSocket(char *IP, char* Port) {
 	} else
 		error = getaddrinfo(IP, Port, &hints, &serverInfo);
 	if (error != 0) {
-		printf("Problema con el getaddrinfo()\n");
+		log_info(logs,"Problema con el getaddrinfo()\n");
 		return NULL;
 	}
 	return serverInfo;
@@ -365,12 +369,12 @@ int conectarCliente(char *IP, char* Port) {
 	int serverSocket = socket(serverInfo->ai_family, serverInfo->ai_socktype,
 			serverInfo->ai_protocol);
 	if (serverSocket == -1) {
-		printf("Error en la creacion del socket\n");
+		log_info(logs,"Error en la creacion del socket\n");
 		return -1;
 	}
 	if (connect(serverSocket, serverInfo->ai_addr, serverInfo->ai_addrlen)
 			== -1) {
-		printf("No se pudo conectar con el socket servidor\n");
+		log_info(logs,"No se pudo conectar con el socket servidor\n");
 		close(serverSocket);
 		exit(-1);
 	}
@@ -425,11 +429,11 @@ int conectarServidor(char* IP, char* Port, int backlog) {
 			serverInfo->ai_protocol);
 	if (bind(socketEscucha, serverInfo->ai_addr, serverInfo->ai_addrlen)
 			== -1) {
-		printf("Error en el Bind \n");
+		log_info(logs,"Error en el Bind \n");
 	}
 	freeaddrinfo(serverInfo);
 	if (listen(socketEscucha, backlog) == -1) {
-		printf("error en la escucha de un cliente");
+		log_info(logs,"error en la escucha de un cliente");
 		return -5;
 	}
 
@@ -439,7 +443,7 @@ int conectarServidor(char* IP, char* Port, int backlog) {
 	int socketCliente = accept(socketEscucha, (struct sockaddr *) &addr,
 			&addrlen);
 	if (socketCliente == -1) {
-		printf("Error en la conexion, en la funcion accept\n");
+		log_info(logs,"Error en la conexion, en la funcion accept\n");
 		return -2;
 	}
 	return socketCliente;
