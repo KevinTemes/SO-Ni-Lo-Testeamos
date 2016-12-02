@@ -397,12 +397,8 @@ void banquero() {
 					destroy_pkmn_factory(facto);
 				}
 
-				list_destroy(entrenadoresEnDeadlock);
-				int otromas;
-				for (otromas = 0; otromas < list_size(deadlocks); otromas++) {
-					list_remove_and_destroy_element(deadlocks, otromas,
-							(void*) free);
-				}
+
+
 			}
 			int auxi23;
 			for (auxi23 = 0; auxi23 < list_size(entrenadoresEnCurso);
@@ -413,6 +409,10 @@ void banquero() {
 			}
 			list_destroy_and_destroy_elements(vectorT, (void*) free);
 			//log_info(logs,"se elimina vector auxiliar");
+			list_destroy(entrenadoresEnDeadlock);
+			while(list_size(deadlocks)) {
+								list_remove_and_destroy_element(deadlocks, 0,(void*) free);
+							}
 		}
 	}
 
