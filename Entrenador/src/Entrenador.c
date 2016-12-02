@@ -30,6 +30,7 @@ t_posMapaposObjetivoYDeadlocks* posicionesYDeadlocks;
 char* protocAManejar;
 char* configEntrenador;
 char* horaInicio;
+t_tiempoBloqueado* tiempo;
 
 #define SOBREVIVI 0
 #define ATRAPA 1
@@ -52,7 +53,7 @@ int main(int argc, char* argv[]){ // PARA EJECUTAR: ./Entrenador Ash /home/utnso
 	 //STRUCTS
 	 ent = malloc(sizeof(t_entrenador));
 
-	 t_tiempoBloqueado* tiempo;
+	 //t_tiempoBloqueado* tiempo;
 	 tiempo= malloc(sizeof(t_tiempoBloqueado));
 
 	 t_calculoTiempo* calculoTiempo;
@@ -251,7 +252,7 @@ void handler(int n){
 void reciboUnaVida(){
 	sleep(1);
 	ent->cantidadInicialVidas++;
-	log_info(logs,"Me dieron una vida, ahora tengo %d vidas \n",ent->cantidadInicialVidas);
+	log_info(logs,"Me dieron una vida con SIGUSR1, ahora tengo %d vidas \n",ent->cantidadInicialVidas);
 }
 
 void pierdoUnaVida(){
@@ -589,12 +590,12 @@ void* moverseEnUnaDireccion(t_actualizarPos* posActual,int x, int y){
 
 
 void resetearDesdeCero(){
-	char respuesta[3];
+	char* respuesta;
 	log_info(logs,"Numero de reintentos realizados hasta el momento: %d", ent->reintentos);
 	close(servidor);
-	do{
-		log_info(logs,"Desea reiniciar juego?");
-		fgets(respuesta, 3, stdin);
+	log_info(logs,"Desea reiniciar juego?");
+	while( !(string_equals_ignore_case(respuesta,"si")) && !(string_equals_ignore_case(respuesta,"no"))){
+		scanf("%s",respuesta);
 		if (string_equals_ignore_case(respuesta,"si")){
 			log_info(logs,"Reseteando...\n");
 			resetear();
@@ -619,11 +620,15 @@ void resetearDesdeCero(){
 
 			horaInicio = empezarAventura();
 
+			(tiempo)->horasBloqueado = 0;
+			(tiempo)->minutosBloqueado = 0;
+			(tiempo)->segundosBloqueado=0;
+
 			posicionesYDeadlocks->pos = -1;
 			posicionesYDeadlocks->salirDeObjetivos = 1;
 			posicionesYDeadlocks->cargarDeNuevoObjetivo = 2;
 
-			return;
+			//return;
 
 			}else if(string_equals_ignore_case(respuesta,"no")) {
 				log_info(logs,"Cerrando programa\n");
@@ -632,7 +637,8 @@ void resetearDesdeCero(){
 				log_info(logs,"Debe ingresar si o no sin importar mayusculas para realizar algo\n");
 			}
 
-	}while( !(string_equals_ignore_case(respuesta,"si")) || !(string_equals_ignore_case(respuesta,"no")));
+	}
+	return;
 }
 
 
@@ -651,6 +657,11 @@ void muerePorDeadlock(){
 		posicionesYDeadlocks->salirDeObjetivos = 1;
 		posicionesYDeadlocks->cargarDeNuevoObjetivo=1;
 		//printf("Posicion antes de iterar el for de mapas: %d\n",posicionesYDeadlocks->pos);
+
+		(tiempo)->horasBloqueado = 0;
+		(tiempo)->minutosBloqueado = 0;
+		(tiempo)->segundosBloqueado=0;
+
 		close(servidor);
 		return;
 	} else if(ent->cantidadInicialVidas==0){
