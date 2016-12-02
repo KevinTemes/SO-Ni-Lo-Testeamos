@@ -1079,10 +1079,9 @@ void crearArchivo(char *nombreArchivo, int parentDir, int bloqueInicial, int pos
 void borrarArchivo(int posicion){
 	int aux;
 	miDisco.tablaDeArchivos[posicion].state = DELETED;
-	int inicio = inicioDeDatosEnBloques();
 	int siguienteBloque = miDisco.tablaDeArchivos[posicion].first_block;
 	while(siguienteBloque != -1){
-		bitarray_clean_bit(miDisco.bitmap, siguienteBloque + inicio);
+		bitarray_clean_bit(miDisco.bitmap, siguienteBloque);
 		aux = miDisco.tablaDeAsignaciones[siguienteBloque];
 		miDisco.tablaDeAsignaciones[siguienteBloque] = -1;
 		siguienteBloque = aux;
@@ -1114,11 +1113,10 @@ return cantidad;
 int hayBloquesLibres(int unaCantidad){
 	int exito = -1;
 	int n = 0;
-	int finalBitmap = miDisco.header->fs_blocks;
+	int finalBitmap = miDisco.header->data_blocks;
 	int i;
-	int inicio = inicioDeDatosEnBloques();
 
-	for(i = inicio; i <= finalBitmap; i++){
+	for(i = 0; i <= finalBitmap; i++){
 		if(!bitarray_test_bit(miDisco.bitmap, i)){
 			n++;
 		}
