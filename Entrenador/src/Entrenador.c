@@ -324,7 +324,6 @@ void* solicitarAtraparPokemon(t_calculoTiempo* calculoTiempo,t_tiempoBloqueado* 
 			switch(protocoloRec){
 				case ATRAPA:
 					log_info(logs, "Recibí un 1, entonces voy a atrapar mi pokemon\n");
-					usleep(1000);
 					deserializoPokemon(calculoTiempo,tiempo,mapa,inicioBloq,finBloq);
 					return tiempo;
 
