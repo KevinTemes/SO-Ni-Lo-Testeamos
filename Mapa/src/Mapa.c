@@ -54,7 +54,7 @@ t_list* entrenadoresEnCurso; //MATADO
 t_list* colaDeListosImp;
 t_list* colaDeBloqImp;
 t_list* listaContenedora; //MATADO
-t_list* deadlocks; //MATADO
+
 //colas
 t_queue* colaListos;
 
@@ -85,6 +85,7 @@ void banquero() {
 
 		if (list_size(entrenadoresEnCurso)) {
 			t_list* vectorT = list_create();
+			t_list* deadlocks = list_create();
 			int auxiliar;
 			for (auxiliar = 0; auxiliar < list_size(disponibles); auxiliar++) {
 				tabla* vecto = malloc(sizeof(tabla));
@@ -411,8 +412,11 @@ void banquero() {
 			//log_info(logs,"se elimina vector auxiliar");
 			list_destroy(entrenadoresEnDeadlock);
 			while(list_size(deadlocks)) {
-								list_remove_and_destroy_element(deadlocks, 0,(void*) free);
-							}
+
+			 list_remove_and_destroy_element(deadlocks, 0,(void*) free);
+			 						}
+
+			list_destroy(deadlocks);
 		}
 	}
 
@@ -1233,7 +1237,6 @@ int main(int argc, char* argv[]) {
 	items = list_create();
 	entrenadoresEnCurso = list_create();
 	listaContenedora = list_create();
-	deadlocks = list_create();
 	colaDeListosImp = list_create();
 	colaDeBloqImp = list_create();
 	//inicializo colas
