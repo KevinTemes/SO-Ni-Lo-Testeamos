@@ -53,6 +53,8 @@ void osada_iniciar(char *osada_path){
 	int tamanioBitmap = miDisco.header->bitmap_blocks * 64;
 	miDisco.bitmap = bitarray_create(inicioBitmap, tamanioBitmap);
 
+
+
 	// CARGO LA TABLA DE ARCHIVOS
 	int inicioTablaArchivos = (1 + miDisco.header->bitmap_blocks) * 64;
 	memcpy(miDisco.tablaDeArchivos, &miDisco.discoMapeado[inicioTablaArchivos],
@@ -64,13 +66,6 @@ void osada_iniciar(char *osada_path){
 	osada_block_pointer *puente = (osada_block_pointer *)(miDisco.discoMapeado + inicioTablaAsignaciones);
 
 	miDisco.tablaDeAsignaciones = puente;
-
-	 // MARCO COMO OCUPADOS LOS BLOQUES INICIALES CORRESPONDIENTES A LAS ESTRUCTURAS
-	 int i;
-	 int j = inicioDeDatosEnBloques();
-	 for(i = 0; i <= j; i++){
-	 	bitarray_set_bit(miDisco.bitmap, i);
-	 }
 
 }
 
