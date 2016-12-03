@@ -488,8 +488,6 @@ unsigned int primerBloqueBitmapLibre(){
 	}
 	pthread_mutex_unlock(&mutex_bloques);
 
-	pos -= inicio;
-
 	return pos;
 }
 
@@ -1186,17 +1184,4 @@ int inicioDeDatosEnBloques(){
 
 return inicio;
 }
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-void chequearBitmap(){
-	char *root = "/";
-	char *contDir = osada_readdir(root);
-	if(strlen(contDir) == 0){
-		int i;
-		int inicio = inicioDeDatosEnBloques();
-		int fin = miDisco.header->fs_blocks;
-		for(i = inicio; i <= fin; i++){
-			bitarray_clean_bit(miDisco.bitmap, i);
-		}
-	}
-}
-////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
